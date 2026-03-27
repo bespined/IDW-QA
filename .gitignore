@@ -1,0 +1,32 @@
+# Credentials — NEVER commit
+.env
+.env.local
+
+# User-specific data — per-tester, not shared
+course-config.json
+backups/
+staging/
+reports/
+idw_metrics.json
+audit_results.json
+content_cache/
+.idw/
+
+# Python
+*.pyc
+__pycache__/
+*.egg-info/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+unpacked/
+
+# Node (if any local builds)
+node_modules/

@@ -1,0 +1,112 @@
+<!-- Lesson Page Template -->
+<!-- Replace all {{PLACEHOLDERS}} with module-specific content -->
+<!-- Design system: standards/page-design.md -->
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <h2 style="color: #8C1D40; margin-bottom: 5px;">Lesson: {{LESSON_TOPIC}}</h2>
+  <p style="color: #595959; font-size: 14px; margin-top: 0;">Module {{MODULE_NUMBER}}: {{MODULE_TITLE}} | ~30 minutes</p>
+
+  <!-- Key Question — Left-Border Alert -->
+  <div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      <strong>The big idea:</strong> {{LESSON_INTRO_TEXT}}
+    </p>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Lecture Video Section -->
+  <h3 style="color: #8C1D40;">Lecture Video</h3>
+  <p style="color: #333; line-height: 1.6;">
+    This is the anchor content for this module. Watch the full lecture, then explore the supplementary resources below to deepen your understanding.
+  </p>
+
+  <!-- Video Embed — replace MEDIA_ID with actual Canvas media object ID -->
+  <div style="margin: 15px 0;">
+    <a id="media_comment_{{VIDEO_MEDIA_ID}}" class="instructure_inline_media_comment video_comment">Lecture Video: Module {{MODULE_NUMBER}}</a>
+  </div>
+
+  <!-- Transcript will be injected here by add_transcripts.py -->
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Key Concepts — Numbered Concept Items -->
+  <h3 style="color: #8C1D40;">Key Concepts</h3>
+
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+    <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">1</div>
+    <div style="flex: 1;">
+      <h4 style="color: #8C1D40; margin: 0 0 8px 0;">{{CONCEPT_1_TITLE}}</h4>
+      <p style="color: #333; line-height: 1.6; margin: 0;">{{CONCEPT_1_SUMMARY}}</p>
+    </div>
+  </div>
+
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+    <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">2</div>
+    <div style="flex: 1;">
+      <h4 style="color: #8C1D40; margin: 0 0 8px 0;">{{CONCEPT_2_TITLE}}</h4>
+      <p style="color: #333; line-height: 1.6; margin: 0;">{{CONCEPT_2_SUMMARY}}</p>
+    </div>
+  </div>
+
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+    <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">3</div>
+    <div style="flex: 1;">
+      <h4 style="color: #8C1D40; margin: 0 0 8px 0;">{{CONCEPT_3_TITLE}}</h4>
+      <p style="color: #333; line-height: 1.6; margin: 0;">{{CONCEPT_3_SUMMARY}}</p>
+    </div>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Supplementary Resources — Color-Coded Cards -->
+  <h3 style="color: #8C1D40;">Supplementary Resources</h3>
+  <p style="color: #333; line-height: 1.6;">
+    These resources complement the lecture video. Use them to deepen your understanding of specific topics.
+  </p>
+
+  <!-- Video Resource -->
+  <div style="border: 1px solid #BBDEFB; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #E3F2FD;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <span style="font-size: 20px;">🎬</span>
+      <div style="flex: 1;">
+        <p style="color: #1565C0; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Video</p>
+        <h4 style="margin: 0 0 6px 0;"><a href="{{RESOURCE_1_URL}}" target="_blank" rel="noopener noreferrer" style="color: #333; text-decoration: none;">{{RESOURCE_1_TITLE}} <span style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">(opens in new tab)</span></a></h4>
+        <p style="color: #595959; font-size: 13px; margin: 0;">{{RESOURCE_1_FOCUS}}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reading Resource -->
+  <div style="border: 1px solid #CE93D8; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #F3E5F5;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <span style="font-size: 20px;">📖</span>
+      <div style="flex: 1;">
+        <p style="color: #7B1FA2; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Reading</p>
+        <h4 style="margin: 0 0 6px 0;"><a href="{{RESOURCE_2_URL}}" target="_blank" rel="noopener noreferrer" style="color: #333; text-decoration: none;">{{RESOURCE_2_TITLE}} <span style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">(opens in new tab)</span></a></h4>
+        <p style="color: #595959; font-size: 13px; margin: 0;">{{RESOURCE_2_FOCUS}}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reference Resource -->
+  <div style="border: 1px solid #F48FB1; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #FCE4EC;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <span style="font-size: 20px;">📋</span>
+      <div style="flex: 1;">
+        <p style="color: #AD1457; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Reference</p>
+        <h4 style="margin: 0 0 6px 0;"><a href="{{RESOURCE_3_URL}}" target="_blank" rel="noopener noreferrer" style="color: #333; text-decoration: none;">{{RESOURCE_3_TITLE}} <span style="position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); border: 0;">(opens in new tab)</span></a></h4>
+        <p style="color: #595959; font-size: 13px; margin: 0;">{{RESOURCE_3_FOCUS}}</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Review Reminder — Full-Card Alert -->
+  <div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      💡 <strong>Before moving on:</strong> Make sure you've watched the full lecture video. The Knowledge Check will test your understanding of these concepts.
+    </p>
+  </div>
+
+</div>

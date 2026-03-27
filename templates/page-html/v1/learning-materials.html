@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas-bg: #f5f5f5;
+      --canvas-surface: #ffffff;
+      --canvas-text: #2d3b45;
+      --canvas-text-secondary: #6a7883;
+      --canvas-link: #0374b5;
+      --canvas-border: #c7cdd1;
+      --canvas-table-head: #f5f5f5;
+      --canvas-code-bg: #f8f8f8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--canvas-text);
+      background: var(--canvas-bg);
+      padding: 24px;
+    }
+    .ic-Layout-contentMain {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--canvas-surface);
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+      padding: 24px 32px;
+      min-height: 400px;
+    }
+    /* Canvas user_content styles */
+    .show-content h1 { font-size: 1.75em; font-weight: 500; margin: 0.5em 0; color: var(--canvas-text); }
+    .show-content h2 { font-size: 1.5em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h3 { font-size: 1.25em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h4 { font-size: 1.1em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h5 { font-size: 1em; font-weight: 700; margin: 1em 0 0.5em; }
+    .show-content h6 { font-size: 0.9em; font-weight: 700; margin: 1em 0 0.5em; color: var(--canvas-text-secondary); }
+    .show-content p { margin: 0 0 1em; }
+    .show-content a { color: var(--canvas-link); text-decoration: none; }
+    .show-content a:hover { text-decoration: underline; }
+    .show-content ul, .show-content ol { margin: 0 0 1em 1.5em; }
+    .show-content li { margin: 0.25em 0; }
+    .show-content blockquote {
+      border-left: 4px solid var(--canvas-border);
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--canvas-text-secondary);
+    }
+    .show-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    .show-content th, .show-content td {
+      border: 1px solid var(--canvas-border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .show-content th {
+      background: var(--canvas-table-head);
+      font-weight: 500;
+    }
+    .show-content img {
+      max-width: 100%;
+      height: auto;
+    }
+    .show-content code {
+      background: var(--canvas-code-bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .show-content pre {
+      background: var(--canvas-code-bg);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    .show-content pre code { background: none; padding: 0; }
+    .show-content hr {
+      border: none;
+      border-top: 1px solid var(--canvas-border);
+      margin: 1.5em 0;
+    }
+    .show-content iframe {
+      max-width: 100%;
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+    }
+    /* Preview label */
+    .preview-label {
+      text-align: center;
+      color: var(--canvas-text-secondary);
+      font-size: 12px;
+      padding: 8px;
+      border-bottom: 1px solid var(--canvas-border);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ic-Layout-contentMain">
+    <div class="preview-label">Canvas Preview — Staged Content</div>
+    <div class="show-content user_content">
+      <!-- RAW_CONTENT_START -->
+
+          <div style="background: linear-gradient(135deg, #8C1D40 0%, #4A0A24 70%, #2D0618 100%); color: white; padding: 35px 30px; border-radius: 10px; margin-bottom: 25px;">
+  <p style="color: #FFC627; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 0;">Module 1 · Learning Materials</p>
+  <h2 style="color: white; margin: 0 0 8px 0; font-size: 28px;">Human Factors Foundations &amp; Signal Detection Theory</h2>
+  <p style="color: #f0f0f0; margin: 0; font-size: 16px;">Lectures, readings, and key concepts for the week</p>
+</div>
+
+<div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+  <p style="color: #333; line-height: 1.6; margin: 0;">
+    <strong>The big idea:</strong> Errors in forensic science are not random — they follow predictable patterns rooted in human cognitive architecture. Signal Detection Theory gives you a precise language for describing the trade-offs every forensic examiner makes, whether they realize it or not. This week's materials lay the groundwork for everything that follows.
+  </p>
+</div>
+
+<h2>🎬 Lecture Videos</h2>
+
+<p style="color: #595959; margin-bottom: 16px;">Watch these in order. Each builds on the previous one.</p>
+
+<div style="border: 1px solid #BBDEFB; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #E3F2FD;">
+  <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <span style="font-size: 20px;">🎬</span>
+    <div style="flex: 1;">
+      <p style="color: #1565C0; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Lecture Video 1</p>
+      <h3 style="margin: 0 0 6px 0; color: #333;">Signal and Noise: Hits, Misses, False Alarms, and Correct Rejections</h3>
+      <p style="color: #595959; font-size: 13px; margin: 0 0 8px 0;">Instructor-recorded · ~15–20 min · Wistia (embedded below once uploaded)</p>
+      <p style="color: #333; line-height: 1.5; margin: 0; font-size: 14px;">Introduces the four outcomes of any detection decision and builds intuition for how forensic examiners implicitly navigate signal-to-noise problems every day. Pairs directly with Chapter 2.</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #BBDEFB; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #E3F2FD;">
+  <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <span style="font-size: 20px;">🎬</span>
+    <div style="flex: 1;">
+      <p style="color: #1565C0; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Lecture Video 2</p>
+      <h3 style="margin: 0 0 6px 0; color: #333;">Improving Sensitivity and Setting Criteria: Considerations and Forensic Examples</h3>
+      <p style="color: #595959; font-size: 13px; margin: 0 0 8px 0;">Instructor-recorded · ~15 min · Wistia (embedded below once uploaded)</p>
+      <p style="color: #333; line-height: 1.5; margin: 0; font-size: 14px;">Explores how decision criteria can be shifted and what happens to error rates when they are. Includes real forensic examples — DNA, latent prints, digital evidence — to ground the theory in practice.</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #BBDEFB; border-radius: 8px; padding: 20px; margin-bottom: 25px; background-color: #E3F2FD;">
+  <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <span style="font-size: 20px;">🎬</span>
+    <div style="flex: 1;">
+      <p style="color: #1565C0; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Lecture Video 3</p>
+      <h3 style="margin: 0 0 6px 0; color: #333;">Forensic Specialties and Finding Existing Standards</h3>
+      <p style="color: #595959; font-size: 13px; margin: 0 0 8px 0;">Instructor-recorded · ~10–15 min · Wistia (embedded below once uploaded)</p>
+      <p style="color: #333; line-height: 1.5; margin: 0; font-size: 14px;">A practical guide to locating professional and laboratory standards relevant to your forensic specialty — OSAC, FBI, ISO, SWGMAT, and others. Directly prepares you for Assignment 1.</p>
+    </div>
+  </div>
+</div>
+
+<h2>📖 Readings</h2>
+
+<div style="border: 1px solid #CE93D8; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #F3E5F5;">
+  <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <span style="font-size: 20px;">📖</span>
+    <div style="flex: 1;">
+      <p style="color: #7B1FA2; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Textbook — Required</p>
+      <h3 style="margin: 0 0 6px 0; color: #333;">Chapter 1: Introduction to Human Factors &amp; Human Performance</h3>
+      <p style="color: #595959; font-size: 13px; margin: 0 0 8px 0;">Wickens, Hollands, Banbury &amp; Parasuraman — <em>Engineering Psychology and Human Performance</em> (4th or 5th ed.)</p>
+      <p style="color: #333; line-height: 1.5; margin: 0; font-size: 14px;">Covers the discipline of human factors, models of human performance, error taxonomies (slips, lapses, mistakes), and why systemic analysis outperforms individual blame. Pay close attention to the section on error classification — you'll reference this framework throughout the course.</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #CE93D8; border-radius: 8px; padding: 20px; margin-bottom: 15px; background-color: #F3E5F5;">
+  <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <span style="font-size: 20px;">📖</span>
+    <div style="flex: 1;">
+      <p style="color: #7B1FA2; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Textbook — Required</p>
+      <h3 style="margin: 0 0 6px 0; color: #333;">Chapter 2: Signal Detection Theory</h3>
+      <p style="color: #595959; font-size: 13px; margin: 0 0 8px 0;">Wickens, Hollands, Banbury &amp; Parasuraman — <em>Engineering Psychology and Human Performance</em> (4th or 5th ed.)</p>
+      <p style="color: #333; line-height: 1.5; margin: 0; font-size: 14px;">The core SDT chapter. Focus on the ROC curve, d-prime (d'), and the concept of criterion (β). You do not need to memorize formulas — understand the conceptual relationships. The quiz and assignment test application, not calculation.</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #CE93D8; border-radius: 8px; padding: 20px; margin-bottom: 25px; background-color: #F3E5F5;">
+  <div style="display: flex; align-items: flex-start; gap: 12px;">
+    <span style="font-size: 20px;">📖</span>
+    <div style="flex: 1;">
+      <p style="color: #7B1FA2; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; margin: 0 0 4px 0;">Journal Article — Required</p>
+      <h3 style="margin: 0 0 6px 0; color: #333;">Overview of Special Issues: Human Factors in Forensic Science</h3>
+      <p style="color: #595959; font-size: 13px; margin: 0 0 8px 0;">Provided by instructor — see link in course resources</p>
+      <p style="color: #333; line-height: 1.5; margin: 0; font-size: 14px;">A broad survey of how human factors principles apply across forensic disciplines. This article is the foundation for your first discussion post — come prepared to connect at least one concept to your own forensic specialty or professional context. If you haven't worked in forensics yet, choose the discipline you intend to enter.</p>
+    </div>
+  </div>
+</div>
+
+<h2>🧠 Key Concepts</h2>
+
+<p style="color: #595959; margin-bottom: 16px;">Core ideas from this module — use these to guide your reading and study.</p>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">A</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">The Human Factors Perspective</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Human factors reframes error as a systems problem, not a personal failure. When a forensic examiner misidentifies a latent print, the question isn't "why did that examiner fail?" but "what conditions made that error possible — and how do we redesign them?"</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 12px; margin-top: 12px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Key terms:</strong> human factors, human performance, error taxonomy, systemic analysis, person-centered vs. system-centered blame</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">B</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">The Four SDT Outcomes</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Every forensic decision produces one of four outcomes: a <strong>hit</strong> (correctly identifying a match), a <strong>miss</strong> (failing to identify a real match), a <strong>false alarm</strong> (incorrectly claiming a match), or a <strong>correct rejection</strong> (correctly finding no match). Understanding which type of error a standard is designed to prevent is essential to using it intelligently.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 12px; margin-top: 12px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Key terms:</strong> hit rate, miss rate, false alarm rate, correct rejection, sensitivity (d'), criterion (β), ROC curve</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">C</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Bias Is Not a Character Flaw</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Cognitive biases — confirmation bias, contextual bias, anchoring — are not signs of incompetence. They are features of a cognitive system optimized for efficiency. The problem is that forensic work demands something that evolution didn't design for: unbiased evaluation of ambiguous physical evidence under institutional pressure. Standards and procedures exist to compensate for exactly this.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 12px; margin-top: 12px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Key terms:</strong> confirmation bias, contextual bias, anchoring, availability heuristic, cognitive load, motivated reasoning</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 25px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">D</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Reading Standards Through an SDT Lens</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Every provision in a forensic quality standard is, at some level, a human factors intervention. Blind verification procedures reduce contextual bias. Proficiency testing reveals where sensitivity needs improvement. Documentation requirements create audit trails that expose criterion shifts. When you read a standard for Assignment 1, ask: what type of error is this provision trying to reduce?</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 12px; margin-top: 12px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Key terms:</strong> OSAC, proficiency testing, blind verification, accreditation, quality assurance, decision criterion</p>
+    </div>
+  </div>
+</div>
+
+<div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+  <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Ready for the Discussion?</h3>
+  <p style="color: #333; line-height: 1.6; margin: 0;">Once you've completed the readings and watched the videos, head to the Module 1 Coursework section. Start with the <strong>Intro Discussion</strong> to introduce yourself, then tackle the <strong>Article Discussion</strong> — you'll be asked to connect concepts from the <em>Overview of Special Issues</em> article to your own forensic specialty. The quiz and assignment follow. Good luck this week.</p>
+</div>
+        
+<!-- RAW_CONTENT_END -->
+    </div>
+  </div>
+</body>
+</html>

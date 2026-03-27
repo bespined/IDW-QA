@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas-bg: #f5f5f5;
+      --canvas-surface: #ffffff;
+      --canvas-text: #2d3b45;
+      --canvas-text-secondary: #6a7883;
+      --canvas-link: #0374b5;
+      --canvas-border: #c7cdd1;
+      --canvas-table-head: #f5f5f5;
+      --canvas-code-bg: #f8f8f8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--canvas-text);
+      background: var(--canvas-bg);
+      padding: 24px;
+    }
+    .ic-Layout-contentMain {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--canvas-surface);
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+      padding: 24px 32px;
+      min-height: 400px;
+    }
+    /* Canvas user_content styles */
+    .show-content h1 { font-size: 1.75em; font-weight: 500; margin: 0.5em 0; color: var(--canvas-text); }
+    .show-content h2 { font-size: 1.5em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h3 { font-size: 1.25em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h4 { font-size: 1.1em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h5 { font-size: 1em; font-weight: 700; margin: 1em 0 0.5em; }
+    .show-content h6 { font-size: 0.9em; font-weight: 700; margin: 1em 0 0.5em; color: var(--canvas-text-secondary); }
+    .show-content p { margin: 0 0 1em; }
+    .show-content a { color: var(--canvas-link); text-decoration: none; }
+    .show-content a:hover { text-decoration: underline; }
+    .show-content ul, .show-content ol { margin: 0 0 1em 1.5em; }
+    .show-content li { margin: 0.25em 0; }
+    .show-content blockquote {
+      border-left: 4px solid var(--canvas-border);
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--canvas-text-secondary);
+    }
+    .show-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    .show-content th, .show-content td {
+      border: 1px solid var(--canvas-border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .show-content th {
+      background: var(--canvas-table-head);
+      font-weight: 500;
+    }
+    .show-content img {
+      max-width: 100%;
+      height: auto;
+    }
+    .show-content code {
+      background: var(--canvas-code-bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .show-content pre {
+      background: var(--canvas-code-bg);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    .show-content pre code { background: none; padding: 0; }
+    .show-content hr {
+      border: none;
+      border-top: 1px solid var(--canvas-border);
+      margin: 1.5em 0;
+    }
+    .show-content iframe {
+      max-width: 100%;
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+    }
+    /* Preview label */
+    .preview-label {
+      text-align: center;
+      color: var(--canvas-text-secondary);
+      font-size: 12px;
+      padding: 8px;
+      border-bottom: 1px solid var(--canvas-border);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ic-Layout-contentMain">
+    <div class="preview-label">Canvas Preview — Staged Content</div>
+    <div class="show-content user_content">
+      <!-- RAW_CONTENT_START -->
+
+          <h2 style="color: #8C1D40; border-bottom: 2px solid #FFC627; padding-bottom: 6px; margin-top: 12px;"><strong>Your Task List for Success</strong></h2>
+<p>Use the task list to help you plan and organize. Taking the time to create and commit to a plan has proven results, correlating with successful mastery of learning outcomes.</p>
+
+<details style="border-bottom: 1px solid #e0e0e0; padding: 10px 0 14px 0; margin-bottom: 4px;">
+  <summary style="color: #4A0A24; font-weight: 600; cursor: pointer; font-size: 1em; line-height: 1.5;" data-heading-variant="h2semibold">Get Organized and Committed</summary>
+  <div style="padding: 12px 0 4px 20px;">
+    <ul style="line-height: 1.8;">
+      <li>
+        <p><strong>Syllabus</strong>: Read through the syllabus. This can be found in the Syllabus area in the Canvas navigation menu.</p>
+        <ul>
+          <li><strong>Required Knowledge and Skills</strong>: Refer to the syllabus and course description so you are aware of what is expected prior to starting this course.</li>
+          <li><strong>Technology Requirements</strong>: Refer to the syllabus and course description so you have what you need to successfully complete this course.</li>
+        </ul>
+      </li>
+      <li>
+        <p><strong>Course Readiness</strong>: Complete all of the quizzes in Module 0.</p>
+      </li>
+      <li>
+        <p><strong>Make the Commitment</strong>: Create your course plan, learning goals, and schedule time on your calendar for when you will commit to doing your coursework. Putting these commitments to yourself in writing and setting a schedule are two proven steps towards achieving your goal of completing this course and doing well. When applicable, share this information with your family and friends, so they can best support you — because no one succeeds alone, and we all need a support system!</p>
+      </li>
+    </ul>
+  </div>
+</details>
+
+<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;">
+
+<h2 style="color: #8C1D40; border-bottom: 2px solid #FFC627; padding-bottom: 6px;" data-heading-variant="h2semibold"><strong>Checklist</strong></h2>
+<p>Review the Syllabus and Grades sections for specific due dates, times, and any associated late penalties.</p>
+<ul style="line-height: 1.8;">
+  <li style="padding: 4px 0;"><strong>Lecture Videos</strong>: Watch all three lecture videos in the Learning Materials page. You are encouraged to stay actively engaged by taking notes while viewing.</li>
+  <li style="padding: 4px 0;"><strong>Required Readings</strong>: Read Chapter 1 and Chapter 2 in Wickens et al. and the assigned journal article (Overview of Special Issues: Human Factors in Forensic Science). All required readings are provided within the course or are accessible through the ASU Library.</li>
+  <li style="padding: 4px 0;"><strong>Intro Discussion: Meet Your Peers</strong>: Introduce yourself to the class. Share your forensic background, specialty, and what brings you to this course.</li>
+  <li style="padding: 4px 0;"><strong>Article Discussion: Overview of Special Issues</strong>: Submit your initial post and reply to at least two peers.</li>
+  <li style="padding: 4px 0;"><strong>Module 1 Quiz: Human Factors &amp; SDT</strong>: Complete the timed, open-book quiz covering Chapters 1–2 and core SDT vocabulary.</li>
+  <li style="padding: 4px 0;"><strong>Substantive Assignment 1: Identify and Analyze a Forensic Standard</strong>: Submit your written assignment (500–750 words, Word or PDF).</li>
+</ul>
+
+<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 24px 0;">
+
+<details style="padding: 10px 0 14px 0; margin-bottom: 4px;">
+  <summary style="color: #4A0A24; font-weight: 600; cursor: pointer; font-size: 1em; line-height: 1.5;" data-heading-variant="h2semibold">Looking Ahead</summary>
+  <div style="padding: 12px 0 4px 20px;">
+    <p style="color: #595959; margin: 0 0 10px 0;">Take a moment to look ahead at upcoming coursework.</p>
+    <ul style="line-height: 1.8;">
+      <li style="padding: 4px 0;"><strong>Module 2: Cognitive Bias, Memory, and Decision-Making</strong>: Begin reviewing course materials for the next module, which builds directly on the SDT and human factors foundations introduced this week.</li>
+      <li style="padding: 4px 0;"><strong>Substantive Assignment 2: Cognitive Factors and Forensic Error Analysis</strong>: Review the assignment instructions early so you can take notes with that task in mind as you complete Module 2 readings and videos.</li>
+    </ul>
+  </div>
+</details>
+        
+<!-- RAW_CONTENT_END -->
+    </div>
+  </div>
+</body>
+</html>

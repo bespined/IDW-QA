@@ -1,0 +1,60 @@
+<!-- Guided Practice Page Template -->
+<!-- Replace all {{PLACEHOLDERS}} with module-specific content -->
+<!-- Design system: standards/page-design.md -->
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <h2 style="color: #8C1D40; margin-bottom: 5px;">Guided Practice {{MODULE_NUMBER}}</h2>
+  <p style="color: #595959; font-size: 14px; margin-top: 0;">Module {{MODULE_NUMBER}}: {{MODULE_TITLE}} | ~20 minutes | {{GP_POINTS}} points</p>
+
+  <p style="font-size: 16px; line-height: 1.6; color: #333;">
+    Now it's time to actively work with the concepts from this module. Complete the interactive activities below to build your understanding before the graded assignment.
+  </p>
+
+  <!-- Formative Note — Left-Border Alert -->
+  <div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      <strong>Note:</strong> These activities are <strong>formative</strong> (not graded for accuracy). You can retry as many times as you like. Focus on understanding the feedback when you get something wrong.
+    </p>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Instructions -->
+  <h3 style="color: #8C1D40;">Instructions</h3>
+  <p style="color: #333; line-height: 1.6;">
+    {{PRACTICE_INSTRUCTIONS}}
+  </p>
+
+  <!-- Interactive Activities will be injected here by deploy_interactives.py -->
+  <!-- Each activity is wrapped in a styled div with iframe -->
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Reflection -->
+  <h3 style="color: #8C1D40;">After You Practice</h3>
+  <p style="color: #333; line-height: 1.6;">
+    After completing the activities above, take a moment to reflect:
+  </p>
+  <ul style="line-height: 1.8; color: #333;">
+    <li>Which concepts felt solid? Which need more review?</li>
+    <li>Were there any questions where the feedback surprised you?</li>
+    <li>How does this connect to what you learned in the lecture?</li>
+  </ul>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Submission — CTA Button -->
+  <h3 style="color: #8C1D40;">Submit Your Practice</h3>
+  <p style="color: #333; line-height: 1.6;">
+    Click the button below to confirm completion of this guided practice. You'll write a brief reflection on what you learned.
+  </p>
+
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="/courses/{{COURSE_ID}}/assignments/{{GP_ASSIGNMENT_ID}}"
+       style="display: inline-block; background-color: #8C1D40; color: white; padding: 15px 40px; border-radius: 6px; text-decoration: none; font-size: 18px; font-weight: bold;">
+      Submit Guided Practice {{MODULE_NUMBER}} →
+    </a>
+  </div>
+
+</div>

@@ -1,0 +1,73 @@
+<!-- Prepare to Learn Page Template -->
+<!-- Replace all {{PLACEHOLDERS}} with module-specific content -->
+<!-- Design system: standards/page-design.md -->
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <h2 style="color: #8C1D40; margin-bottom: 5px;">Prepare to Learn</h2>
+  <p style="color: #595959; font-size: 14px; margin-top: 0;">Module {{MODULE_NUMBER}}: {{MODULE_TITLE}} | ~15 minutes</p>
+
+  <!-- Intro Framing — Left-Border Alert -->
+  <div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      <strong>Before you begin:</strong> Take a few minutes to prime your thinking. Listen to the audio overview below, then review the key terms you'll encounter in this module.
+    </p>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Audio Overview Section (Dark Theme) -->
+  <div style="background: linear-gradient(135deg, #1B1B2F 0%, #0d0d1a 100%); border-radius: 10px; padding: 30px; margin: 25px 0;">
+    <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 15px;">
+      <span style="font-size: 28px;">🎧</span>
+      <div>
+        <h3 style="color: white; margin: 0 0 6px 0; font-size: 20px;">Audio Overview</h3>
+        <p style="color: #b0b0b0; margin: 0; font-size: 14px;">~5 minutes | Listen before the lecture to prime your thinking</p>
+      </div>
+    </div>
+    <div style="margin: 15px 0;">
+      <a id="media_comment_{{AUDIO_MEDIA_ID}}" class="instructure_inline_media_comment audio_comment">Audio Primer: Module {{MODULE_NUMBER}}</a>
+    </div>
+    <!-- Transcript will be injected here by add_transcripts.py -->
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Key Terms — Interactive Activity Container -->
+  <h3 style="color: #8C1D40;">Key Terms to Know</h3>
+  <p style="color: #333; line-height: 1.6;">
+    Flip through these cards to familiarize yourself with the key vocabulary for this module. You don't need to memorize them now — just get a feel for the language you'll encounter.
+  </p>
+
+  <div style="margin: 25px 0; padding: 20px; background-color: #f8f4f0; border: 1px solid #ddd; border-radius: 8px;">
+    <h3 style="color: #8C1D40; margin: 0 0 5px 0;">{{DIALOG_CARDS_TITLE}}</h3>
+    <p style="color: #595959; font-size: 14px; margin: 0 0 12px 0;">Flashcards | ~3 min | Formative (not graded)</p>
+    <iframe src="/courses/{{COURSE_ID}}/files/{{DIALOG_CARDS_FILE_ID}}/preview"
+            width="100%" height="550"
+            style="border: 1px solid #ccc; border-radius: 6px;"
+            sandbox="allow-same-origin allow-scripts allow-forms"
+            title="{{DIALOG_CARDS_TITLE}}"
+            loading="lazy"></iframe>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- What to Think About -->
+  <h3 style="color: #8C1D40;">What to Think About</h3>
+  <p style="color: #333; line-height: 1.6;">
+    As you move into the lecture video, keep these questions in mind:
+  </p>
+  <ul style="line-height: 1.8; color: #333;">
+    <li>{{QUESTION_1}}</li>
+    <li>{{QUESTION_2}}</li>
+    <li>{{QUESTION_3}}</li>
+  </ul>
+
+  <!-- Transition — Full-Card Alert -->
+  <div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      You're ready for the lecture. Head to the <strong>Lesson</strong> page next to dive into the core content for this module.
+    </p>
+  </div>
+
+</div>

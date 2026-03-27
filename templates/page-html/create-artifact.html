@@ -1,0 +1,101 @@
+<!-- Create an Artifact Page Template -->
+<!-- Replace all {{PLACEHOLDERS}} with module-specific content -->
+<!-- Design system: standards/page-design.md -->
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <h2 style="color: #8C1D40; margin-bottom: 5px;">Create an Artifact: {{ARTIFACT_TITLE}}</h2>
+  <p style="color: #595959; font-size: 14px; margin-top: 0;">Module {{MODULE_NUMBER}}: {{MODULE_TITLE}} | ~20 minutes | {{ARTIFACT_POINTS}} points</p>
+
+  <p style="font-size: 16px; line-height: 1.6; color: #333;">
+    {{ARTIFACT_INTRO_TEXT}}
+  </p>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Assignment Instructions -->
+  <h3 style="color: #8C1D40;">{{ASSIGNMENT_HEADING}}</h3>
+
+  <!-- Scenario/Context — Left-Border Info Box -->
+  <div style="background-color: #f8f4f0; border-left: 4px solid #8C1D40; padding: 20px; border-radius: 0 8px 8px 0; margin-bottom: 20px;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      {{SCENARIO_TEXT}}
+    </p>
+  </div>
+
+  <!-- Task -->
+  <h3 style="color: #8C1D40;">Your Task</h3>
+  <ol style="line-height: 1.8; color: #333;">
+    <li>{{TASK_1}}</li>
+    <li>{{TASK_2}}</li>
+    <li>{{TASK_3}}</li>
+    <li>{{TASK_4}}</li>
+  </ol>
+
+  <!-- Submission Requirements -->
+  <h3 style="color: #8C1D40;">Submission Requirements</h3>
+  <ul style="line-height: 1.8; color: #333;">
+    <li>{{REQUIREMENT_1}}</li>
+    <li>{{REQUIREMENT_2}}</li>
+    <li>{{REQUIREMENT_3}}</li>
+    <li>{{REQUIREMENT_4}}</li>
+  </ul>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Grading -->
+  <h3 style="color: #8C1D40;">Grading</h3>
+  <p style="color: #333; line-height: 1.6;">
+    This assignment is worth <strong>{{ARTIFACT_POINTS}} points</strong>. See the rubric attached to the assignment for detailed evaluation criteria.
+  </p>
+
+  <!-- Rubric Summary -->
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+    <thead>
+      <tr style="background-color: #8C1D40; color: white;">
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">Criterion</th>
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">Points</th>
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">Focus</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background-color: #f9f9f9;">
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_1_NAME}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_1_POINTS}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_1_FOCUS}}</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_2_NAME}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_2_POINTS}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_2_FOCUS}}</td>
+      </tr>
+      <tr style="background-color: #f9f9f9;">
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_3_NAME}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_3_POINTS}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{CRITERION_3_FOCUS}}</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Tips — Left-Border Alert (Gold) -->
+  <div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <h4 style="color: #8C1D40; margin: 0 0 10px 0;">Tips for Success</h4>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8; color: #333;">
+      <li>Review the rubric before you start — it tells you exactly what we're looking for</li>
+      <li>Use the lecture video and resources as references</li>
+      <li>Focus on explaining <em>why</em>, not just <em>what</em></li>
+      <li>Connect to concepts from previous modules where applicable</li>
+    </ul>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Submit — CTA Button -->
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="/courses/{{COURSE_ID}}/assignments/{{ARTIFACT_ASSIGNMENT_ID}}"
+       style="display: inline-block; background-color: #8C1D40; color: white; padding: 15px 40px; border-radius: 6px; text-decoration: none; font-size: 18px; font-weight: bold;">
+      Submit Your Artifact →
+    </a>
+  </div>
+
+</div>

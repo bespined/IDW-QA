@@ -1,0 +1,433 @@
+# ============================================================
+# ASU Course Design Standards - QA Initiate Template
+# ============================================================
+# Source: [Final Template] QA Initiate.xlsx
+# Extracted: 2026-02-27
+# Updated: 2026-03-20 — Added criterion_id and check_type per criterion
+# ============================================================
+# criterion_id: Explicit, stable ID (never derived from list order).
+#   Format: {standard_id}.{criterion_number} (e.g., "01.1")
+#   Reordering criteria must NOT change IDs. Missing/duplicate IDs
+#   must fail validation at build time.
+# check_type: "deterministic" | "ai" | "hybrid"
+#   deterministic = rule-based, automated via deterministic_checks.py
+#   ai = requires AI judgment with enrichment card context
+#   hybrid = deterministic signal + AI quality judgment
+# ============================================================
+
+standards:
+
+  - id: "01"
+    name: "Course-Level Alignment"
+    category: "Course Structure and Organization"
+    description: "Course-level objectives are measurable and aligned with program objectives, industry relevance, and/or practical applications."
+    essential: true
+    criteria:
+      - criterion_id: "01.1"
+        text: "Each course-level objective is written with a measurable action verb. Objectives avoid verbs that cannot be defined well enough for effective measurement."
+        check_type: "deterministic"
+      - criterion_id: "01.2"
+        text: "Each course-level objective aligns with program and/or industry standards, including institutionally mandated objectives."
+        check_type: "ai"
+      - criterion_id: "01.3"
+        text: "Each course-level objective indicates tasks or knowledge relating to the course focus so learners are truly able to demonstrate mastery of course content."
+        check_type: "ai"
+      - criterion_id: "01.4"
+        text: "Course-level objectives collectively demonstrate how the course supports professional, academic, and personal growth."
+        check_type: "ai"
+
+  - id: "02"
+    name: "Module-Level Alignment"
+    category: "Course Structure and Organization"
+    description: "Module-level objectives are measurable and aligned with course-level outcomes."
+    essential: true
+    criteria:
+      - criterion_id: "02.1"
+        text: "Each module-level objective is written with a measurable action verb. Objectives avoid verbs that cannot be defined well enough for effective measurement."
+        check_type: "deterministic"
+      - criterion_id: "02.2"
+        text: "Each module-level objective aligns with at least one course-level objective."
+        check_type: "deterministic"
+      - criterion_id: "02.3"
+        text: "The alignment between module-level objectives and course-level objectives demonstrates a logical progression of knowledge and skill development."
+        check_type: "hybrid"
+
+  - id: "03"
+    name: "Alignment Made Clear"
+    category: "Course Structure and Organization"
+    description: "The connection between course- and module-level objectives, learning materials, activities, and assessments is made clear to learners."
+    essential: false
+    criteria:
+      - criterion_id: "03.1"
+        text: "The course contains documentation visible to learners that demonstrates how each learning material, activity, and assessment helps learners achieve course learning objectives."
+        check_type: "hybrid"
+
+  - id: "04"
+    name: "Consistent Layout"
+    category: "Course Structure and Organization"
+    description: "The course employs standard template elements. The course uses the ASU Online Canvas template unless the unit requires a department or program template."
+    essential: false
+    criteria:
+      - criterion_id: "04.1"
+        text: "Course includes a \"Getting Started\" area."
+        check_type: "deterministic"
+      - criterion_id: "04.2"
+        text: "Course includes a syllabus with necessary policies and course information."
+        check_type: "deterministic"
+      - criterion_id: "04.3"
+        text: "Course includes an introduction page for course facilitators, which also includes contact information."
+        check_type: "deterministic"
+      - criterion_id: "04.4"
+        text: "Course includes a course introduction activity or discussion for learners."
+        check_type: "deterministic"
+      - criterion_id: "04.5"
+        text: "Course includes module overview pages for each module."
+        check_type: "deterministic"
+      - criterion_id: "04.6"
+        text: "Recurring types of pages and recurring elements on pages are formatted and arranged consistently."
+        check_type: "ai"
+      - criterion_id: "04.7"
+        text: "Aspects of the institutional template have been personalized to the instructor, course subject and/or department or programmatic template to enhance the learner experience."
+        check_type: "ai"
+
+  - id: "05"
+    name: "Engaging Course and Module Introductions"
+    category: "Course Structure and Organization"
+    description: "The introduction to the course and each module sets a welcoming tone, captures attention, highlights its value, and is designed to build an online learning community."
+    essential: false
+    criteria:
+      - criterion_id: "05.1"
+        text: "The tone of all introductory material is written intentionally, advocates for learner success, and connects to practical or professional applications and learner goals."
+        check_type: "ai"
+      - criterion_id: "05.2"
+        text: "The course introduction clearly articulates the value proposition of the course and how it connects to learners' academic and professional goals."
+        check_type: "ai"
+      - criterion_id: "05.3"
+        text: "Each module introduction clearly articulates the value proposition of that module and provides context for how each unit builds upon previous knowledge and contributes to course outcomes."
+        check_type: "ai"
+
+  - id: "06"
+    name: "Clear Workload Expectations"
+    category: "Course Structure and Organization"
+    description: "The workload and pacing of the course/modules are intentionally aligned with credit-hour expectations and communicated to learners."
+    essential: true
+    criteria:
+      - criterion_id: "06.1"
+        text: "Course includes details on workload, pacing, and relevant policies that address information like deadlines, flexibility for special circumstances, and the ability to work ahead when applicable."
+        check_type: "deterministic"
+      - criterion_id: "06.2"
+        text: "Course schedules clearly indicate estimated time commitments for course activities and are aligned with credit hour requirements."
+        check_type: "deterministic"
+      - criterion_id: "06.3"
+        text: "Course includes a uniform module structure with predictable pacing and straightforward navigation."
+        check_type: "deterministic"
+      - criterion_id: "06.4"
+        text: "Major assessments are distributed throughout the term to avoid workload clusters."
+        check_type: "deterministic"
+      - criterion_id: "06.5"
+        text: "High-stakes applied assessments are introduced at the beginning of the course to allow sufficient time for learners to review, work on, and seek clarification for those assessments."
+        check_type: "deterministic"
+      - criterion_id: "06.6"
+        text: "Due dates, deadlines, and/or assessment availability settings in the course are aligned with the pacing and course schedule information."
+        check_type: "deterministic"
+
+  - id: "07"
+    name: "Instructor Guide"
+    category: "Course Structure and Organization"
+    description: "When appropriate, the course includes setup instructions and notes for future instructors."
+    essential: false
+    criteria:
+      - criterion_id: "07.1"
+        text: "Guide includes notes on course setup, technologies, instructional strategies, common learner questions, and assessment expectations to maintain course quality over time."
+        check_type: "deterministic"
+      - criterion_id: "07.2"
+        text: "Guide documents the use of any specialized tools and partnerships crucial to course delivery, as well as their accompanying resources."
+        check_type: "deterministic"
+
+  - id: "08"
+    name: "Assessments Align with Objectives"
+    category: "Assessments and Measurement"
+    description: "Assessments measure the aligned course and module objectives."
+    essential: true
+    criteria:
+      - criterion_id: "08.1"
+        text: "Each assessment explicitly aligns with course-level objectives and module-level objectives."
+        check_type: "deterministic"
+      - criterion_id: "08.2"
+        text: "Assessment instructions visible to learners explicitly state which objectives are being evaluated."
+        check_type: "deterministic"
+      - criterion_id: "08.3"
+        text: "Evaluation criteria (e.g., rubrics) reinforce objectives being measured."
+        check_type: "deterministic"
+      - criterion_id: "08.4"
+        text: "Alignment has been verified by the subject matter expert (SME). If the SME is not available, alignment is verified by consulting the mapping of course- and module-level objectives (refer to Standard 3 in this sheet)."
+        check_type: "ai"
+
+  - id: "09"
+    name: "Clear Grading Criteria"
+    category: "Assessments and Measurement"
+    description: "Detailed rubrics (when appropriate) and assignment instructions are embedded in the LMS, with an estimated feedback timeline included in the course."
+    essential: false
+    criteria:
+      - criterion_id: "09.1"
+        text: "Each assessment has instructions that are clear and include enough detail so learners know what is expected of them and how to earn points. Any permitted or restricted resources are clearly indicated, if applicable."
+        check_type: "ai"
+      - criterion_id: "09.2"
+        text: "Each assessment has transparent evaluation criteria that are clearly explained to learners through the instructions and/or the rubric (if a rubric is used)."
+        check_type: "ai"
+      - criterion_id: "09.3"
+        text: "A method for learners to ask grading questions is provided (e.g., email or office hours)."
+        check_type: "deterministic"
+      - criterion_id: "09.4"
+        text: "Estimated timeline for assessment feedback is provided in the course."
+        check_type: "deterministic"
+
+  - id: "10"
+    name: "Varied Assessments"
+    category: "Assessments and Measurement"
+    description: "The course includes diverse assessment formats."
+    essential: false
+    criteria:
+      - criterion_id: "10.1"
+        text: "Course includes at least two different types of assessments."
+        check_type: "deterministic"
+      - criterion_id: "10.2"
+        text: "Course provides multiple ways for learners to demonstrate mastery of objectives."
+        check_type: "ai"
+      - criterion_id: "10.3"
+        text: "Assessment types in the course are aligned with Universal Design for Learning principles."
+        check_type: "ai"
+
+  - id: "11"
+    name: "Cognitive Skills Development"
+    category: "Assessments and Measurement"
+    description: "Assessments are structured to guide learners from foundational knowledge to more complex, higher-order learning levels throughout the course."
+    essential: false
+    criteria:
+      - criterion_id: "11.1"
+        text: "Bloom's Taxonomy levels are evident in the module objectives through the verbs used."
+        check_type: "deterministic"
+      - criterion_id: "11.2"
+        text: "Bloom's Taxonomy levels in module objectives are appropriate to the course level."
+        check_type: "ai"
+      - criterion_id: "11.3"
+        text: "Bloom's Taxonomy levels show progression through the course and build higher-order learning levels over time."
+        check_type: "deterministic"
+      - criterion_id: "11.4"
+        text: "Assessments have a mix of lower- and higher-order learning levels."
+        check_type: "deterministic"
+
+  - id: "12"
+    name: "Materials Align with Objectives"
+    category: "Learning Materials"
+    description: "Course materials support learners in achieving the aligned course and module objectives."
+    essential: true
+    criteria:
+      - criterion_id: "12.1"
+        text: "Each material supports the achievement of at least one learning objective."
+        check_type: "deterministic"
+      - criterion_id: "12.2"
+        text: "Learning material alignment has been verified by a subject matter expert (SME). If a SME is not available, alignment is verified by consulting the mapping of course- and module-level objectives (refer to Standard 3 in this sheet)."
+        check_type: "ai"
+      - criterion_id: "12.3"
+        text: "Materials align with Universal Design for Learning principles by providing multiple means of engagement (e.g., readings, videos, case studies, simulations)."
+        check_type: "deterministic"
+
+  - id: "13"
+    name: "High-Quality Content"
+    category: "Learning Materials"
+    description: "Instructional materials apply discipline-specific and industry-accepted best practices for the course's content."
+    essential: false
+    criteria:
+      - criterion_id: "13.1"
+        text: "All written, visual, and multimedia content are of best quality available and align with professional standards for the discipline and/or institution."
+        check_type: "ai"
+      - criterion_id: "13.2"
+        text: "Each outside material is cited and has necessary publisher permissions (if applicable)."
+        check_type: "deterministic"
+
+  - id: "14"
+    name: "Real-World Relevance"
+    category: "Learning Materials"
+    description: "Materials use practical examples and case studies to address professional and academic challenges."
+    essential: false
+    criteria:
+      - criterion_id: "14.1"
+        text: "Materials include real-world examples that are practical and address professional and academic areas of focus. They may highlight current events and their impact on industry and academic spaces, if applicable."
+        check_type: "ai"
+      - criterion_id: "14.2"
+        text: "Materials incorporate scenario-based learning. Learning materials, activities, and/or assessments may be based on or informed by real-world data."
+        check_type: "ai"
+      - criterion_id: "14.3"
+        text: "Materials promote information and research literacy and include varied experiences that encourage ethical decision-making."
+        check_type: "ai"
+
+  - id: "15"
+    name: "Universally Designed Content"
+    category: "Learning Materials"
+    description: "Materials include diverse perspectives, encourage global understanding, and connect to learners' lives."
+    essential: false
+    criteria:
+      - criterion_id: "15.1"
+        text: "Global representation is evident in examples and materials. Materials include global perspectives and represent various cultures and lived experiences."
+        check_type: "ai"
+      - criterion_id: "15.2"
+        text: "Context is addressed and explained as necessary, including but not limited to historical bias, cultural references, idioms, etc."
+        check_type: "ai"
+
+  - id: "16"
+    name: "Universally Designed Media"
+    category: "Learning Materials"
+    description: "Materials are provided in varying formats (e.g., text, audio, video) to support global learners."
+    essential: false
+    criteria:
+      - criterion_id: "16.1"
+        text: "Learning materials are provided in multiple formats (e.g., text audio, video, etc.) to align with the best practices of Universal Design for Learning."
+        check_type: "hybrid"
+      - criterion_id: "16.2"
+        text: "At least two different types of formats are present in the course: Text materials, video materials, audio materials, interactive materials, or other formats."
+        check_type: "deterministic"
+
+  - id: "17"
+    name: "Open Space for Learner Questions"
+    category: "Engagement and Interaction"
+    description: "The course includes a prominently featured, actively monitored space where learners can ask questions that support the learning community."
+    essential: false
+    criteria:
+      - criterion_id: "17.1"
+        text: "There is a course-wide space for classroom questions (e.g., community forum, discussion board, interactive FAQ page)."
+        check_type: "deterministic"
+      - criterion_id: "17.2"
+        text: "A clear moderation policy for the community space is visible to learners, and the expected response turnaround time is specified."
+        check_type: "deterministic"
+      - criterion_id: "17.3"
+        text: "Instructions note that personal inquiries should be directed to private communication channels."
+        check_type: "deterministic"
+      - criterion_id: "17.4"
+        text: "Community space is prominently featured and encourages collaborative learning between peers and the course facilitator(s)."
+        check_type: "ai"
+
+  - id: "18"
+    name: "Instructor-Created Media"
+    category: "Engagement and Interaction"
+    description: "Instructor-created media are present throughout the course to foster connection and increase engagement."
+    essential: false
+    criteria:
+      - criterion_id: "18.1"
+        text: "Course contains clear examples of instructor-created media, particularly videos and lectures. Other examples may include announcements or media in module overviews and other relevant spaces."
+        check_type: "deterministic"
+      - criterion_id: "18.2"
+        text: "All featured faculty (course developers, facilitators, guest lecturers) are introduced early in the course. An explanation is provided if the featured faculty is different from the course facilitator(s)."
+        check_type: "deterministic"
+      - criterion_id: "18.3"
+        text: "Media is used in a predictable and consistent pattern."
+        check_type: "ai"
+      - criterion_id: "18.4"
+        text: "Videos are organized by topic and long videos are broken into shorter segments."
+        check_type: "ai"
+      - criterion_id: "18.5"
+        text: "Slides and other relevant learning materials in media, including annotations, are provided in the course for learners."
+        check_type: "deterministic"
+
+  - id: "19"
+    name: "Active Learning"
+    category: "Engagement and Interaction"
+    description: "Activities encourage critical thinking, interaction, and the development and application of professional skills."
+    essential: false
+    criteria:
+      - criterion_id: "19.1"
+        text: "Activities require students to apply concepts, analyze problems, and engage in critical thinking."
+        check_type: "ai"
+      - criterion_id: "19.2"
+        text: "Activities promote meaningful interactions tied to learning objectives."
+        check_type: "ai"
+      - criterion_id: "19.3"
+        text: "Activities demonstrate practical applications that facilitate engagement."
+        check_type: "ai"
+
+  - id: "20"
+    name: "Tool Integration"
+    category: "Engagement and Interaction"
+    description: "All tools align with course objectives, enhance engagement, and include learner-facing technical guides or support."
+    essential: false
+    criteria:
+      - criterion_id: "20.1"
+        text: "Selected tools are used intentionally to align with learning objectives and enhance engagement and interaction."
+        check_type: "ai"
+      - criterion_id: "20.2"
+        text: "Technical support and guides are provided to learners for troubleshooting and to reduce barriers to access."
+        check_type: "deterministic"
+
+  - id: "21"
+    name: "Technical and Academic Support"
+    category: "Accessibility and Learner Support"
+    description: "The course prominently displays contact information for IT support, accessibility services, and academic resources, as well as language that encourages learners to use them."
+    essential: false
+    criteria:
+      - criterion_id: "21.1"
+        text: "IT support, accessibility services, and relevant academic resource information is provided in centralized locations (syllabus and course menu)."
+        check_type: "deterministic"
+      - criterion_id: "21.2"
+        text: "Support resources are highlighted early in the course."
+        check_type: "deterministic"
+      - criterion_id: "21.3"
+        text: "Language in the course encourages and normalizes learner engagement with support resources."
+        check_type: "ai"
+
+  - id: "22"
+    name: "Material Accessibility"
+    category: "Accessibility and Learner Support"
+    description: "All course content meets WCAG 2.1 AA standards as supported by FRAME."
+    essential: true
+    criteria:
+      - criterion_id: "22.1"
+        text: "Course pages and elements (including files) pass accessibility testing (i.e., with Canvas accessibility checker)."
+        check_type: "deterministic"
+      - criterion_id: "22.2"
+        text: "Course meets FRAME expectations (all documents are accessible, all images have alt text, media is supported by descriptive text, important visual material has verbal descriptions, all videos have captions and downloadable transcripts, etc.)."
+        check_type: "deterministic"
+
+  - id: "23"
+    name: "Tool Accessibility"
+    category: "Accessibility and Learner Support"
+    description: "All third-party tools used in the course meet WCAG 2.1 AA standards."
+    essential: true
+    criteria:
+      - criterion_id: "23.1"
+        text: "Selected tool(s) are licensed by ASU."
+        check_type: "ai"
+      - criterion_id: "23.2"
+        text: "Tools were vetted for accessibility compliance, with alternatives provided when necessary."
+        check_type: "ai"
+
+  - id: "24"
+    name: "Mobile and Offline Optimization"
+    category: "Accessibility and Learner Support"
+    description: "Navigation and materials are designed for mobile and offline access when possible, clearly indicating which materials are fully accessible on mobile."
+    essential: false
+    criteria:
+      - criterion_id: "24.1"
+        text: "Course tools have been tested for mobile compatibility."
+        check_type: "ai"
+      - criterion_id: "24.2"
+        text: "Course materials have been tested for mobile compatibility."
+        check_type: "ai"
+      - criterion_id: "24.3"
+        text: "Course signals which elements of the course can be accessed by a mobile device and which require a laptop or desktop."
+        check_type: "deterministic"
+
+  - id: "25"
+    name: "Low-Cost Resources"
+    category: "Accessibility and Learner Support"
+    description: "The course prioritizes low-cost or open educational materials to reduce financial barriers and increase accessibility to high-quality learning materials."
+    essential: false
+    criteria:
+      - criterion_id: "25.1"
+        text: "There is evidence that Open Educational Resources or low-cost materials were prioritized."
+        check_type: "deterministic"
+      - criterion_id: "25.2"
+        text: "If there are items that require student cost, these are justified in the syllabus."
+        check_type: "deterministic"
+      - criterion_id: "25.3"
+        text: "QA Initiate has not concluded."
+        check_type: "ai"

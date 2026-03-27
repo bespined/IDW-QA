@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas-bg: #f5f5f5;
+      --canvas-surface: #ffffff;
+      --canvas-text: #2d3b45;
+      --canvas-text-secondary: #6a7883;
+      --canvas-link: #0374b5;
+      --canvas-border: #c7cdd1;
+      --canvas-table-head: #f5f5f5;
+      --canvas-code-bg: #f8f8f8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--canvas-text);
+      background: var(--canvas-bg);
+      padding: 24px;
+    }
+    .ic-Layout-contentMain {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--canvas-surface);
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+      padding: 24px 32px;
+      min-height: 400px;
+    }
+    /* Canvas user_content styles */
+    .show-content h1 { font-size: 1.75em; font-weight: 500; margin: 0.5em 0; color: var(--canvas-text); }
+    .show-content h2 { font-size: 1.5em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h3 { font-size: 1.25em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h4 { font-size: 1.1em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h5 { font-size: 1em; font-weight: 700; margin: 1em 0 0.5em; }
+    .show-content h6 { font-size: 0.9em; font-weight: 700; margin: 1em 0 0.5em; color: var(--canvas-text-secondary); }
+    .show-content p { margin: 0 0 1em; }
+    .show-content a { color: var(--canvas-link); text-decoration: none; }
+    .show-content a:hover { text-decoration: underline; }
+    .show-content ul, .show-content ol { margin: 0 0 1em 1.5em; }
+    .show-content li { margin: 0.25em 0; }
+    .show-content blockquote {
+      border-left: 4px solid var(--canvas-border);
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--canvas-text-secondary);
+    }
+    .show-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    .show-content th, .show-content td {
+      border: 1px solid var(--canvas-border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .show-content th {
+      background: var(--canvas-table-head);
+      font-weight: 500;
+    }
+    .show-content img {
+      max-width: 100%;
+      height: auto;
+    }
+    .show-content code {
+      background: var(--canvas-code-bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .show-content pre {
+      background: var(--canvas-code-bg);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    .show-content pre code { background: none; padding: 0; }
+    .show-content hr {
+      border: none;
+      border-top: 1px solid var(--canvas-border);
+      margin: 1.5em 0;
+    }
+    .show-content iframe {
+      max-width: 100%;
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+    }
+    /* Preview label */
+    .preview-label {
+      text-align: center;
+      color: var(--canvas-text-secondary);
+      font-size: 12px;
+      padding: 8px;
+      border-bottom: 1px solid var(--canvas-border);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ic-Layout-contentMain">
+    <div class="preview-label">Canvas Preview — Staged Content</div>
+    <div class="show-content user_content">
+      <!-- RAW_CONTENT_START -->
+<h2 style="color: #8C1D40; border-bottom: 2px solid #FFC627; padding-bottom: 6px; margin-top: 12px;"><strong>Lecture Videos</strong></h2>
+<p style="color: #595959;">Watch these in order. Each builds on the previous one.</p>
+
+<div style="border-left: 4px solid #1565C0; padding: 14px 18px; margin-bottom: 16px; background-color: #f8f9fe; border-radius: 0 6px 6px 0;">
+<h3 style="color: #1565C0; margin: 0 0 4px 0;"><strong>Signal and Noise: Hits, Misses, False Alarms, and Correct Rejections</strong></h3>
+<p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">Runtime: [<span style="background-color: #fbeeb8;">HH:MM:SS</span>] &nbsp;·&nbsp; Instructor-recorded</p>
+<p style="margin: 0 0 10px 0;">Introduces the four outcomes of any detection decision and builds intuition for how forensic examiners implicitly navigate signal-to-noise problems every day. Pairs directly with Chapter 2.</p>
+<p style="margin: 0;">[<span style="background-color: #fbeeb8;">Embed via Wistia once uploaded</span>]</p>
+<ul style="margin-top: 8px; color: #595959; font-size: 14px;">
+<li>[<span style="background-color: #fbeeb8;">Upload accessible transcript: Signal and Noise Transcript</span>]</li>
+</ul>
+</div>
+
+<div style="border-left: 4px solid #1565C0; padding: 14px 18px; margin-bottom: 16px; background-color: #f8f9fe; border-radius: 0 6px 6px 0;">
+<h3 style="color: #1565C0; margin: 0 0 4px 0;"><strong>Improving Sensitivity and Setting Criteria: Considerations and Forensic Examples</strong></h3>
+<p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">Runtime: [<span style="background-color: #fbeeb8;">HH:MM:SS</span>] &nbsp;·&nbsp; Instructor-recorded</p>
+<p style="margin: 0 0 10px 0;">Explores how decision criteria can be shifted and what happens to error rates when they are. Includes real forensic examples — DNA, latent prints, digital evidence — to ground the theory in practice.</p>
+<p style="margin: 0;">[<span style="background-color: #fbeeb8;">Embed via Wistia once uploaded</span>]</p>
+<ul style="margin-top: 8px; color: #595959; font-size: 14px;">
+<li>[<span style="background-color: #fbeeb8;">Upload accessible transcript: Improving Sensitivity and Setting Criteria Transcript</span>]</li>
+</ul>
+</div>
+
+<div style="border-left: 4px solid #1565C0; padding: 14px 18px; margin-bottom: 8px; background-color: #f8f9fe; border-radius: 0 6px 6px 0;">
+<h3 style="color: #1565C0; margin: 0 0 4px 0;"><strong>Forensic Specialties and Finding Existing Standards</strong></h3>
+<p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">Runtime: [<span style="background-color: #fbeeb8;">HH:MM:SS</span>] &nbsp;·&nbsp; Instructor-recorded</p>
+<p style="margin: 0 0 10px 0;">A practical guide to locating professional and laboratory standards relevant to your forensic specialty — OSAC, FBI, ISO, SWGMAT, and others. Directly prepares you for Assignment 1.</p>
+<p style="margin: 0;">[<span style="background-color: #fbeeb8;">Embed via Wistia once uploaded</span>]</p>
+<ul style="margin-top: 8px; color: #595959; font-size: 14px;">
+<li>[<span style="background-color: #fbeeb8;">Upload accessible transcript: Forensic Specialties and Finding Existing Standards Transcript</span>]</li>
+</ul>
+</div>
+
+<hr style="border: none; border-top: 1px solid #e0e0e0; margin: 28px 0;">
+
+<h2 style="color: #8C1D40; border-bottom: 2px solid #FFC627; padding-bottom: 6px;"><strong>Required Readings</strong></h2>
+
+<div style="border-left: 4px solid #7B1FA2; padding: 14px 18px; margin-bottom: 16px; background-color: #faf6fb; border-radius: 0 6px 6px 0;">
+<h3 style="color: #7B1FA2; margin: 0 0 4px 0;"><strong>Chapter 1: Introduction to Human Factors &amp; Human Performance</strong></h3>
+<p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">Wickens, Hollands, Banbury &amp; Parasuraman — <em>Engineering Psychology and Human Performance</em>, 4th or 5th ed.</p>
+<p style="margin: 0 0 8px 0;">Covers the discipline of human factors, models of human performance, error taxonomies (slips, lapses, mistakes), and why systemic analysis outperforms individual blame. Pay close attention to the section on error classification — you will reference this framework throughout the course.</p>
+<ul style="color: #595959; font-size: 14px; margin: 0;">
+<li>Access via your required course textbook.</li>
+</ul>
+</div>
+
+<div style="border-left: 4px solid #7B1FA2; padding: 14px 18px; margin-bottom: 16px; background-color: #faf6fb; border-radius: 0 6px 6px 0;">
+<h3 style="color: #7B1FA2; margin: 0 0 4px 0;"><strong>Chapter 2: Signal Detection Theory</strong></h3>
+<p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">Wickens, Hollands, Banbury &amp; Parasuraman — <em>Engineering Psychology and Human Performance</em>, 4th or 5th ed.</p>
+<p style="margin: 0 0 8px 0;">The core SDT chapter. Focus on the ROC curve, d-prime (d'), and the concept of criterion (β). You do not need to memorize formulas — understand the conceptual relationships. The quiz and assignment test application, not calculation.</p>
+<ul style="color: #595959; font-size: 14px; margin: 0;">
+<li>Access via your required course textbook.</li>
+</ul>
+</div>
+
+<div style="border-left: 4px solid #7B1FA2; padding: 14px 18px; margin-bottom: 8px; background-color: #faf6fb; border-radius: 0 6px 6px 0;">
+<h3 style="color: #7B1FA2; margin: 0 0 4px 0;"><strong>Overview of Special Issues: Human Factors in Forensic Science</strong></h3>
+<p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">Journal article — Provided by instructor</p>
+<p style="margin: 0 0 8px 0;">A broad survey of how human factors principles apply across forensic disciplines. This article is the foundation for your Module 1 Article Discussion — come prepared to connect at least one concept to your own forensic specialty or professional context.</p>
+<ul style="color: #595959; font-size: 14px; margin: 0;">
+<li>[<span style="background-color: #fbeeb8;">Insert link to article via course Dropbox or Canvas Files once uploaded</span>]</li>
+<li>Provided by instructor.</li>
+</ul>
+</div>
+
+<!-- RAW_CONTENT_END -->
+    </div>
+  </div>
+</body>
+</html>

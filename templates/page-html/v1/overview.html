@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas-bg: #f5f5f5;
+      --canvas-surface: #ffffff;
+      --canvas-text: #2d3b45;
+      --canvas-text-secondary: #6a7883;
+      --canvas-link: #0374b5;
+      --canvas-border: #c7cdd1;
+      --canvas-table-head: #f5f5f5;
+      --canvas-code-bg: #f8f8f8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--canvas-text);
+      background: var(--canvas-bg);
+      padding: 24px;
+    }
+    .ic-Layout-contentMain {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--canvas-surface);
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+      padding: 24px 32px;
+      min-height: 400px;
+    }
+    /* Canvas user_content styles */
+    .show-content h1 { font-size: 1.75em; font-weight: 500; margin: 0.5em 0; color: var(--canvas-text); }
+    .show-content h2 { font-size: 1.5em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h3 { font-size: 1.25em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h4 { font-size: 1.1em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h5 { font-size: 1em; font-weight: 700; margin: 1em 0 0.5em; }
+    .show-content h6 { font-size: 0.9em; font-weight: 700; margin: 1em 0 0.5em; color: var(--canvas-text-secondary); }
+    .show-content p { margin: 0 0 1em; }
+    .show-content a { color: var(--canvas-link); text-decoration: none; }
+    .show-content a:hover { text-decoration: underline; }
+    .show-content ul, .show-content ol { margin: 0 0 1em 1.5em; }
+    .show-content li { margin: 0.25em 0; }
+    .show-content blockquote {
+      border-left: 4px solid var(--canvas-border);
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--canvas-text-secondary);
+    }
+    .show-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    .show-content th, .show-content td {
+      border: 1px solid var(--canvas-border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .show-content th {
+      background: var(--canvas-table-head);
+      font-weight: 500;
+    }
+    .show-content img {
+      max-width: 100%;
+      height: auto;
+    }
+    .show-content code {
+      background: var(--canvas-code-bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .show-content pre {
+      background: var(--canvas-code-bg);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    .show-content pre code { background: none; padding: 0; }
+    .show-content hr {
+      border: none;
+      border-top: 1px solid var(--canvas-border);
+      margin: 1.5em 0;
+    }
+    .show-content iframe {
+      max-width: 100%;
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+    }
+    /* Preview label */
+    .preview-label {
+      text-align: center;
+      color: var(--canvas-text-secondary);
+      font-size: 12px;
+      padding: 8px;
+      border-bottom: 1px solid var(--canvas-border);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ic-Layout-contentMain">
+    <div class="preview-label">Canvas Preview — Staged Content</div>
+    <div class="show-content user_content">
+      <!-- RAW_CONTENT_START -->
+<p><img id="63188009" role="presentation" src="https://canvas.asu.edu/courses/255724/files/128469695/preview?verifier=Jl1Ar4GCTwvYI36Qyk05ijN02WEPZCPP04YzjVRv" alt="" width="1300" height="239" data-api-endpoint="https://canvas.asu.edu/api/v1/courses/255724/files/128469695" data-api-returntype="File" loading="lazy"></p>
+
+<div style="background: linear-gradient(135deg, #8C1D40 0%, #4A0A24 70%, #2D0618 100%); color: white; padding: 35px 30px; border-radius: 10px; margin-bottom: 25px;">
+  <p style="color: #FFC627; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 0;">Module 1</p>
+  <h2 style="color: white; margin: 0 0 8px 0; font-size: 28px;">Introduction to Human Factors &amp; Signal Detection Theory</h2>
+  <p style="color: #f0f0f0; margin: 0; font-size: 16px;">PSY 562: Advanced Human Factors &nbsp;·&nbsp; Spring A 2026 &nbsp;·&nbsp; Jan 12–18</p>
+</div>
+
+<div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+  <p style="color: #333; line-height: 1.6; margin: 0;">
+    <strong>Why this module matters:</strong> Before you can improve forensic practice, you need a clear-eyed model of how human performance actually works — and how it fails. This module gives you that foundation. Signal Detection Theory (SDT) in particular is a lens you'll use throughout the entire course to analyze trade-offs between sensitivity and specificity in forensic judgment.
+  </p>
+</div>
+
+<h2>Module Introduction</h2>
+
+<p style="color: #333; line-height: 1.7;">Welcome to PSY 562. In this first module, you'll build the conceptual vocabulary that underlies everything else in the course. Human factors is the study of how people interact with systems, tools, and environments — and forensic science is full of high-stakes moments where human cognitive limits directly affect outcomes.</p>
+
+<p style="color: #333; line-height: 1.7;">We start with <strong>Signal Detection Theory</strong>, a framework developed in the 1950s that remains one of the most powerful tools for analyzing decisions made under uncertainty. You'll see how forensic examiners — like any decision-maker — are always navigating a tension between sensitivity (catching real signals) and specificity (avoiding false alarms). Understanding that tension is step one in designing systems and standards that work with human cognition rather than against it.</p>
+
+<div style="background-color: #f8f4f0; border-radius: 8px; padding: 20px; margin: 20px 0; text-align: center;">
+  <p style="color: #595959; font-size: 14px; margin: 0 0 8px 0;">🎬 Module Introduction Video</p>
+  <p style="color: #333; font-size: 14px; margin: 0;"><em>Your instructor's welcome video will be embedded here. Check back once the course launches.</em></p>
+</div>
+
+<h2>Module Learning Objectives</h2>
+
+<p style="color: #595959; margin-bottom: 16px;">After completing this module, you will be able to:</p>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">1</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 6px 0;">1.1 — Define human factors concepts</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Define key concepts in human factors and explain their relevance to forensic science practice.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 10px; margin-top: 10px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Bloom's level:</strong> Remember / Understand &nbsp;·&nbsp; <strong>Aligns to:</strong> CLO-1</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">2</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 6px 0;">1.2 — Describe cognitive and emotional bias</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Describe how cognitive and emotional biases influence decision-making in forensic contexts.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 10px; margin-top: 10px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Bloom's level:</strong> Understand &nbsp;·&nbsp; <strong>Aligns to:</strong> CLO-2</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">3</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 6px 0;">1.3 — Apply Signal Detection Theory</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Apply Signal Detection Theory (SDT) to forensic examples to explain types of decision errors and accuracy trade-offs.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 10px; margin-top: 10px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Bloom's level:</strong> Apply &nbsp;·&nbsp; <strong>Aligns to:</strong> CLO-1, CLO-2</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">4</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 6px 0;">1.4 — Identify relevant forensic standards</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Identify and interpret professional or laboratory standards relevant to your forensic discipline.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 10px; margin-top: 10px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Bloom's level:</strong> Analyze &nbsp;·&nbsp; <strong>Aligns to:</strong> CLO-3</p>
+    </div>
+  </div>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 15px; display: flex; gap: 15px; align-items: flex-start;">
+  <div style="background-color: #8C1D40; color: white; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 16px; flex-shrink: 0;">5</div>
+  <div style="flex: 1;">
+    <h3 style="color: #8C1D40; margin: 0 0 6px 0;">1.5 — Analyze standards for error mitigation</h3>
+    <p style="color: #333; line-height: 1.6; margin: 0;">Analyze how specific provisions within forensic standards are designed to minimize human error or bias in practice.</p>
+    <div style="background-color: #f8f4f0; border-radius: 6px; padding: 10px; margin-top: 10px;">
+      <p style="color: #595959; font-size: 13px; margin: 0;"><strong>Bloom's level:</strong> Analyze &nbsp;·&nbsp; <strong>Aligns to:</strong> CLO-3</p>
+    </div>
+  </div>
+</div>
+
+<h2>Topics Covered</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">What Is Human Factors?</h3>
+    <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">The science of optimizing human performance in complex systems — and understanding why errors are often systemic, not individual failures.</p>
+  </div>
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Human Performance and Error</h3>
+    <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">Taxonomies of human error (slips, lapses, mistakes), the role of expertise and context, and why well-trained people still make consequential errors.</p>
+  </div>
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Cognitive &amp; Emotional Biases in Forensic Work</h3>
+    <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">Confirmation bias, contextual bias, and emotional influences that shape forensic examination — and the evidence for how widespread they are.</p>
+  </div>
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Signal Detection Theory (SDT)</h3>
+    <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">The mathematical framework for analyzing hits, misses, false alarms, and correct rejections — and how decision criteria affect accuracy outcomes.</p>
+  </div>
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Interpreting Forensic Standards</h3>
+    <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">How professional standards (OSAC, FBI, ISO) encode human factors principles — and how to read them with a human performance lens.</p>
+  </div>
+  <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+    <h3 style="color: #8C1D40; margin: 0 0 8px 0;">Linking HF to Forensic Practice</h3>
+    <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">Connecting theory to the real-world contexts you work in — DNA analysis, latent prints, digital forensics, crime scene investigation, and more.</p>
+  </div>
+</div>
+
+<h2>Module Progression</h2>
+
+<div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+  <ol style="color: #333; line-height: 2; margin: 0; padding-left: 20px;">
+    <li><strong>Task List</strong> — See everything due this week at a glance</li>
+    <li><strong>Learning Materials</strong> — Lectures, readings, and key concepts</li>
+    <li><strong>Intro Discussion</strong> — Introduce yourself and share your forensic background</li>
+    <li><strong>Article Discussion</strong> — Apply module concepts to the <em>Overview of Special Issues</em> article</li>
+    <li><strong>Module 1 Quiz</strong> — Check your understanding of SDT and human factors foundations</li>
+    <li><strong>Substantive Assignment 1</strong> — Identify and analyze a forensic standard from your specialty</li>
+  </ol>
+</div>
+
+<div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+  <p style="color: #333; line-height: 1.6; margin: 0;">⏱ <strong>Estimated completion time:</strong> 5–7 hours &nbsp;·&nbsp; <strong>Due:</strong> Sunday, January 18, 2026 &nbsp;·&nbsp; <strong>Points available:</strong> See assignment and quiz for details</p>
+</div>
+
+<!-- RAW_CONTENT_END -->
+    </div>
+  </div>
+</body>
+</html>

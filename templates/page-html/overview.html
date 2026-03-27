@@ -1,0 +1,112 @@
+<!-- Module Overview Page Template -->
+<!-- Replace all {{PLACEHOLDERS}} with module-specific content -->
+<!-- Design system: standards/page-design.md -->
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <!-- Module Header Banner -->
+  <div style="background: linear-gradient(135deg, #8C1D40 0%, #4A0A24 70%, #2D0618 100%); color: white; padding: 35px 30px; border-radius: 10px; margin-bottom: 25px;">
+    <p style="color: #FFC627; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 0;">Module {{MODULE_NUMBER}}</p>
+    <h2 style="color: white; margin: 0 0 8px 0; font-size: 28px;">{{MODULE_TITLE}}</h2>
+    <p style="color: #f0f0f0; margin: 0; font-size: 16px;">{{MODULE_SUBTITLE}}</p>
+  </div>
+
+  <!-- Welcome / Overview -->
+  <p style="font-size: 16px; line-height: 1.6; color: #333;">
+    {{WELCOME_TEXT}}
+  </p>
+
+  <!-- Why This Matters — Left-Border Alert -->
+  <div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      <strong>Why this matters:</strong> {{CLINICAL_CONNECTION_TEXT}}
+    </p>
+  </div>
+
+  <!-- Learning Objectives -->
+  <div style="background-color: #f8f4f0; border-left: 4px solid #8C1D40; padding: 20px; border-radius: 0 8px 8px 0; margin-bottom: 25px;">
+    <h3 style="color: #8C1D40; margin: 0 0 12px 0;">Learning Objectives</h3>
+    <p style="color: #595959; font-size: 14px; margin: 0 0 10px 0;">By the end of this module, you will be able to:</p>
+    <ol style="margin: 0; padding-left: 20px; line-height: 1.8; color: #333;">
+      <li>{{OBJECTIVE_1}}</li>
+      <li>{{OBJECTIVE_2}}</li>
+      <li>{{OBJECTIVE_3}}</li>
+      <li>{{OBJECTIVE_4}}</li>
+      <li>{{OBJECTIVE_5}}</li>
+    </ol>
+  </div>
+
+  <!-- Module Roadmap -->
+  <h3 style="color: #8C1D40;">Module Roadmap</h3>
+  <p style="color: #595959; font-size: 14px;">Complete items in order</p>
+
+  <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
+    <thead>
+      <tr style="background-color: #8C1D40; color: white;">
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">#</th>
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">Activity</th>
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">Type</th>
+        <th style="padding: 10px 15px; text-align: left; border: 1px solid #ddd;">Points</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background-color: #f9f9f9;">
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">1</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Prepare to Learn</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Audio primer + vocabulary</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">&mdash;</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">2</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Lesson: {{LESSON_TOPIC}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Lecture video + resources</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">&mdash;</td>
+      </tr>
+      <tr style="background-color: #f9f9f9;">
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">3</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Knowledge Check {{MODULE_NUMBER}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Quiz (2 attempts)</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{KC_POINTS}} pts</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">4</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Guided Practice {{MODULE_NUMBER}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Interactive activities</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{GP_POINTS}} pts</td>
+      </tr>
+      <tr style="background-color: #f9f9f9;">
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">5</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Create an Artifact: {{ARTIFACT_TITLE}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{ARTIFACT_TYPE}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{ARTIFACT_POINTS}} pts</td>
+      </tr>
+      <tr>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">6</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Discussion: {{DISCUSSION_TITLE}}</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">Initial post + 2 responses</td>
+        <td style="padding: 10px 15px; border: 1px solid #ddd;">{{DISCUSSION_POINTS}} pts</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- Professional Connections — Concept Grid -->
+  <h3 style="color: #8C1D40;">Where This Shows Up</h3>
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0;">
+    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+      <h4 style="color: #8C1D40; margin: 0 0 8px 0;">{{CONNECTION_1_TITLE}}</h4>
+      <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">{{CONNECTION_1_TEXT}}</p>
+    </div>
+    <div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px;">
+      <h4 style="color: #8C1D40; margin: 0 0 8px 0;">{{CONNECTION_2_TITLE}}</h4>
+      <p style="color: #595959; line-height: 1.5; margin: 0; font-size: 14px;">{{CONNECTION_2_TEXT}}</p>
+    </div>
+  </div>
+
+  <!-- Time Estimate — Full-Card Alert -->
+  <div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      ⏱ <strong>Estimated time:</strong> {{ESTIMATED_TIME}} &mdash; Complete items in the order listed above for the best learning experience.
+    </p>
+  </div>
+
+</div>

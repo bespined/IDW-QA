@@ -1,0 +1,20 @@
+{
+  "version": "1.0.0",
+  "configurations": [
+    {
+      "name": "staging-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8111", "--directory", "staging"],
+      "port": 8111,
+      "autoPort": true
+    },
+    {
+      "name": "audit-report-preview",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8222", "--directory", "reports"],
+      "port": 8222,
+      "autoPort": true
+    }
+  ],
+  "_portConflictDiagnostic": "If a server fails to start, check for conflicts: lsof -i :<port> | grep LISTEN — then kill the PID or restart Claude Code."
+}

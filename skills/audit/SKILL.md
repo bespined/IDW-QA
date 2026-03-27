@@ -1,0 +1,681 @@
+---
+name: audit
+description: "Audit a Canvas course: design standards, accessibility, or launch readiness."
+---
+
+# Audit
+
+> **Run**: `/audit`
+
+## Metric Tracking
+When this skill is invoked, immediately run this command before doing anything else:
+```bash
+python scripts/idw_metrics.py --track skill_invoked --context '{"skill": "audit"}'
+```
+This records usage metrics for the pilot dashboard. Do not skip this step.
+
+## Purpose
+
+One skill for all course quality checks: full design standards evaluation, WCAG accessibility scanning, or pre-launch readiness checklist.
+
+## When to Use
+
+- "Audit my course" / "Check my course" / "Let's audit LAW 517" → **Ask which type** (see Entry Point below)
+- "Run a design standards audit" → **Standards mode** (skip prompt)
+- "Check accessibility" / "WCAG audit" → **Accessibility mode** (skip prompt)
+- "Is my course ready to launch?" → **Readiness mode** (skip prompt)
+- "Full audit — everything" → Run all three modes sequentially (skip prompt)
+
+## Entry Point — Audit Type Selection
+
+When the user asks for a general audit without specifying a mode, **always present the choice first** before fetching any data. Use `AskUserQuestion` with these options:
+
+| Option | Label | Description |
+|---|---|---|
+| 1 | **Design Standards** | Evaluates all 25 ASU course design standards + 19 QA structural checks. Covers objectives alignment, assessment quality, materials, engagement, and accessibility standards. Produces an HTML dashboard + XLSX report. |
+| 2 | **Accessibility (WCAG 2.1 AA)** | Scans every page for accessibility issues: alt text, heading hierarchy, link text, table structure, color contrast, and media captions. Optional deep mode adds vision-based image analysis. |
+| 3 | **Course Readiness (CRC)** | Pre-launch operational checklist across 9 categories: syllabus, navigation, content availability, assessment setup, grading, dates, communication, publishing, and technical checks. Pass/Fail per item. |
+| 4 | **Full Audit — All Three** | Runs Design Standards + Accessibility + Course Readiness sequentially. Most comprehensive but takes the longest. |
+
+If the user says "walk me through it", "audit with me", or "interactive audit", skip this prompt and go directly to **Mode 4: Interactive Audit Walkthrough**.
+
+Only skip this prompt when the user's message clearly specifies a mode (e.g., "design standards audit", "check accessibility", "is my course ready?").
+
+---
+
+## Mode 1: Design Standards Audit (25 ASU Standards + 19 QA Categories)
+
+Comprehensive evaluation against all 25 ASU Online Course Design Standards plus 19 structural QA categories.
+
+### Standards Reference Files
+- `config/standards.yaml` — Base definitions of 25 standards
+- `config/standards_enrichment.yaml` — Enriched with measurable_criteria, expectations, considerations, examples, and research citations
+
+### Progress Reporting
+
+During any audit mode, report progress to the user as each major step completes. Never leave the user waiting in silence.
+
+```
+  → Fetching course data...
+✓ Course data loaded: 7 modules, 42 pages, 14 quizzes, 7 assignments
+  → Evaluating Standard 1 of 25: Measurable Learning Objectives...
+✓ Standards 1-5 evaluated (Structure & Navigation)
+✓ Standards 6-10 evaluated (Assessments)
+  → Standards 11-15 (Materials & Content)...
+```
+
+After completing all checks, display a quick summary before the detailed report:
+```
+═══ Audit Complete ═══
+Design Standards: 18 Met, 5 Partial, 2 Not Met
+QA Categories: 14 Pass, 3 Warn, 2 Fail
+Detailed findings below...
+```
+
+### Scan Procedure
+
+1. **Fetch course data**: modules, module items, pages (with body HTML), quizzes (with questions), assignments, discussion topics, tabs, syllabus, assignment groups
+2. **Build or load alignment graph** (new):
+   - Check `course-config.json` for `alignment_graph` field
+   - If absent or stale (>7 days): run `python scripts/alignment_graph.py --build` to auto-extract CLO→MLO→Material→Assessment relationships
+   - If present: load and display summary (`python scripts/alignment_graph.py --summary`)
+   - Report: "Alignment graph loaded: X CLOs, Y MLOs, Z assessments, N gaps"
+3. **Evaluate each of the 25 standards** using the two-pass approach below
+4. **Score each standard**: Met / Partially Met / Not Met / Not Auditable
+5. **Include research citations** for Not Met/Partially Met standards
+
+### Two-Pass Evaluation (Graph + AI)
+
+For every standard, follow this evaluation protocol:
+
+**Pass 1 — Deterministic checks (graph-powered, high confidence):**
+Run structural/data checks that produce provable results. These checks use the alignment graph, page HTML parsing, and Canvas API data — no AI judgment needed.
+
+**Pass 2 — AI quality judgment (medium confidence):**
+After deterministic checks, evaluate subjective quality criteria using the full enrichment card (measurable_criteria + expectations + considerations + examples) from `standards_enrichment.yaml`. Inject the enrichment card into your evaluation context for each standard.
+
+**Scoring rules:**
+- If all deterministic checks pass AND AI judgment is positive → **Met** (High confidence)
+- If deterministic checks pass but AI finds quality concerns → **Partially Met** (Medium confidence)
+- If any deterministic check fails but some evidence exists → **Partially Met** (Medium confidence)
+- If deterministic checks fail and no evidence → **Not Met** (High confidence)
+- If prerequisite data is missing (e.g., no CLOs found for Standard 01) → **Not Auditable** (excluded from score denominator)
+
+### Alignment Graph Integration — Standards 01, 02, 03, 08, 12
+
+These five standards depend on structural alignment relationships. When the alignment graph is available, use these deterministic checks FIRST:
+
+#### Standard 01: Course-Level Alignment
+
+**Deterministic (from graph):**
+- [ ] All CLO verbs are measurable — check `graph.clos[].is_measurable`. Fail if ANY CLO uses an unmeasurable verb (understand, learn, know, be aware, realize, appreciate).
+- [ ] CLO count is reasonable — 3-credit course typically has 4-8 CLOs. Flag if <3 or >10.
+- [ ] Every CLO maps to ≥1 MLO — check `graph.clos[].mlo_ids` is non-empty. Report count of unmapped CLOs from `graph.gaps.unmapped_clos`.
+
+**AI judgment (using enrichment card 01):**
+- Are verbs appropriate for course level (introductory vs. advanced)?
+- Do CLOs collectively address professional, academic, and personal growth?
+- Are CLOs aligned with program/industry standards?
+
+#### Standard 02: Module-Level Alignment
+
+**Deterministic (from graph):**
+- [ ] All MLO verbs are measurable — check `graph.mlos[].is_measurable`.
+- [ ] Every MLO maps to ≥1 CLO — check `graph.mlos[].clo_ids` is non-empty. Report unmapped MLOs from `graph.gaps.unmapped_mlos`.
+- [ ] Bloom's progression — check `graph.coverage.blooms_progression`. If false, report which modules break the progression from `graph.coverage.blooms_by_module`.
+
+**AI judgment (using enrichment card 02):**
+- Is each MLO-to-CLO mapping semantically valid? (Does the MLO genuinely support the CLO it claims?)
+- Do MLOs show logical progression within each module?
+
+#### Standard 03: Alignment Made Clear
+
+**Deterministic (from graph):**
+- [ ] CLO→MLO→Assessment chain complete — for every CLO, trace: CLO → at least one MLO → at least one assessment. Report broken chains from `graph.gaps.clos_without_summative`.
+- [ ] Module overview pages contain objectives text — check each module's first page for objective-like content (regex for "objectives", "by the end", "able to").
+- [ ] Alignment documentation visible — search all page HTML for alignment tables, objective references, CLO/MLO labels on assessments.
+
+**AI judgment (using enrichment card 03):**
+- Is the alignment documentation clear and helpful to students?
+- Would a student reading the course understand how each activity connects to outcomes?
+
+#### Standard 08: Assessments Align with Objectives
+
+**Deterministic (from graph):**
+- [ ] Every assessment maps to ≥1 MLO — check `graph.assessments[].mlo_ids`. Report orphan assessments from `graph.gaps.orphan_assessments`.
+- [ ] Every MLO has ≥1 assessment (formative or summative) — cross-reference MLO IDs against all assessment `mlo_ids`.
+- [ ] Assessment Bloom's level ≥ MLO Bloom's level — for each assessment, the assessment's complexity should match or exceed its mapped MLOs.
+- [ ] Graded assignments/discussions have rubrics — check `graph.assessments[].has_rubric` for summative items.
+
+**AI judgment (using enrichment card 08):**
+- Do assessment instructions explicitly state which objectives are being evaluated?
+- Does the assessment actually measure what the MLO claims? (Semantic analysis)
+- Do rubric criteria reinforce the stated objectives?
+
+#### Standard 12: Materials Align with Objectives
+
+**Deterministic (from graph):**
+- [ ] Every material maps to ≥1 MLO — check `graph.materials[].mlo_ids`. Report orphan materials from `graph.gaps.orphan_materials`.
+- [ ] Every MLO has ≥1 material — cross-reference MLO IDs against all material `mlo_ids`.
+- [ ] Material types are varied per module (UDL) — group materials by module, count distinct `canvas_type` values. Flag modules where all materials are the same type.
+
+**AI judgment (using enrichment card 12):**
+- Does the material content actually support the mapped MLO?
+- Are materials from credible, current sources?
+- Do materials provide multiple means of engagement per UDL?
+
+### Standards 04–07, 09–11, 13–25 (Non-Alignment)
+
+These standards do NOT use the alignment graph. Evaluate them using the standard approach:
+1. Read the enrichment card from `standards_enrichment.yaml`
+2. Fetch relevant course content (pages, assignments, quizzes, etc.)
+3. Run any applicable structural checks (heading hierarchy, link text, rubric presence)
+4. Apply AI judgment using the full enrichment criteria
+5. Score with evidence and recommendation
+
+### Evidence Verification (QAI Port)
+
+After scoring each standard, verify evidence integrity:
+
+1. **Quote verification**: If your evidence includes a direct quote from course content, verify the quote actually exists using `alignment_graph.verify_evidence(quote, page_text)`. If the quote is NOT found in the actual content, downgrade status from "Met" to "Not Met" and add note: "Evidence quote not found in course content — manual review required."
+
+2. **Coverage-aware status**: For module-scoped criteria, evidence must appear in ≥60% of modules to be "Met". Use `alignment_graph.coverage_status(found_modules, total_modules, "module")`. Evidence in <60% but >0 modules = "Partially Met".
+
+3. **Confidence degradation**: Start at "High" confidence. Degrade one level for each trigger:
+   - Evidence verification fails → degrade
+   - Coverage below 60% threshold → degrade
+   - Graph edges are `source="inferred"` (not declared/extracted) → degrade
+   - Standard depends on CLOs but no CLOs found in course → degrade + mark "Not Auditable"
+
+### "Not Auditable" Status
+
+When prerequisite data is missing, mark the standard as **"Not Auditable"** instead of "Not Met":
+- Standards 01, 02: No CLOs found in syllabus or course-config → Not Auditable
+- Standard 03: No alignment graph AND no visible alignment documentation → Not Auditable
+- Standards 08, 12: No MLOs AND no CLOs found → Not Auditable
+
+"Not Auditable" standards are **excluded from the score denominator**. Report them separately with the recommendation to provide the missing prerequisite data.
+
+### Per-Criterion Evaluation
+
+Each standard in `standards.yaml` has a `criteria:` list where every criterion has an explicit `criterion_id` and `check_type`. Evaluate each criterion individually:
+
+1. **Load criteria** — Read the `criteria:` array for each standard. Each entry has `criterion_id`, `text`, and `check_type` ("deterministic" | "ai" | "hybrid").
+
+2. **Route by check_type:**
+   - `"deterministic"` → Run via `deterministic_checks.run_checks()` (see `scripts/deterministic_checks.py`). These produce automated, high-confidence results with no AI judgment.
+   - `"ai"` → Evaluate using the enrichment card context from `standards_enrichment.yaml`. Apply evidence verification and coverage checks.
+   - `"hybrid"` → Run the deterministic signal first. If it passes, apply AI judgment for quality aspects. If the deterministic signal fails, the criterion is at most "Partially Met" regardless of AI opinion.
+
+3. **Per-criterion result model:**
+   ```json
+   {
+     "criterion_id": "01.1",
+     "criterion_text": "Each course-level objective is written with a measurable action verb...",
+     "check_type": "deterministic",
+     "status": "Met",
+     "confidence": "High",
+     "evidence": "All 5 CLOs use measurable verbs: analyze, evaluate, apply, compare, design",
+     "graph_verified": true
+   }
+   ```
+
+4. **Standard-level status** = lowest criterion status ("lowest criterion wins"):
+   - If ANY criterion is "Not Met" → standard is at most "Partially Met"
+   - If ALL criteria are "Met" → standard is "Met"
+   - This is an intentional IDW scoring policy.
+
+5. **Report per-criterion findings** in the audit output JSON as `criteria_results` array per standard item. The audit report renders these as expandable sub-rows within each standard card.
+
+### Enrichment-Injected Prompts
+
+When evaluating each standard, construct your evaluation context with the FULL enrichment card:
+
+```
+STANDARD [ID]: [Name]
+Category: [category]
+Essential: [yes/no]
+
+DESCRIPTION: [description from standards.yaml]
+
+MEASURABLE CRITERIA:
+[bulleted list from standards_enrichment.yaml]
+
+EXPECTATIONS:
+[bulleted list from standards_enrichment.yaml]
+
+CONSIDERATIONS:
+[bulleted list from standards_enrichment.yaml]
+
+EXAMPLES:
+[bulleted list from standards_enrichment.yaml]
+
+RESEARCH:
+[bulleted list from standards_enrichment.yaml]
+
+ALIGNMENT GRAPH DATA (if applicable):
+[relevant graph data for this standard]
+
+EVIDENCE FROM COURSE:
+[actual course content relevant to this standard]
+
+EVALUATE: Score this standard as Met/Partially Met/Not Met/Not Auditable.
+Provide: status, evidence, recommendation, confidence, coverage.
+```
+
+### 19 QA Categories
+
+1. Module structure consistency
+2. Page title formatting
+3. Learning objectives presence
+4. Assessment-objective alignment
+5. Quiz configuration (attempts, time, shuffle)
+6. Heading hierarchy (H2→H3→H4)
+7. Image alt text presence
+8. Link accessibility (target, noopener, sr-text)
+9. Video captions/transcripts
+10. File accessibility
+11. Color contrast
+12. Table structure (headers, scope)
+13. Font consistency
+14. Navigation consistency
+15. Module completeness (7-page structure)
+16. Grading transparency
+17. External link validation
+18. Content freshness (dates, references)
+19. Mobile-friendly layout
+
+### Output Format
+
+```
+=== ASU Course Design Standards Audit ===
+Course: [Name] (ID: [id])
+Date: [timestamp]
+
+DESIGN STANDARDS (25):
+  Met:           18
+  Partially Met:  5
+  Not Met:        2
+
+[Detailed findings per standard with evidence and citations]
+
+QA CATEGORIES (19):
+  Pass:  14
+  Warn:   3
+  Fail:   2
+
+[Detailed findings per category]
+
+CLO ALIGNMENT MATRIX:
+[Table mapping CLOs to assessments]
+```
+
+---
+
+## Mode 2: Accessibility Audit (WCAG 2.1 AA)
+
+Focused accessibility evaluation with optional vision-based image analysis.
+
+### Scan Procedure
+
+1. Fetch all pages with HTML body content
+2. Run automated checks:
+   - Image alt text (present, descriptive, not "image.png")
+   - Heading hierarchy (no skipped levels)
+   - Link text (no "click here", has descriptive text)
+   - Table structure (thead, th, scope attributes)
+   - Color contrast (check inline styles for known violations)
+   - Lists (proper ol/ul structure, not manual numbering)
+   - Language attributes
+   - Form labels (if applicable)
+
+3. **Vision-based analysis** (when `--deep` flag or user requests):
+   - Extract all images from pages using `scripts/vision_audit.py`
+   - Download images for Claude vision analysis
+   - Check: alt text accuracy vs actual image content, text-in-images detection, decorative image flagging, complex image description adequacy
+
+4. **Semantic alt text validation** (when `--semantic` flag or user requests deeper analysis):
+   - Run `scripts/vision_audit.py --page-slug <slug> --semantic --output vision_data.json`
+   - This downloads images AND prepares semantic comparison instructions
+   - For each downloaded image, read the image file and compare against current alt text
+   - Rate each as: `good` (accurate), `partial` (vaguely correct), `mismatch` (wrong), or `decorative`
+   - Suggest corrected alt text for any `partial` or `mismatch` findings
+   - Use `--max-images N` to limit scope (default 15 per page)
+   - No additional API key required — uses Claude Code's native vision capability
+
+### Output Format
+
+```
+=== WCAG 2.1 AA Accessibility Audit ===
+Course: [Name]
+
+CRITICAL:  [count] (must fix before launch)
+WARNING:   [count] (should fix)
+INFO:      [count] (best practice)
+
+[Detailed findings with page, element, issue, and fix suggestion]
+```
+
+### WCAG Success Criteria Checked
+
+| Criterion | Description | How Checked |
+|---|---|---|
+| 1.1.1 | Non-text content | Alt text on images |
+| 1.3.1 | Info and relationships | Heading hierarchy, table structure |
+| 1.4.3 | Contrast (minimum) | Inline style analysis |
+| 2.4.4 | Link purpose | Link text analysis |
+| 2.4.6 | Headings and labels | Heading presence and order |
+| 3.1.1 | Language of page | Lang attribute check |
+| 4.1.2 | Name, role, value | Form label check |
+
+---
+
+## Mode 3: Course Readiness Check (9 Categories)
+
+Pre-launch operational checklist — is the course ready for students on Day 1?
+
+### 9 CRC Categories
+
+1. **Course Information**: Syllabus published, course description set, instructor info visible
+2. **Navigation**: Home page configured, navigation tabs cleaned up, modules ordered
+3. **Content Availability**: All modules have content, no empty pages, no placeholder text
+4. **Assessment Setup**: All quizzes configured (attempts, time, dates), all assignments with due dates, rubrics attached
+5. **Grading**: Assignment groups with weights, grading scheme set, late policy configured
+6. **Dates & Availability**: All due dates set, module availability dates (if used), no past dates
+7. **Communication**: Welcome announcement drafted, discussion boards ready, instructor contact info
+8. **Publishing**: All intended modules published, no accidentally published draft content
+9. **Technical**: No broken links, all media playable, external tools configured
+
+### Scan Procedure
+
+1. Fetch course data (modules, items, pages, assignments, quizzes, tabs, late policy)
+2. Run each category's checks programmatically
+3. Score: Pass / Fail per item within each category
+
+### Output Format
+
+```
+=== Course Readiness Check ===
+Course: [Name]
+Status: [READY / NOT READY]
+
+[Category] .......................... [PASS/FAIL]
+  ✓ Syllabus is published
+  ✓ Course description set
+  ✗ No instructor contact info on home page
+  ...
+```
+
+---
+
+## Combined Audit
+
+When user says "full audit" or "audit everything":
+1. Run Mode 1 (Design Standards) → summary
+2. Run Mode 2 (Accessibility) → summary
+3. Run Mode 3 (Readiness) → summary
+4. Generate combined report with overall score
+
+## HTML Report Output
+
+Generate a polished, shareable HTML audit report for leadership and team review.
+
+**When to use:** "Generate an audit report", "I need a shareable report", "audit report for my lead"
+
+**Generate:**
+
+```bash
+python scripts/audit_report.py --input audit_results.json --open   # From saved results
+python scripts/audit_report.py --demo --open                        # Demo with sample data
+```
+
+**Saved to:** `reports/{COURSE-CODE_TERM}/{COURSE-CODE_YYYY-MM-DD_HH-MM_AI-Audit}.html`
+
+Audit reports are standalone deliverables — NOT staging files. They save directly to `reports/` with the course code and timestamp. The `--open` flag opens the report in the default browser. Reports are never overwritten — each audit creates a new timestamped file.
+
+**Features:**
+- Overall score ring (weighted: 40% standards, 30% QA, 15% accessibility, 15% readiness)
+- Summary cards for all 4 audit sections with color-coded counts
+- Collapsible sections: Design Standards (25), QA Categories (19), Accessibility (WCAG), Readiness (9)
+- Filter buttons to show only Met/Partially Met/Not Met findings
+- Recommendations highlighted with gold callout boxes
+- **Remediation Roadmap** — auto-generated section ranking all Not Met / Fail / Warn / Partial findings by priority and score impact, with current → projected progress bars and quick-wins callout
+- CLO Alignment Matrix
+- Print-friendly for PDF export
+- Self-contained HTML — share as a single file, no server needed
+
+**Required JSON schema** — `audit_results.json` must follow this structure exactly or all counts will render as 0:
+
+```json
+{
+  "course": {"name": "...", "id": "..."},
+  "audit_date": "2026-03-25T09:41:00",
+  "auditor": "ID Workbench v1.5.0",
+  "sections": {
+    "design_standards": {
+      "summary": {"Met": 9, "Partially Met": 14, "Not Met": 1, "Not Auditable": 1},
+      "items": [{"id":"01","name":"...","status":"Met|Partially Met|Not Met|Not Auditable","evidence":"...","recommendation":"...","confidence":"High|Medium|Low","coverage":"..."}]
+    },
+    "qa_categories": {
+      "summary": {"Pass": 9, "Warn": 7, "Fail": 2},
+      "items": [{"id":"Q01","name":"...","status":"Pass|Warn|Fail","detail":"..."}]
+    },
+    "accessibility": {
+      "summary": {"Critical": 1, "Warning": 3, "Info": 2},
+      "items": [{"severity":"Critical|Warning|Info","page":"...","issue":"...","element":"...","fix":"..."}]
+    },
+    "readiness": {
+      "overall": "READY|NOT READY",
+      "categories": [{"name":"...","status":"Pass|Warn|Fail","checks":[{"item":"...","status":"Pass|Fail|Warn","note":"..."}]}]
+    }
+  },
+  "clo_alignment": {"clos": [{"id":"CLO-1","text":"...","modules":[1,2],"assessments":4}]},
+  "external_links": [{"page":"...","text":"...","url":"...","domain":"...","status":"Not Reviewed|Reviewed|Broken","notes":"..."}]
+}
+```
+
+⚠️ **Common failure**: putting `design_standards`, `qa_categories` etc. at the top level instead of inside `"sections"` — and using lowercase keys (`met`, `pass`) instead of title-case (`"Met"`, `"Pass"`) inside `"summary"`. Both cause all counts to silently render as 0.
+
+**Workflow integration:**
+1. Run `/audit` → results display in conversation + saved as `audit_results.json`
+2. Run `python scripts/audit_report.py --input audit_results.json --open` → shareable HTML report
+3. Share report with lead, SME, or team
+4. Fix issues via `/bulk-edit` → staged → reviewed in unified preview → pushed
+
+## Faculty Feedback Summary
+
+After an audit completes, offer:
+
+> "Would you like me to generate a faculty summary you can share with the SME? It translates findings into non-technical language with clear action items."
+
+If the user says yes, generate using `audit_report.generate_faculty_summary(data)`:
+- Plain text output (email-ready, not HTML)
+- No jargon: avoids CLO, MLO, WCAG, Bloom's unless explained
+- Grouped by priority: High (required standards Not Met), Medium (Partially Met or essential), Low (nice-to-have)
+- Shows what's working well first
+- Saved to `reports/{course}/faculty-summary_{date}.txt`
+
+The ID reviews the summary before sending to faculty. AI never contacts faculty directly.
+
+## XLSX Report Output (QA Initiate Format)
+
+Generate a standards-aligned XLSX audit report using the QA Initiate template for formal deliverables.
+
+**When to use:** "Generate an Excel audit report", "I need a QA form", "audit for my lead in Excel"
+
+**Generate:**
+
+```bash
+python scripts/audit_report.py --input audit_results.json --xlsx              # XLSX only
+python scripts/audit_report.py --input audit_results.json --xlsx --open       # Generate and open
+python scripts/audit_report.py --demo --xlsx                                   # Demo with sample data
+python scripts/audit_report.py --demo --xlsx --xlsx-output my_report.xlsx     # Custom output path
+```
+
+**Output file:** Auto-archived at `reports/{COURSE-CODE_TERM}/{COURSE-CODE_TERM_YYYY-MM-DD_HH-MM_AI-Audit}.xlsx`
+
+**Sheets:**
+1. **QA Initiate** — 25 standards with 3-state status, evidence, confidence, coverage, Canvas links
+2. **Dashboard** — Summary charts, overall score, confidence distribution, top action items
+3. **External Links** — Inventory of all external links with review status
+
+**Columns (QA Initiate sheet):**
+
+| Column | Content |
+|---|---|
+| A | Standard status formula (Meets / Partially Meets / Does Not Meet) |
+| B | Status: Met / Partially Met / Not Met (dropdown) |
+| C | Measurable criteria and expectations |
+| D | Reviewer notes / evidence |
+| E | Recommendations |
+| F | Confidence (High / Medium / Low) |
+| G | Coverage (e.g., "8/12 modules") |
+| H | Scope (Course-wide / Module-level / Assessment-level) |
+| I | Evidence source (Canvas / External / Mixed) |
+| J | Canvas deep link |
+
+**Confidence tiers:**
+- **High** — Deterministic check passed or explicit evidence found and verified
+- **Medium** — Evidence found but ambiguous or incomplete
+- **Low** — Insufficient evidence; manual review recommended
+
+**Audit scope policy:**
+> This audit evaluates content within Canvas. External links are listed but not reviewed unless external scanning is enabled. "Met" requires evidence across all relevant modules. "Partially Met" indicates evidence in some modules.
+
+**Dashboard features:**
+- Overall score (weighted: 40% standards, 30% QA, 15% accessibility, 15% readiness)
+- Bar charts for Design Standards and QA Categories
+- Pie chart for Confidence Distribution
+- Course Readiness status with category checkmarks
+- Top Action Items table (Not Met + Low Confidence + QA Fail items)
+
+## Read-Only Mode
+
+All audit modes are **read-only by default**. No content is modified. If findings suggest fixes, recommend `/bulk-edit` to apply them.
+
+## Error Handling
+
+| Error | Resolution |
+|---|---|
+| Course data fetch fails | Check credentials and course ID |
+| Vision analysis timeout | Fall back to text-only analysis |
+| Syllabus is PDF-only | Flag as warning, note inline content unavailable |
+| Page body empty | Flag as warning in content availability check |
+
+---
+
+## Mode 4: Interactive Audit Walkthrough (S4.5 — "Audit With Me")
+
+An alternative to batch auditing — walk through standards conversationally with the ID so they can review, fix, and approve findings in real time.
+
+### When to Use
+
+- "Walk me through the audit"
+- "Audit with me"
+- "Let's review each standard together"
+- "Interactive audit"
+- User explicitly wants to fix issues as they're found rather than reviewing a report afterward
+
+### How It Works
+
+1. **Fetch course data** the same way as Mode 1 (modules, pages, quizzes, assignments, discussions, tabs, alignment graph)
+2. **Walk through standards one at a time** (or in small groups of 2-3 related standards), presenting findings conversationally:
+
+```
+Standard 1: Course-Level Alignment
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+I found 6 CLOs. Let me check each one...
+
+✅ CLO-1: "Explain and apply foundational human factors principles" — "explain" is measurable ✓
+✅ CLO-2: "Analyze how cognitive factors influence decision-making" — "analyze" is measurable ✓
+⚠️ CLO-3: "Understand the role of stress in forensic work" — "understand" is not measurable
+   Suggestion: Replace with "Describe" or "Evaluate"
+
+→ Want to update CLO-3 now, or note it and continue?
+```
+
+3. **After each standard or group**, pause with an `AskUserQuestion`:
+
+| Label | Description |
+|---|---|
+| **Fix now** | Let me address the issues before moving on |
+| **Note and continue** | I'll come back to these later — keep going |
+| **Looks good, skip** | I've reviewed this and accept it as-is |
+
+4. **Track the review state** for each standard:
+   - `reviewed_live` — ID saw it and responded (fix, note, or accept)
+   - `auto_evaluated` — Standard was batch-evaluated (for standards the ID skips)
+
+5. **Standard grouping** for conversational flow:
+
+| Group | Standards | Theme |
+|---|---|---|
+| 1 | 01, 02, 03 | Alignment (CLOs, MLOs, connections) |
+| 2 | 04, 05 | Course structure & introductions |
+| 3 | 06, 07 | Workload & instructor guide |
+| 4 | 08, 09, 10 | Assessment quality |
+| 5 | 11, 12, 13 | Cognitive skills & materials |
+| 6 | 14, 15, 16 | Relevance, UDL, media |
+| 7 | 17, 18, 19 | Community, instructor media, active learning |
+| 8 | 20, 21 | Tools & support |
+| 9 | 22, 23, 24, 25 | Accessibility & cost |
+
+6. **Fixing on the spot**: When the ID says "fix now," handle fixes directly:
+   - **Measurability**: Suggest replacement verbs and update `course-config.json`
+   - **Missing rubric**: Route to `/rubric-creator` inline
+   - **Heading hierarchy**: Fix via API or stage the corrected page
+   - **Missing alt text**: Show the image and ask the ID to describe it
+   - **Missing overview page**: Generate one from `course-config.json` objectives
+   - **Due date missing**: Prompt for date and update via API
+   After each fix, re-check that specific criterion and show the updated status.
+
+7. **At the end**, produce the same HTML/XLSX report as Mode 1, but with annotations:
+   - Items reviewed live show a "Reviewed with ID ✓" badge
+   - Items the ID accepted as-is show "Accepted" status
+   - Items fixed during walkthrough show "Fixed during review" with before/after
+   - Items auto-evaluated (batch) show standard confidence indicators
+
+### Presentation Rules
+
+- **Plain language** — no standard numbers in conversation (say "Course-Level Alignment" not "Standard 01")
+- **One group at a time** — never dump all 25 standards at once
+- **Show evidence** — for every finding, quote the specific content that was checked
+- **Celebrate wins** — when a group is all Met, say so: "Standards 4 and 5 are solid — your course structure and introductions look great."
+- **Prioritize errors** — within each group, show Not Met items first, then Partially Met, then Met
+- **Estimate remaining time** — "6 of 9 groups reviewed. About 10 minutes left."
+
+### Exit Early
+
+If the ID says "that's enough for now" or "I'll review the rest later":
+- Generate a partial report with reviewed items annotated
+- List unreviewed standards as "Not yet reviewed"
+- Save state so a future session can resume
+
+---
+
+### Google Drive Integration
+
+Use the Google Drive MCP connector to find source documents for cross-referencing against published Canvas content.
+
+**MCP Tools**:
+- `google_drive_search` — Search for original SME documents, approved syllabi, or master content files to compare against what's published in Canvas
+- `google_drive_fetch` — Fetch source documents to compare content accuracy, check for missing sections, or verify assessment alignment
+
+**Where It Fits**:
+- **Standards Audit**: Cross-reference published Canvas content against original source documents on Drive to detect content drift or missing material
+- **Accessibility Audit**: Find original image files on Drive to check if alt text matches the original intent/description
+- **Readiness Audit**: Locate the approved syllabus on Drive and verify the Canvas course matches it
+
+---
+
+### Browser Automation (Claude in Chrome)
+
+Use Claude in Chrome for visual verification of published Canvas pages.
+
+**MCP Tools**: `navigate`, `computer`, `read_page`, `get_page_text`, `javascript_tool`, `tabs_context_mcp`
+
+**Where It Fits**:
+- **Visual QA**: Navigate to published Canvas pages and take screenshots to verify layout, styling, and visual consistency match design standards
+- **External link validation**: Click through external links on Canvas pages to verify they load correctly and aren't broken
+- **Embedded media checks**: Verify that embedded videos, iframes, and interactive content render correctly in the browser
+- **Student view verification**: Navigate Canvas in student view mode to confirm the student-facing experience matches design intent

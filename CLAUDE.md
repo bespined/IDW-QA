@@ -1,0 +1,228 @@
+# IDW QA — Course Quality Assurance & Remediation Plugin
+
+## Overview
+
+IDW QA is a Claude Code plugin providing 16 focused skills for auditing, reviewing, and remediating WCAG-compliant Canvas LMS courses following ASU instructional design standards. It includes a guided concierge, course navigation, 3-mode quality auditing with semantic alt text validation, design review, staging/preview/push workflow, content remediation (quizzes, assignments, discussions, rubrics, interactives, syllabus), course configuration, and RLHF feedback integration via Supabase.
+
+This is the QA-focused subset of ID Workbench, purpose-built for pilot testing with instructional designers who audit and remediate existing courses.
+
+## Default Entry Point
+
+When a user starts a conversation without specifying a skill, invoke `/qa-concierge`. This guides them through three modes:
+
+1. **Audit** — Run a full quality check on a course
+2. **Review** — Walk through findings and fix issues
+3. **Search** — Find specific content in the course
+
+IDs interact through natural conversation — the concierge routes to the right skill automatically. The 16 skills are the engine; the concierge is the steering wheel.
+
+Users can still invoke any skill directly by name (e.g., `/audit`) — the concierge is the default, not a gatekeeper.
+
+## Setup Gate
+
+**Before using any skill**, check:
+
+1. If `.env` does **not** exist at the plugin root (`<plugin_root>/.env`):
+   - If running `qa-concierge`: it handles setup transparently within its flow. Proceed.
+   - Otherwise: tell the user "Let me help you connect to Canvas first," then run inline setup (ask for API token + domain + course URL, write `.env`), and resume the original skill.
+2. **Course confirmation** (for all skills except `qa-concierge`):
+   - If `.env` has a course ID: fetch the course name via API, then confirm: *"You're connected to **[Course Name]** ([domain]). Is this the right course?"* → [Yes] / [Switch course].
+   - If user says "Switch course": run `python scripts/setup_env.py --list-courses`, show numbered list, let them pick, update `.env`.
+   - If no course ID in `.env`: show the course list automatically and let them pick.
+   - **Skip this confirmation** if the user's message already names the course (e.g., "audit Module 3 for BIO 101") and it matches the active course.
+3. If `course-config.json` does **not** exist in the current working directory:
+   - For `qa-concierge` / `syllabus-generator`: config gets created during the flow. Proceed.
+   - For remediation skills (`quiz`, `assignment-generator`, `discussion-generator`, `rubric-creator`, `interactive-content`): create a minimal config from the confirmed course.
+   - For QA skills (`audit`, `course-review`): create a minimal config with just the course ID.
+   - For staging/publishing skills (`staging`): only needs `.env` (domain + course ID). No `course-config.json` required.
+   - For navigation/management skills (`canvas-nav`, `bulk-edit`, `course-config`, `media-upload`): only needs `.env`.
+
+## Configuration
+
+### Canvas Credentials (`.env` at plugin root)
+
+All Python scripts and API operations read credentials from `.env` at the plugin root via `python-dotenv`. The file contains:
+
+```
+# Production instance
+CANVAS_TOKEN=<personal access token>
+CANVAS_DOMAIN=<canvas instance domain>
+CANVAS_COURSE_ID=<course ID from URL>
+
+# Dev / Sandbox instance (optional)
+CANVAS_DEV_TOKEN=<dev access token>
+CANVAS_DEV_DOMAIN=<dev instance domain>
+CANVAS_DEV_COURSE_ID=<dev course ID>
+
+# Active instance: "prod" or "dev" (default: prod)
+CANVAS_ACTIVE_INSTANCE=prod
+```
+
+**SECURITY**: Never display, log, or transmit the `CANVAS_TOKEN` or `CANVAS_DEV_TOKEN` values. If the user asks you to show it, remind them it is stored in `.env` and should not be shared.
+
+### Supabase Credentials (`.env.local` at plugin root)
+
+RLHF feedback loop credentials are stored separately from Canvas credentials:
+
+```
+SUPABASE_URL=<project URL>
+SUPABASE_ANON_KEY=<anon public key>
+SUPABASE_SERVICE_KEY=<service role key>
+```
+
+**SECURITY**: Never display or transmit Supabase keys. These are loaded by `audit_report.py` to push findings to the RLHF review system.
+
+### Multi-Instance Support
+
+The plugin supports both production and dev/sandbox Canvas instances. Use the concierge or say 'switch to dev' to toggle between them or change courses mid-session. The active instance is stored in `CANVAS_ACTIVE_INSTANCE` in `.env`.
+
+### Course Context (`course-config.json` in working directory)
+
+When any skill needs module objectives, CLOs, course structure, assessment architecture, or grading information, read `course-config.json` from the current working directory. This is the **source of truth** for all "Required Inputs" referenced in skill files.
+
+## RLHF Feedback Loop
+
+Every audit run automatically:
+1. Pushes findings to Supabase (`audit_sessions` + `audit_findings` tables)
+2. Uploads HTML + XLSX reports to `rlhf-reports` storage bucket
+3. Returns a link to the IDW Review App where IDs approve/reject/flag findings
+
+The review app collects:
+- **Approved** — AI got it right
+- **Rejected** — AI was wrong; ID provides corrected verdict + explanation
+- **False Positive** — AI flagged something that wasn't actually an issue
+
+This feedback refines the audit skill prompts over time. The dashboard at `/dashboard` shows agreement rates by standard and reviewer activity.
+
+## Staging Workflow
+
+Content-remediating skills (quiz, assignment-generator, discussion-generator, interactive-content, update-module, bulk-edit) stage pages locally instead of pushing directly to Canvas:
+
+1. **Generate/Fix** — skill produces updated HTML content
+2. **Stage** — HTML is written to `staging/{slug}.html` wrapped in Canvas-like CSS shell for preview
+3. **Preview** — use Claude Preview to screenshot the staged page in conversation
+4. **Iterate** — user requests changes, page is re-staged and re-previewed
+5. **Push** — when approved, `/staging` shows a diff, creates a backup, and pushes to Canvas
+
+This gives users a review loop before anything touches Canvas. Skills support `--direct` to bypass staging.
+
+## Post-Push Verification (Required)
+
+**After ANY operation that creates or modifies content in Canvas**, always:
+
+1. **Provide a direct Canvas link** to the item. Format:
+   - Pages: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/pages/{slug}`
+   - Quizzes: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/quizzes/{id}`
+   - Assignments: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
+   - Discussions: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/discussion_topics/{id}`
+   - Modules: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/modules`
+
+2. **Auto-verify the result** by fetching the created/updated object back from the Canvas API and displaying a confirmation summary.
+
+3. **Offer a live screenshot**: "Want me to screenshot how this looks in Canvas?" If the user says yes, navigate to the Canvas URL and take a screenshot using the browser tools.
+
+## Quick Edits (No Skill Required)
+
+For simple one-off changes, Claude should handle them directly via the Canvas API without invoking a full skill workflow. Examples:
+
+- "Rename Module 3 to 'Membrane Biology'" → `PUT /courses/:id/modules/:id` with `module[name]`
+- "Change the Module 2 quiz to 3 attempts" → `PUT /courses/:id/quizzes/:id` with `quiz[allowed_attempts]`
+- "Update the due date on the Module 5 assignment to March 20" → `PUT /courses/:id/assignments/:id`
+
+**Safety gate**: Before making any quick edit, run `python scripts/canvas_api.py --check-write` or check `CANVAS_READ_ONLY` in `.env`. If read-only mode is enabled, inform the user.
+
+## Delete Operations
+
+Delete functions are available in `canvas_api.py`. **Before any delete**, always:
+1. **Confirm with the user** — show exactly what will be deleted
+2. **For bulk deletes** (3+ items), show the full list and get explicit confirmation
+3. Pages are automatically backed up before deletion
+
+## Page Design System
+
+All content-generating skills that produce Canvas page HTML must follow the design system in `standards/page-design.md`. Canvas strips `<style>` blocks and most CSS classes, so all styling uses inline `style=""` attributes.
+
+## ASU Template Flexibility (Critical)
+
+IDs **do not build courses from scratch** — they receive a pre-built ASU Canvas DEV template and remediate it. The template contains MORE pages than any single course will use.
+
+**Never assume all template pages are required.** Common adjustments:
+- IDs may combine pages and delete unused ones
+- Some modules may not need certain page types
+- IDs may use external LTI tools instead of Canvas pages
+
+**How IDW QA handles this:**
+1. **Ask, don't assume** — when helping fix pages, ask which pages the ID is keeping
+2. **Preflight skips deleted pages** — only check pages the ID is actively working on
+3. **Canvas nav shows what's there** — use `/canvas-nav` to see actual module structure
+4. **Respect the ID's choices** — help them structure content well rather than enforcing patterns
+
+## Skills Reference
+
+| Category | Skill | Trigger | Purpose |
+|---|---|---|---|
+| **Entry** | `qa-concierge` | `/qa-concierge` | Guided entry point — 3 modes: Audit, Review & Fix, Search |
+| **Navigation** | `canvas-nav` | `/canvas-nav` | Browse the full course tree (modules → items) in conversation |
+| **QA** | `audit` | `/audit` | 3-mode audit: design standards (25 ASU), accessibility (WCAG 2.1 AA), or launch readiness (CRC) |
+| **Review** | `course-review` | `/course-review` | Expert instructional design review of a completed course |
+| **Staging** | `staging` | `/staging` | Preview staged pages, push to Canvas with backup, or rollback |
+| **Remediation** | `update-module` | `/update-module` | Modify a single module — add, replace, rearrange, or reorder content |
+| **Remediation** | `bulk-edit` | `/bulk-edit` | Batch edits, page propagation, or bulk accessibility/branding fixes |
+| **Remediation** | `course-config` | `/course-config` | Publish/unpublish, due dates, assignment groups, navigation tabs, late policy, grading |
+| **Remediation** | `quiz` | `/quiz` | Fix quiz settings, add feedback, edit questions |
+| **Remediation** | `rubric-creator` | `/rubric-creator` | Create or fix analytic rubrics (3-5 criteria, 4 levels) |
+| **Remediation** | `discussion-generator` | `/discussion-generator` | Fix or create graded discussion prompts (5 types) |
+| **Remediation** | `assignment-generator` | `/assignment-generator` | Fix or create assignments with rubrics |
+| **Remediation** | `interactive-content` | `/interactive-content` | Fix or create interactive HTML activities (5 types + custom) |
+| **Remediation** | `syllabus-generator` | `/syllabus-generator` | Fix or generate syllabus content (CRC compliance) |
+| **Remediation** | `media-upload` | `/media-upload` | Upload media files to Canvas and embed in pages |
+| **Knowledge** | `knowledge` | `/knowledge` | Local course content cache for search and Q&A |
+
+## Python Scripts
+
+All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` automatically:
+
+| Script | Purpose |
+|---|---|
+| `canvas_api.py` | Shared API utilities (auth, pagination, upload, pages, folders, multi-instance) |
+| `setup_env.py` | Setup validation helper (test, validate, list courses, verify course) |
+| `course_navigator.py` | Fetch and display full course tree (modules → items), cached with 5-min TTL |
+| `audit_report.py` | Generate HTML or XLSX audit reports + push findings to Supabase RLHF |
+| `audit_pages.py` | Audit all pages for accessibility issues |
+| `alignment_graph.py` | CLO→MLO→Material→Assessment alignment analysis |
+| `preflight_checks.py` | Lightweight content-type validation |
+| `diff_engine.py` | Unified diff and summary between two HTML strings |
+| `backup_manager.py` | Save/list/restore page backups with SHA256 checksums |
+| `staging_manager.py` | Stage pages locally in Canvas-like shell for preview |
+| `vision_audit.py` | Extract and download page images for vision-based accessibility analysis |
+| `deploy_interactives.py` | Upload HTML interactives to Canvas + patch pages |
+| `upload_captions.py` | Upload VTT caption tracks to Canvas media objects |
+| `add_transcripts.py` | Add expandable text transcripts to wiki pages |
+| `generator.py` | Generate HTML interactive activity files |
+| `course_content_cache.py` | Dump, refresh, and search local course content cache |
+| `unified_preview.py` | Render all staged pages in one scrollable document |
+| `idw_logger.py` | Shared structured logging |
+| `idw_metrics.py` | Lightweight metrics/telemetry tracking |
+
+## MCP Connectors
+
+### Google Drive (`google_drive_search`, `google_drive_fetch`)
+Search and fetch files from institutional Google shared drives for audit cross-referencing, source document comparison, and media sourcing.
+
+### Claude in Chrome (Browser Automation)
+Navigate Canvas for visual QA, screenshot verification, external link validation, and embed testing.
+
+### Canvas REST API
+All skills use the Canvas API for CRUD operations on pages, quizzes, assignments, discussions, modules, and course settings.
+
+## Standards & Config
+
+| File | Purpose |
+|---|---|
+| `standards/page-design.md` | Page design system: reusable HTML/CSS components |
+| `standards/canvas-standards.md` | ASU Canvas course design standards |
+| `standards/instructional-design.md` | ID frameworks (UDL, backward design, Mayer) |
+| `standards/assessment-best-practices.md` | Assessment design guidelines |
+| `standards/canvas-content-types.md` | Canvas REST API object reference |
+| `config/standards.yaml` | 25 ASU Online Course Design Standards — base definitions |
+| `config/standards_enrichment.yaml` | Enriched standards with measurable criteria and examples |

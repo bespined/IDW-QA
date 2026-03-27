@@ -1,0 +1,585 @@
+# ============================================================
+# ASU Design Standards Card Details (EdPlus Enrichment)
+# ============================================================
+# Source: https://edl.asu.edu/design-standards
+# Extracted: 2026-02-27
+# ============================================================
+
+standards:
+
+  '01':
+    source_title: 'Course-level alignment'
+    description: 'Course-level objectives are measurable and aligned with program objectives, industry relevance, and/or practical applications.'
+    measurable_criteria:
+      - 'All action verbs in course-level objectives are measurable and clearly align with course-level outcomes and program/industry standards.'
+    expectations:
+      - 'Clearly defined, measurable objectives ensure learners understand how the course supports professional, academic, and personal growth.'
+      - 'Best practices include aligning objectives with industry standards, using measurable action verbs, indicating tasks or knowledge relating to the course focus, and providing real-world examples.'
+      - 'If institutionally mandated objectives exist, they should be transparently integrated and contextualized to highlight their relevance.'
+    considerations:
+      - 'Course-level objectives should represent a learner''s ability to demonstrate mastery and should not be treated as a "task list."'
+      - 'Avoid verbs that cannot be defined well enough for effective measurement, such as "understand," learn," "know," "be aware," "realize," and "appreciate."'
+      - 'Measurable learning objectives describe what learners will be able to do once they "understand," "know," or "realize" a concept in the course.'
+      - 'Use verbs from Bloom''s Taxonomy aligned with the course''s level and learning activities.'
+      - 'Use the ASUO Learning Objective Creator and edit the output to align with the course''s level and learning activities.'
+      - 'Use an alignment tool, chart, or column in your development worksheets to ensure alignment during development.'
+    examples:
+      - 'A learning objective that calls for the learner to "understand the nature of reasoning" could be improved and made measurable by replacing the undefined verb "understand" with the more concrete verb "explain": "Explain the nature of reasoning."'
+      - 'In an English course, an example of a measurable learning objective aligned with program objectives might be, "Apply rhetorical strategies to compose clear, well-supported academic arguments tailored to specific audiences and purposes."'
+      - 'In a biology course, an example of a measurable learning objective aligned with program objectives might be, "Explain the process of cellular respiration and its role in energy production in living organisms."'
+      - 'In an information technology course, an example of a measurable learning objective aligned with program objectives might be, "Demonstrate the ability to troubleshoot common hardware and software issues using industry-standard diagnostic tools."'
+    research:
+      - 'Courses that meet Quality Matters standards, including clear, measurable objectives, lead to 7% increase in student grades. Kahlow, J., & Sarraj, S. (2025, March 27). Online course redesign: It matters. American Journal of Distance Education. https://doi.org/10.1080/08923647.2025.2482292'
+      - 'Well-aligned courses can lead to statistically significant improvements in student scores in scientific courses. Zhang, H., Su, S., Zeng, Y., & Lam, J. F. (2022, May 11). An experimental study on the effectiveness of students'' learning in scientific courses through constructive alignment-A case study from an MIS course. Higher Education Quality Assurance, 12(5), 338. https://doi.org/10.3390/educsci12050338'
+      - 'At Florida International University, 29 online sections redesigned to QM standards outperformed 664 non-redesigned sections on every metric studied, including +10 percent logins, +16 percent clicks, +19 percent submissions, +177 minutes time-on-task, higher course evaluations, and slightly higher grades; leaders attributed gains to tighter assignment-objective alignment. FIU Online. (2016, July). The benefits of Quality Matters certification: What the analytics reveal. Insider. https://insider.fiu.edu/qmreport/'
+  '02':
+    source_title: 'Module-level alignment'
+    description: 'Module-level objectives are measurable and aligned with course-level outcomes.'
+    measurable_criteria:
+      - 'Action verbs in module-level objectives (MLO) are measurable and align with the course-level outcomes (CLO) and the module''s content.'
+    expectations:
+      - 'MLOs should demonstrate a direct relationship with CLOs, ensuring a logical progression of knowledge and skill development.'
+      - 'Designers and faculty should use backward design to ensure all materials, activities, and assessments align with these objectives.'
+    considerations:
+      - 'Alignment must be clear between CLOs and MLOs because MLOs support the CLOs by addressing a foundational step in learning at a more granular, focused level.'
+      - 'Avoid verbs that cannot be defined well enough for effective measurement, such as "understand," learn," "know," "be aware," "realize," and "appreciate."'
+      - 'Measurable learning objectives describe what learners will be able to do once they "understand," "know," or "realize" a concept in the module.'
+      - 'Use verbs from Bloom''s Taxonomy aligned with the course''s level and learning activities.'
+      - 'Use the ASUO Learning Objective Creator and edit the output to align with the course''s level and learning activities.'
+      - 'Use an alignment tool, chart, or column in your development worksheets to ensure alignment during development.'
+      - 'If MLOs are modified, assessment questions (e.g., in a quiz item bank) should be reviewed for alignment. Edit questions as needed so that they explicitly assess objectives.'
+    examples:
+      - 'In a STEM course, a course-level objective might be, "Explain the process of cellular respiration and its role in energy production in living organisms," and an aligned module-level objective might be, "Describe the stages of glycolysis, and identify points at which ATP is produced."'
+      - 'In a psychology course, a course-level objective might be, "Explain how biological structures and processes influence human behavior," and an aligned module-level objective might be, "Identify the major components of the limbic system and their functions."'
+    research:
+      - 'Students report that Quality Matters learning objectives standards increased their learning and engagement by 75%.Sadaf, A., & Martin, F. (2019, December). Student perceptions of the impact of Quality Matters-certified online courses on their learning and engagement. Online Learning, 23(4), 214-233. http://dx.doi.org/10.24059/olj.v23i4.2009'
+  '03':
+    source_title: 'Alignment made clear'
+    description: 'The connection between course- and module-level objectives, learning materials, activities, and assessments is made clear to learners.'
+    measurable_criteria:
+      - 'The course contains documentation demonstrating how learning materials, activities, and assessments help learners achieve course learning outcomes.'
+    expectations:
+      - 'Transparent alignment documentation (e.g., a course map, alignment charts, or objectives table) is included to help learners understand how each component contributes to their learning journey.'
+    considerations:
+      - 'Include information in the overviews and/or descriptions of all course assessments, activities, and materials that clarifies how specific learning materials, activities, and assessments will support learning objectives at both the course- and module-level.'
+      - 'Use a numbering convention during development to make referencing course-level and module-level objectives easier when checking alignment (e.g., CLO 1 or MLO 1.1).'
+    examples:
+      - 'A visual or table presented to learners in Module 0 that demonstrates the course''s backward design and alignment between the materials, activities, and assessments.'
+      - 'A checklist or table is provided on each module overview page that lists the module''s required tasks, gives the approximate time needed for each task, and specifies the corresponding learning objectives that each task supports.'
+      - 'A context-building statement on each module overview page that connects the module-level objectives to the course-level objectives.'
+      - 'A context-building summary or introduction for all learning materials so learners can make connections between the purpose of those materials and the objectives at both the course and module levels.'
+      - 'An "Objectives" section is included in the overview and/or directions of each course assessment, activity, and material to ensure learners understand how these specific assessments, activities, and materials support their learning.'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online Students, students noted that "many assignments, particularly discussions, are tedious or lack value, as they sometimes repeat information from readings and videos without providing new learning opportunities." Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+      - 'Students report the highest engagement (78.5%) with courses that clearly connect activities to learning objectives. Sadaf, A., & Martin, F. (2019, December). Student perceptions of the impact of Quality Matters-certified online courses on their learning and engagement. Online Learning, 23(4), 214-233. http://dx.doi.org/10.24059/olj.v23i4.2009'
+      - 'Transparent alignment documentation supports learner agency and self-regulation per UDL research.CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Research also shows that transparent alignment positively impacts student learning and improves their self-assessment ability, which improves learning outcomes.Hanover Research. (2014, August). The impact of formative assessment and learning intentions on student achievement. https://www.hanoverresearch.com/media/The-Impact-of-Formative-Assessment-and-Learning-Intentions-on-Student-Achievement.pdf?utm_source=chatgpt.com'
+      - 'Research has shown that students in transparently-aligned courses experience significantly greater learning benefits, especially in the areas of "academic confidence, sense of belonging, and mastery of the skills that employers value most when hiring." Winkelmes, M., Bernacki, M., Butler, J., Zochowski, M., Golanics, J., & Weevil, K. H. (2016). A teaching intervention that increases underserved college students'' success. Peer Review: Emerging Trends and Key Debates in Undergraduate Education, 18(1/2), 31-36. https://dgmg81phhvh63.cloudfront.net/content/user-photos/Publications/Arc hives/Peer-Review/PR_WISP16_Vol18No1-2.pdf'
+  '04':
+    source_title: 'Consistent layout'
+    description: 'The course employs standard template elements. The course uses the ASU Online Canvas template unless the unit requires a department or program template.'
+    measurable_criteria:
+      - 'Standard template elements are evident, including a "Getting Started" area, syllabus, introduction page for course facilitators with contact information, a course introduction activity or discussion for learners, and module overview pages.'
+    expectations:
+      - 'Recurring elements on pages (e.g., learning material links, media files) and recurring types of pages (e.g., module overviews) are formatted and arranged consistently.'
+      - 'While institutional templates provide structure, instructors are encouraged to personalize aspects that enhance the learner experience, such as customized introductions or thematic elements relevant to the course subject.'
+    considerations:
+      - 'Module titles and recurring pages/elements should follow consistent naming conventions throughout the course outline to reduce cognitive load and enhance usability.'
+      - 'Use Canvas technology to establish predictable pacing and clearly indicate all required tasks and deadlines, including but not limited to completing readings, watching videos, participating in activities, and completing assessments.'
+      - 'Timestamps on all work and assessments can ensure consistent workload and pacing.'
+      - 'Including resources that learners need to access frequently to complete work/tasks throughout the course in a centralized location (e.g., in the introductory module) and organizing these resources sequentially can help learners easily locate and access them whenever needed.'
+    examples:
+      - 'A "Getting Started" area can include items such as assessment resources (e.g., directions and overviews), access and troubleshooting information for third-party tools used in the course, relevant program-related information, a Course Navigation video, and introduction activities for learners to get acquainted with the course and/or each other.'
+      - 'Each module can be structured consistently to have an "Overview" or "Introduction" section, a "Learning Materials" or "Content" section, an "Assessments" or "Coursework" section, and a "Conclusion and Reflection" section, which provides a predictable and logical progression to each module''s activities, tasks, and engagement opportunities.'
+    research:
+      - 'Consistent layouts reduce cognitive load and improve accessibility for diverse learners. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'CHLOE research shows institutions using standardized templates report better student performance.Legon, R. (2019, May 24). Assessing the state of online learning: Diving into the CHLOE surveys. The evolllution: A modern campus illumination. https://evolllution.com/revenue-streams/distance_online_learning/assessing-the-state-of-online-learning-diving-into-the-chloe-surveys'
+      - 'Research also shows that students have positive perceptions of online course templates'' consistency regarding format and access, and found these templates to benefit their learning. Todoran, G. S., Tekula, R., Gordon, B., & Knepper, H. J. (2019, August). Consistency is key in online learning: Evaluating student and instructor perceptions of a collaborative online-course template. Teaching Public Administration, 37(3), 274-292. http://dx.doi.org/10.1177/0144739419852759'
+      - 'Research has shown that consistent course layouts reduce "the time and energy required for course navigation," help students "focus on the most relevant content," and help them "integrate knowledge by applying it to their day-to-day lives." University of Pennsylvania. (2025). Consistency and predictability and principles for course design. Medical Ethics & Health Policy Online Education. https://improvinghealthcare.mehp.upenn.edu/resource/consistency-and-predictability-principles-course-designMsstacymuse. (2023, January 17). Benefits of implementing course templates in your department. IDAT Services. https://instructionaldesignthatworks.com/2023/01/17/benefits-of-implementing-course-templates-in-your-department/'
+  '05':
+    source_title: 'Engaging course and module introductions'
+    description: 'The introduction to the course and each module sets a welcoming tone, captures attention, highlights its value, and is designed to build an online learning community.'
+    measurable_criteria:
+      - 'The tone of introductory material, such as the syllabus, course homepage, and module overview pages, is written intentionally, advocates for learner success, and connects to practical or professional applications and learner goals.'
+    expectations:
+      - 'Strong course and faculty introductions set expectations, establish relevance, and build a sense of community.'
+      - 'Course and module introductions should clearly articulate the value proposition of the course/module and how it connects to learners'' academic and professional goals.'
+      - 'Module introductions should provide context for how each unit builds upon previous knowledge and contributes to course outcomes.'
+    considerations:
+      - 'A welcoming tone creates an inclusive environment that encourages learner engagement from the start.'
+      - 'Learner introductions build a sense of community.'
+      - 'Scaffold module introductions connect to prior knowledge, preview upcoming content, and explain why the content matters in the context of the course and field.'
+      - 'For specialized courses like internships or independent studies, introductions may focus more on course-related tasks, projects, or individual learning paths while establishing clear expectations and communication channels.'
+    examples:
+      - 'A personalized welcome message from the faculty of record is posted at the start of a course that introduces them as the instructor, shares their teaching philosophy, and expresses enthusiasm for the subject matter.'
+      - 'A separate "Meet Your Instructor" video details the faculty''s connection to course topics, reasons for teaching, and plans for learner engagement.'
+      - 'Instructor-created videos, storytelling, or real-world scenarios at the start of the course or a module to help engage learners and get them excited about the work ahead.'
+      - 'Visually engaging elements (e.g., images, infographics, or concept maps) to complement text-based introductions and add appeal.'
+      - 'As part of an introduction activity in a political science course, learners can record and share podcast videos communicating who they are, why they are in the course, and what they want to learn.'
+      - 'As part of a low-stakes introduction activity in an engineering course, learners can design and share a prototype for a chair.'
+    research:
+      - 'Research has found that "during the first week of an online course, students are looking for cues about the course and will look at available resources to establish an opinion of the instructor, the course, and what to expect," while other research has shown that "video is more effective than text for communicating personality to students." Crawford, S. R. (2020, February 12). Making a first impression with your introduction videos. Quality Matters. https://www.qualitymatters.org/qa-resources/resource-center/articles-resources/how-to-make-video-introductions'
+      - 'Research has found that promoting student engagement in well-structured courses can positively impact student perceptions of learning and satisfaction. Gray, J. A. & DiLoreto, M. (2016, May). The effects of student engagement, student satisfaction, and perceived learning in online learning environments. International Journal of Educational Leadership Preparation, 11(1). https://files.eric.ed.gov/fulltext/EJ1103654.pdf'
+  '06':
+    source_title: 'Clear workload expectations'
+    description: 'The workload and pacing of the course/modules are intentionally aligned with credit-hour expectations and communicated to learners.'
+    measurable_criteria:
+      - 'The course includes details on workload, pacing, relevant policies, and a uniform module structure with predictable pacing and straightforward navigation.'
+    expectations:
+      - 'Policies should address pacing, deadlines, flexibility for special circumstances, and the ability to work ahead when applicable.'
+      - 'Course schedules clearly indicate estimated time commitments for various activities (e.g., readings, discussions, assignments, etc.) aligned with credit hour requirements.'
+      - 'Major assessments should be distributed throughout the term to avoid workload clusters that are overwhelming to learners.'
+      - 'High-stakes applied assessments (e.g., course projects) are introduced at the beginning of the course to allow sufficient time for learners to review directions, work on the assessment, and seek information from their instructor.'
+    considerations:
+      - 'Explicit workload expectations help learners manage their time effectively.'
+      - 'Providing a visual course map or calendar can illustrate the distribution of workload across the term.'
+      - 'A workload calculator or weekly time estimates can help learners plan accordingly.'
+      - '"To Do" lists in each module overview should include time estimates to communicate workload and pacing in each module.'
+      - 'Emphasize the need for learners to be proactive when approaching coursework and avoid procrastination so that learners can complete everything by the scheduled due dates.'
+    examples:
+      - 'Course pacing notes in the syllabus can set expectations early on for learners.'
+      - 'A Course Navigation video, highlighting locations and course organization, can draw attention to unique pacing expectations.'
+      - 'A "Looking Ahead" page in Module 0 can notify learners of major assessments (e.g., course projects) or course workload expectations (e.g., eighteen hours of work per credit hour).'
+      - 'An instructor can specifically call out the need to begin working on coursework as soon as possible in a weekly announcement or a module overview video.'
+      - 'The module overview pages can include time estimates so learners know how long each module and/or each learning material will take, helping learners to plan ahead:'
+      - 'Module 1 Learning Materials (~ 3 hours)'
+      - 'Lecture 1 (12 minutes)'
+      - 'Lecture 2 (10 minutes)'
+      - 'Lecture 3 (10 minutes)'
+      - 'Reading 1 (45 minutes)'
+      - 'Reading 2 (55 minutes)'
+      - 'Reading 3 (45 minutes)'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online Students, students reported facing "difficulty in planning ahead due to varying workload levels from module to module." In addition, students report facing "issues with inconsistent, scattered or nonexistent deadlines provided, and time zone confusion."Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+      - 'Research shows a clear need to communicate course and program expectations of how they can be successful without overwhelming them with long, bureaucratic documents.Ley, T., Kisielewska, J., Collett, T., & Burr, S. (2019, January 15). Improving communication for learning with students: Expectations, feedback and feedforward. MedEdPublish. https://mededpublish.org/articles/8-14/v1'
+  '07':
+    source_title: 'Instructor guide'
+    description: 'When appropriate, the course includes setup instructions and notes for future instructors.'
+    measurable_criteria:
+      - 'A comprehensive instructor guide is available for all courses that may be taught again to ensure course continuity and support future instructors.'
+    expectations:
+      - 'The guide should include notes on course setup, technologies, instructional strategies, common learner questions, and assessment expectations to maintain course quality over time.'
+      - 'The guide should document the use of any specialized tools and partnerships crucial to course delivery, as well as their accompanying resources.'
+    considerations:
+      - 'The guide might include separate troubleshooting information for third-party tools specific to the course facilitator and their level of access. If learners and faculty have the same troubleshooting information available and the same level of access, a separate section for this in an instructor guide might not be necessary.'
+      - 'Include information about the course lead who is the "decision maker" for permissions to complete structural changes, link updates, and content edits.'
+      - 'In team-taught courses or courses with multiple sections, clarify roles and responsibilities for content development and maintenance.'
+      - 'Include a link to the instructional design database page so the course facilitator can look up the instructional designer who supports that specific course/program.'
+    examples:
+      - 'The guide includes an explanation of how to set up course tools and a "Troubleshooting" section for addressing technical issues specific to course tools or activities, which may include contact information for third-party tool support.'
+      - 'The guide includes a "Frequently Asked Questions" section based on real previous learner inquiries to help new instructors anticipate common challenges. This section may describe common pain points, specific course concepts, and assessments that learners may struggle with.'
+      - 'The guide includes background information on key assignment groups.'
+      - 'The guide describes common pain points, course concepts, and assignments that learners may struggle with.'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online Students, two points of high severity were a lack of instructor presence "due to little interaction with students, slow responses to questions, or lectures from different faculty and a lack of feedback, leading students to "struggle understanding their progress in courses and how they can improve due to delayed or no meaningful feedback on assignments." In addition, a point of medium severity was a lack of interactivity, with students expressing "frustration with excessive reading and lectures, feeling it can hinder their understanding of the material." These points can be resolved in the instructor guide. Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+  '08':
+    source_title: 'Assessments align with objectives'
+    description: 'Assessments measure the aligned course and module objectives.'
+    measurable_criteria:
+      - 'Assessment alignment is verified by a subject matter expert (SME). If a SME is not available, alignment is verified by consulting the mapping of course- and module-level objectives (Standard 3).'
+    expectations:
+      - 'Every assessment should explicitly align with course and module objectives, ensuring it measures intended learning outcomes rather than unrelated tasks.'
+      - 'Assessment instructions should explicitly tell learners which course or module objectives are being evaluated.'
+      - 'Evaluation criteria of assessments reinforce the objectives being measured by that assessment, using a rubric when appropriate.'
+    considerations:
+      - 'When appropriate for the discipline, use authentic assessments that mirror real-world applications of knowledge and skills.'
+      - 'Build feedback mechanisms into the assessment design to support learning.'
+      - 'For courses with professional standards or certifications, describe how assessments prepare learners for industry expectations or licensure requirements for added relevance.'
+    examples:
+      - 'An alignment map (Standard 3) should show how each assessment connects to specific course objectives and which level of Bloom''s Taxonomy it addresses.'
+      - 'In module overview videos, describe the connection between the assessments in that module and the overall course objectives.'
+      - 'Identify the objective(s) measured by each question in an item bank.'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online students, a point of high severity was some students feeling unprepared for the course workload, finding expectations unrealistic for its short duration, and being overwhelmed by the number of assignments. Strong alignment ensures all work is meaningful to achieving the course objectives. In addition, some students reported feeling that exams are too heavily weighted, while others are frustrated over significant prep time with little grade impact. Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+      - 'Research shows aligned assessments improve student achievement by moderate-to-large effect sizes.King-Sears, M. E., Stefanidis, A., Evmenova, A. S., Rao, K., Mergen, R. L., Owen, L. S., & Strimel, M. M. (2023, February). Achievement of learners receiving UDL instruction: A meta-analysis. Teaching and Teacher Education, 122. https://doi.org/10.1016/j.tate.2022.103956'
+  '09':
+    source_title: 'Clear grading criteria'
+    description: 'Detailed rubrics (when appropriate) and assignment instructions are embedded in the LMS, with an estimated feedback timeline included in the course.'
+    measurable_criteria:
+      - 'Grading criteria are clearly explained to learners through rubrics and/or assignment instructions, and the timeline for feedback is mentioned in the course.'
+    expectations:
+      - 'Instructors should include clear rubrics for appropriate assessments to provide transparency, guide learner achievement, and support equitable assessment.'
+      - 'Instructors should provide examples of successful work when appropriate.'
+      - 'Assessments include clear details regarding formatting expectations (e.g., APA, IEEE, MLA, etc.) and permitted or restricted resources (e.g., generative artificial intelligence).'
+      - 'Faculty should provide a method for learners to ask grading questions (e.g., email or office hours).'
+    considerations:
+      - 'Assessment instructions should be clear, aligned with the evaluation criteria, and include enough detail so that it is clear how learners can earn points.'
+      - 'Scoring among evaluation criteria is fairly distributed, with greater emphasis on the most important criteria.'
+      - 'Earnable points listed across evaluation criteria match the total number of points available for the assessment.'
+      - 'The rubric''s criteria and point values must accurately reflect the course''s overall grading scale, such that the median performance level equates to approximately 75%, reflecting a "C" grade in the final score.'
+      - 'Provide or hyperlink to formatting support and resources where applicable, including examples.'
+      - 'Use the ASU Online Rubric Generator, and edit the output to align with the purpose of the assessment and learning objectives.'
+    examples:
+      - 'Quizzes and/or exams clearly state point values, including information about partial credit if applicable.'
+      - 'Rubrics include multiple detailed criteria (2-3 criteria minimum) and ratings for each (at least 3 rating levels).'
+      - 'Each criterion description is detailed enough to support clear differentiation between ratings and to support fair, accurate, and expedited grading.'
+      - 'AI-generated rubric example: COM110: ChatGPT Analysis of Identity Rubric.'
+    research:
+      - 'Studies show courses with clear rubrics have 16% more student interactions and 19% higher submission rates. Straumsheim, C. (2016, August 30). Inside higher ed: Florida International U explores impact. Quality Matters. https://www.qualitymatters.org/qa-resources/resource-center/articles-resources/fiu-explores-impact'
+      - 'Transparent grading criteria support UDL principles of reducing barriers. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Research has found that rubrics clarify the learning target, guide instructional design and delivery, make assessment processes more accurate and fair, and provide students with a tool for self-assessment and peer feedback. Wolf, K. & Stevens, E. (2007). The role of rubrics in advancing and assessing student learning. The Journal of Effective Teaching, 7(1), 3-14. https://files.eric.ed.gov/fulltext/EJ1055646.pdf'
+  '10':
+    source_title: 'Varied assessments'
+    description: 'The course includes diverse assessment formats.'
+    measurable_criteria:
+      - 'At least two different types of assessment (e.g., quizzes, projects, discussions) are included in the course.'
+    expectations:
+      - 'Incorporate varied assessment types aligned with Universal Design for Learning principles and provide multiple ways for learners to demonstrate mastery of objectives.'
+    considerations:
+      - 'Sequence the assessments to enable learners to build on previous knowledge and skills gained in the course and prerequisite courses.'
+      - 'Pace assessments to give learners adequate time to complete work thoughtfully and demonstrate learning achievement based on instructor feedback.'
+      - 'Weigh assessment types based on the learning objective priority or focus.'
+      - 'Within assessments, offer multiple means of expression, such as permitting several different submission format options (e.g., paper, audio, video).'
+      - 'Provide opportunities in assessments for learners to apply course concepts to real-world scenarios, connect learning to their personal lives, or practice a skill that will be relevant in future career paths.'
+    examples:
+      - 'Feedback for prior assessments is provided at least 2-3 days before the following assessment is due, so learners have adequate time to review and implement feedback before they submit the following assessment.'
+      - 'Quizzes and exams have varied question types that assess higher Bloom''s Taxonomy levels (e.g., scenario-based questions or critical thinking questions).'
+    research:
+      - 'UDL research shows varied assessments improve achievement across diverse learners. Sharma, B. U. (2024, August). Impact of Universal Design for Learning (UDL) on student engagement and achievement in inclusive education. International Journel of Novel Research and Development, 9(8). https://ijnrd.org/papers/IJNRD2408322.pdf'
+      - 'UDL research shows varied assessments address "human variability based on parts of the brain that manage the ''why'' (affective network), the ''what'' (recognition network), and the ''how'' (strategic network) of learning. AlRawi, J. M. & AlKahtani, M. A. (2021, March 21). Universal design for learning for educating students with intellectual disabilities: A systematic review. Internationaal Journal of Developmental Disabilities, 68(6), 800-808. https://doi.org/10.1080/20473869.2021.1900505 Rose, D. H., & Meyer, A. (2002). Teaching every student in the digital age: Universal design for learning. Educational Technology Research and Development, 55(5), 512-525. http://dx.doi.org/10.1007/s11423-007-9056-3'
+  '11':
+    source_title: 'Cognitive skills development'
+    description: ''
+    measurable_criteria:
+      - 'Assessments are structured to guide learners from foundational knowledge to more complex, higher-order learning levels throughout the course.'
+      - 'Bloom''s Taxonomy levels are evident in the module objectives, appropriate to the course level, and build higher-order learning levels over time.'
+    expectations:
+      - 'Bloom''s Taxonomy guides assessment design, ensuring a mix of lower- and higher-order learning levels.'
+      - 'Learning objectives are phrased to promote higher-order Bloom''s skills (e.g., critique, analyze, evaluate).'
+    considerations:
+      - 'Ensure that assessments are suited to the level of the course.'
+      - 'Consider designing assessments so they build skills step-by-step by breaking down complex tasks across multiple assignments.'
+      - 'Provide opportunities for feedback throughout the course to extend the learning experience of each assessment and help learners continue to build their knowledge through iterations of application and reflection.'
+    examples:
+      - 'In an English course, assessments progress from defining terms (quiz) to ideating paper topics (discussion) to outlining (short paper) to drafting and finally to a revised version (long paper).'
+      - 'In a biology course, assessments progress from identifying cell structures (quiz) to analyzing experimental data (lab report) to designing an investigation (proposal) to conducting the experiment, and finally to presenting findings (research paper).'
+      - 'In an engineering course, assessments progress from applying fundamental formulas (quiz) to modeling systems (problem sets) to proposing a solution to a real-world problem (design brief) to building a prototype and finally to delivering a final report with performance analysis.'
+    research:
+      - 'UDL research shows scaffolded skill development improves learning outcomes. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Progression within Bloom''s taxonomy has been proven to require higher levels of cognitive skills, resulting in "deeper learning and transfer of knowledge and skills to a greater variety of tasks and contexts."Sharma, B. U. (2024, August). Impact of Universal Design for Learning (UDL) on student engagement and achievement in inclusive education. International Journel of Novel Research and Development, 9(8). https://ijnrd.org/papers/IJNRD2408322.pdf Adams, N. E. (2015, July). Bloom''s taxonomy of cognitive learning objectives. Journal of the Medical Library Association, 103(3), 152-153. https://doi.org/10.3163/1536-5050.103.3.010'
+      - 'Studies have shown that scaffolding learning levels positively impacts students'' ability to engage in self-regulated learning and their academic achievements. Murtagh, L. & Webster, M. (2010, December 6). Scaffolding teaching, learning and assessment in higher education. Teacher Education Advancement Network Journal, 1(2). https://research.manchester.ac.uk/en/publications/scaffolding-teaching-learning-and-assessment-in-higher-education?utm_source=chatgpt.com'
+  '12':
+    source_title: 'Materials align with objectives'
+    description: 'Course materials support learners in achieving the aligned course and module objectives.'
+    measurable_criteria:
+      - 'Alignment is verified by a subject matter expert (SME). If a SME is not available, alignment is verified by consulting the mapping of course- and module-level objectives (Standard 3).'
+    expectations:
+      - 'All materials should support the achievement of learning objectives.'
+      - 'Align with Universal Design for Learning (UDL) principles by providing multiple means of engagement (e.g., readings, videos, case studies, simulations).'
+    considerations:
+      - 'Learning material should be able to "answer" a learning objective:'
+      - 'Does this material allow learners to "Identify X vocabulary word"?'
+      - 'Does this material include examples to illustrate "Compare X and Y"?'
+      - 'Use an alignment tool, chart, or column in your development worksheets to ensure alignment during development.'
+      - 'Instructional materials should contribute to the achievement of objectives by integrating effectively with tools, assessments, and activities.'
+      - 'If a learning material is copyrighted, permission must be obtained from the copyright holder to incorporate these materials into the course.'
+    examples:
+      - 'Aligned Example: To support the learning objective "Apply rhetorical concepts to analyze a written text," learners read a persuasive article and watch a short video on identifying rhetorical appeals. These materials prepare learners for the rhetorical analysis assignment by modeling how to examine an author''s use of ethos, pathos, and logos in context.'
+      - 'Unaligned Example: One of the module''s learning objectives is "Conduct effective peer review by providing constructive feedback on structure, clarity, and rhetorical effectiveness." Learners are assigned a podcast episode on the history of typewriters and a video on the writing routines of famous literary authors. These materials are engaging and help learners appreciate the craft of writing, but do not directly contribute to the achievement of the learning objective.'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online students, some students reported feeling "that the time spent on lectures and assignments does not align with or prepare them for assessments, contributing to withdrawals from courses."Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+      - 'Research shows that strong course alignment increases students'' perceptions of competency, enjoyment, and investment in learning experiences as well as higher course ratings. Stamov Rossnagel, C., Fitzallen, N., & Lo Baido, K. (2020). Constructive alignment and the learning experience: relationships with student motivation and perceived learning demands. Higher Education Research & Development, 40(4), 838-851. https://doi.org/10.1080/07294360.2020.1787956'
+      - 'Other research has shown that students in well-aligned courses were "more likely to adopt deep learning approaches and less likely to use surface learning approaches in their study of a particular course." Wang, X., Su, Y., Cheung, S., Wong, E., & Kwong, T. (2012). An exploration of Biggs'' constructive alignment in course design and its impact on students'' learning approaches. Assessment & Evaluation in Higher Education, 38(4), 477-491. https://doi.org/10.1080/02602938.2012.658018'
+  '13':
+    source_title: 'High-quality content'
+    description: 'Instructional materials apply discipline-specific and industry-accepted best practices for the course''s content.'
+    measurable_criteria:
+      - 'Course materials align with traditional publishing standards for the discipline.'
+    expectations:
+      - 'Written, visual, and multimedia content should adhere to best practices in clarity, accessibility, and professional standards.'
+      - 'References are provided if using an outside open-source resource.'
+      - 'Permissions are obtained from the publisher if using copyrighted material, and required citations are provided.'
+    considerations:
+      - 'Materials make purposeful use of academic and industry-relevant vocabulary, and define this vocabulary clearly.'
+      - 'Examples, demonstrations, and analogies are clearly explained, fusing theory and practice.'
+      - 'Materials use process maps, data visualizations, etc., to introduce and reinforce key content.'
+      - 'Materials use fonts that are appropriate for the specific content or materials.'
+      - 'Refer to the ASU Brand and Marketing Guide and follow standards for ASU-created content.'
+      - 'Refer to industry standards and accreditation requirements when determining how to format content or citations.'
+      - 'Studio and media support and/or guidance are used to record videos and create multimedia assets.'
+    examples:
+      - 'In a computer science course, instructional materials include coding style guides and version control workflows aligned with industry standards (e.g., PEP 8 for Python, GitHub-based collaboration). Sample projects mirror real-world applications like building REST APIs or deploying machine learning models using current industry tools.'
+      - 'In a nursing course, the content incorporates the latest evidence-based practices and aligns with clinical guidelines from organizations like the American Nurses Association. Case studies simulate patient scenarios based on current healthcare protocols, helping students apply theoretical knowledge in realistic, professional contexts.'
+      - 'In a business course, materials draw from frameworks used in industry, such as SWOT analysis, Porter''s Five Forces, and Lean Startup methodology. Case studies feature real companies and market data, encouraging students to apply strategic decision-making practices aligned with current business standards.'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online Students, students reported frustrations with outdated or low-quality course materials, including lecture videos, readings, or assignment examples. Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+      - 'A study showed that students using multimodal learning materials over a traditional textbook saw a 10 percentage point increase in exam scores.Stelzer, T., Gladding, G., Mestre, J., & Brookes, D. T. (2018, October 22). Comparing the efficacy of multimedia modules with traditional textbooks for learning introductory physics content. https://arxiv.org/pdf/0806.0405'
+      - 'Shulman''s signature pedagogies in the professions point out that pre-professional education must align with both academic and industry standards to adequately prepare students for "accomplished and responsible" practice. Shulman, L. S. (2005). Signature Pedagogies in the Professions. Daedalus, 134(3), 52-59. http://www.jstor.org/stable/20027998'
+  '14':
+    source_title: 'Real-world relevance'
+    description: 'Materials use practical examples and case studies to address professional and academic challenges.'
+    measurable_criteria:
+      - 'Real-world examples are present in the course materials.'
+    expectations:
+      - 'Incorporate scenario-based learning.'
+      - 'Employ learning materials, activities, and assessments that are based on or informed by real-world data and datasets.'
+      - 'Include varied experiences that encourage ethical decision-making.'
+      - 'Regularly review and update course materials to highlight current events and their impact on industry and academic spaces.'
+      - 'Provide materials that promote information and research literacy.'
+    considerations:
+      - 'Case studies, industry examples, and practical applications make content more engaging and help learners connect learning to their future careers.'
+    examples:
+      - 'In an engineering course, students examine case studies of major engineering projects, such as the design and failure analysis of the Tacoma Narrows Bridge or the development of renewable energy systems. They engage in practical applications like evaluating design trade-offs and simulating system performance, mirroring tasks in civil and mechanical engineering careers.'
+      - 'An economics course incorporates case studies analyzing the economic impact of real-world events, such as the effects of trade tariffs on global markets. Students apply economic models to these scenarios and explore career-relevant tasks like policy briefing writing or cost-benefit analyses, connecting theoretical knowledge to roles in government, finance, or consulting.'
+      - 'A history course uses case studies such as the reconstruction of post-World War II Europe or the Civil Rights Movement to explore cause-and-effect relationships and historiographical debates. Assignments include tasks like curating digital exhibits or drafting policy memos from historical perspectives, helping students connect historical analysis to careers in education, public policy, and museum work.'
+    research:
+      - 'UDL research shows authentic, relevant content increases engagement and achievement. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'A study conducted in 2021 by the Association of American Colleges and Universities found that 93% of employers believe that a candidate''s capability to showcase skills that utilize knowledge in practical situations is more significant than their academic qualifications by themselves. American Association of Colleges & Universities. (2023, March 3). How college contributes to workforce success. AAC&U. https://www.aacu.org/liberaleducation/articles/how-college-contributes-to-workforce-success'
+      - 'Research has found that course materials with real-world relevance increase students'' engagement, help develop their analytical and decision-making skills, and support higher-order thinking reflected in Bloom''s levels of application, analysis, synthesis, and evaluation. Brooke, S. L. (2006). Using the case method to teach online classes: Promoting Socratic dialogue and critical thinking skills. International Journal of Teaching and Learning in Higher Education, 18(2), 142-149. http://www.isetl.org/ijtlhe/'
+  '15':
+    source_title: 'Universally designed content'
+    description: ''
+    measurable_criteria:
+      - 'Materials include diverse perspectives, encourage global understanding, and connect to learners'' lives.'
+      - 'Global representation is evident in examples and materials.'
+    expectations:
+      - 'Content should include global perspectives and represent various cultures and lived experiences, highlighting the contributions of different communities.'
+      - 'Explain any cliches, figurative language, idioms, and popular culture references used, and include equivalent examples from other cultures.'
+      - 'Explain bias based on historical context.'
+      - 'Use media that represent individuals from diverse cultural and national backgrounds.'
+    considerations:
+      - 'Introductory materials should address different learner needs by providing multiple ways to engage with course content and expectations.'
+      - 'Account for global religious events in the course schedule.'
+      - 'Create choice-based modules where learners get to pick how to access content (e.g., watch, read, listen).'
+      - 'Provide localized examples in visuals or case studies to connect with different learners.'
+      - 'Include various dialects, representations, and images in course media.'
+    examples:
+      - 'In a literature course, readings include authors from various cultural backgrounds, and assignments prompt students to explore how themes like identity and migration resonate across cultures and connect to their own experiences.'
+      - 'In a sociology course, case studies and data sets reflect a variety of racial, socioeconomic, and cultural contexts. Students examine how social structures affect individuals differently and reflect on how these issues appear in their communities and daily lives.'
+      - 'In a math course, word problems and project-based assignments draw on diverse cultural contexts and real-world applications, such as analyzing income inequality using census data or modeling population growth in different countries.'
+    research:
+      - 'UDL research demonstrates that diverse perspectives improve learning for all students. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Inclusive content design reduces barriers and improves outcomes. AlRawi, J. M. & AlKahtani, M. A. (2021, March 21). Universal design for learning for educating students with intellectual disabilities: A systematic review. Internationaal Journal of Developmental Disabilities, 68(6), 800-808. https://doi.org/10.1080/20473869.2021.1900505'
+      - 'Sharma, B. U. (2024, August). Impact of Universal Design for Learning (UDL) on student engagement and achievement in inclusive education. International Journel of Novel Research and Development, 9(8). https://ijnrd.org/papers/IJNRD2408322.pdf'
+      - 'Research in cognitive neuroscience has found that neuro-variability, brain plasticity, impacts of learner background knowledge and experience, and the goal-driven nature of human brains are important considerations for designing high-quality learning experiences.CAST. (2018). UDL & the learning brain. https://www.cast.org/wp-content/uploads/2024/12/cast-udlandthebrain-20220228-a11y.pdf'
+  '16':
+    source_title: 'Universally designed media'
+    description: 'Materials are provided in varying formats (e.g., text, audio, video) to support global learners.'
+    measurable_criteria:
+      - 'Availability of multiple formats for materials.'
+    expectations:
+      - 'Provide multiple formats (e.g., text, audio, video) to align with the best practices of Universal Design for Learning.'
+      - 'Include alternative text, captions, and transcripts for visual and auditory media.'
+    considerations:
+      - 'Invest time in procuring or creating multimodal content that includes interactive elements, and differentiate materials for various types of learners.'
+      - 'Gamified media can provide rich, interactive experiences.'
+      - 'Prioritize screen reader-compatible websites and documents.'
+      - 'Enable language translation tools embedded in learning platforms.'
+    examples:
+      - 'Use audio or video feedback from instructors instead of only written comments.'
+      - 'Include tutorial videos, animations, and diagrams with voiceover narration to provide clear and engaging visual explanations.'
+      - 'Employ in-video questions that pause video playback so learners actively engage with lectures (e.g., quiz questions for content recall or survey questions to encourage learners to connect content to their personal experiences).'
+      - 'Include extended reality (XR) learning environments, such as virtual science labs or museum tours, virtual simulations, or interactive modules that teach through doing.'
+      - 'Utilize podcasts, audiobooks, or audio versions of texts that cover course-related topics.'
+      - 'Prioritize digital formats and digital textbooks that allow highlighting, note-taking, text-to-speech, and/or social annotations.'
+      - 'Include captioned GIFs or short video loops to show processes (e.g., chemical reactions, sign language movements). For accessibility, these loops need a pause button.'
+    research:
+      - 'UDL research shows multiple media formats improve comprehension and engagement. Sharma, B. U. (2024, August). Impact of Universal Design for Learning (UDL) on student engagement and achievement in inclusive education. International Journel of Novel Research and Development, 9(8). https://ijnrd.org/papers/IJNRD2408322.pdf'
+      - 'CAST. (2025). Evidence and benefits of UDL. https://www.cast.org/what-we-do/evidence/'
+      - 'Students with varied learning preferences show improved performance with multimodal content. AlRawi, J. M. & AlKahtani, M. A. (2021, March 21). Universal design for learning for educating students with intellectual disabilities: A systematic review. Internationaal Journal of Developmental Disabilities, 68(6), 800-808. https://doi.org/10.1080/20473869.2021.1900505'
+  '17':
+    source_title: 'Open space for learner questions'
+    description: 'The course includes a prominently featured, actively monitored space where learners can ask questions that support the learning community.'
+    measurable_criteria:
+      - 'A course-wide space, such as a community forum, hallway conversation discussion board, or interactive FAQ page, is provided for classroom questions, with a clear moderation policy available to learners.'
+    expectations:
+      - 'A dedicated, moderated discussion space that encourages collaborative learning between peers and the course facilitator(s).'
+      - 'A clear turnaround time for responses from faculty is specified.'
+      - 'Instructions note that personal inquiries should be directed to private communication channels.'
+    considerations:
+      - 'Best practices include structuring discussions with guiding prompts and ensuring instructor presence by replying to or acknowledging each post.'
+      - 'Participation should be encouraged, but not mandatory.'
+      - 'Language that discourages communication (e.g., "3 before me") is avoided.'
+      - 'Access links to the discussion space should be in a centralized, easy-to-access location (e.g., Canvas navigation menu or introductory module).'
+      - 'Provide instructions and bullet point guidelines for how to ask and answer questions (e.g., emphasize the need for details and what the learner has already done to address an issue). Encourage reviewing past threads/questions first before new ones are created.'
+      - 'Include reminders and links to the discussion space in assessment instructions for easy navigation to receive support.'
+      - 'Threads, topics, tags, etc., can be used for ease of searching. Consider customizing topic/tag/category titles by module, discussion topics, project/assignment, or other needs.'
+    examples:
+      - 'Canvas Discussion Community Forum'
+      - 'Third-party discussion tools (e.g., InScribe, Ed Discussion, Harmonize, Yellowdig, Slack).'
+      - 'Video conferencing tools (e.g., Zoom, Google Meet, Microsoft Teams, etc.)'
+      - 'Private instructor Harmonize board for personal questions.'
+      - 'Optional and recorded live sessions, such as office hours.'
+      - 'Sample statement:Welcome to the Course Q&A Forum: a space within Canvas to ask questions, share insights, and support one another. Use this forum to engage with course content, clarify assignments, and collaborate with your peers. Before posting, please review existing threads to avoid duplication.'
+      - 'When asking a question, be specific: mention the concept or assignment you''re referencing, explain what you''ve already tried, and include any helpful context such as error messages or materials consulted. Your instructional team will reply within 24 hours in this forum by replying to or acknowledging each post to help guide the conversation and support your success. For personal or private matters, please contact the instructor directly via their ASU email.'
+    research:
+      - 'Clear communication requirements improve student-instructor interaction. Sadaf, A., Martin, F., & Ahlgrim-Delzell, L. (2019). Student Perceptions of the Impact of "Quality Matters" Certified Online Courses on their Learning and Engagement. Online Learning, 23(4). https://doi.org/10.24059/olj.v23i4.2009'
+      - 'UDL research shows community spaces enhance belonging and engagement. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Research has found that there is a statistically significant, 0.51 positive, linear association between a sense of community in online courses and perceived cognitive learning. Rovai, A. P. (2002). Sense of community, perceived cognitive learning, and persistence in asynchronous learning networks. The Internet and Higher Education, 5(4), 319-332. https://doi.org/10.1016/s1096-7516(02)00130-6'
+  '18':
+    source_title: 'Instructor-created media'
+    description: 'Instructor-created media are present throughout the course to foster connection and increase engagement.'
+    measurable_criteria:
+      - 'Instructor-created media, particularly videos, are evident in announcements, lectures, module overviews, or other relevant spaces.'
+    expectations:
+      - 'If the instructor is different from the course developer, or if the course includes media made by multiple faculty, learners are informed about this in one of the course introduction spaces (e.g., "Meet your instructional team" page, homepage, syllabus, etc.).'
+      - 'Establish a predictable and consistent pattern of media use, type, and any embedded interactions.'
+      - 'Adhere to best practices for media recording, including lighting, sound, and speaker(s) appearance.'
+      - 'Videos are optimized for learners by clearly organizing the flow of topics and breaking larger topics into shorter video segments.'
+      - 'Make slides used in faculty videos available to learners. Include any annotations made during the recording session.'
+    considerations:
+      - 'Faculty can book appointments with the media studio for professional guidance and production value. The EdPlus Studio and Media Team can collaborate with faculty to create high-quality videos and animations.'
+      - 'Employ in-video questions that pause video playback so learners actively engage with lectures. Learners frequently use these questions to guide their note-taking, so faculty are encouraged to add questions or other interactions to highlight key concepts.'
+      - 'Evergreen and foundational content that will likely not change is present in most modules that deliver content.'
+      - 'Include an instructor and/or developer introduction video within an introductory module. If applicable, clarify in the video(s) why the faculty giving the lectures is different from the faculty teaching the course.'
+    examples:
+      - 'Informal media that reflects learner engagement trends, current events, reflections of learners'' work, or instructor communication that exemplifies instructor presence.'
+      - 'Video examples: course introduction video, module overview videos, lecture videos, quick mini-lectures (1-3 minutes) emphasizing a particular concept, introduction videos for major projects or assignments, announcement videos, and course-wide feedback videos for specific modules or assessments.'
+      - 'View examples of introductions, lectures, discussions, labs/demos, and fieldwork videos from the EdPlus Academic Media team.'
+    research:
+      - 'In a 2024 survey of about 5,000 ASU Online Students, students reported experiencing "confusion when a different instructor teaches the course than the one in the recorded lectures," which they reported "can be jarring and disrupt their learning."Delaney, M. & Skowron, F. (2025). ASU Online student experience.'
+      - 'Student social presence ratings increase significantly with instructor-present videos. Polat, H. (2022). Instructors'' presence in instructional videos: A systematic review. Education and Information Technologies, 1. https://doi.org/10.1007/s10639-022-11532-4'
+      - 'Student motivation and engagement increase with regular instructor video communications. Beege, M., Schroeder, N. L., Heidig, S., Rey, G. D., & Schneider, S. (2023). The instructor presence effect and its moderators in instructional video: A series of meta-analyses. Educational Research Review, 41, 100564. https://doi.org/10.1016/j.edurev.2023.100564'
+      - 'Heidig, S., Beege, M., Rey, G.D. et al. Instructor presence in instructional videos in higher education: three field experiments in university courses. Educational Technology Research and Development, 72, 3047-3074 (2024). https://doi.org/10.1007/s11423-024-10391-9'
+      - 'Research shows that there is a strong association between learner-instructor interaction and student learning, and that these interactions impact students'' academic progress, motivation, and achievement.Morrison, J. S. (2021). Getting to know you: Student-faculty interaction and student engagement in online courses. 8th International Conference on Higher Education Advances (HEAd''22). https://doi.org/10.4995/head21.2021.13160'
+  '19':
+    source_title: 'Active Learning'
+    description: 'Activities encourage critical thinking, interaction, and the development and application of professional skills.'
+    measurable_criteria:
+      - 'Interactive assignments should demonstrate practical applications that facilitate engagement among learners, between learners and content, and between learners and instructors.'
+    expectations:
+      - 'Interactive assignments should require learners to apply concepts, analyze problems, and engage in discussions that foster critical thinking.'
+      - 'Activities promote meaningful interactions that facilitate the development of skills that bolster the achievement of learning objectives.'
+    considerations:
+      - 'The purpose of the activity should support the course learning objectives.'
+      - 'Activities throughout the course meaningfully prepare learners for the current professional landscape of the industry and field. Select industry-focused projects/tasks/skills that could be added to a portfolio or resume.'
+      - 'State how the assessment is meaningful to learners to help them understand or envision its impact.'
+      - 'Scaffold major projects, accompanied by scalable feedback, throughout the course.'
+      - 'Provide learner agency wherever possible. Allow space for learners to choose the assignment topic, format, etc.'
+      - 'Ensure that the course facilitator(s) can efficiently support the activity. Course assistants should be able to understand the activity''s process quickly, be well equipped to answer learners'' questions, and provide feedback when applicable.'
+    examples:
+      - 'Hands-on projects that feature real-world applications and/or portfolio creation.'
+      - 'Case studies, simulations, and scenario-based learning that enhance engagement.'
+      - 'Collaborative work, including peer reviews and discussions.'
+      - 'Assignments where learners create the study objects (e.g., guides, flash cards, content outlines, etc.).'
+      - 'Feedback conversation loops through the comment feature in Speedgrader.'
+      - 'Auto-graded assessments with enriching feedback.'
+    research:
+      - 'UDL research shows active learning improves achievement across diverse learners. Sharma, B. U. (2024, August). Impact of Universal Design for Learning (UDL) on student engagement and achievement in inclusive education. International Journal of Novel Research and Development, 9(8). https://ijnrd.org/papers/IJNRD2408322.pdf'
+      - 'CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Students in active learning courses are 1.5 times less likely to fail compared to traditional lectures.University of Minnesota. (n.d.). Why Use Active Learning? Center for Educational Innovation. https://cei.umn.edu/teaching-resources/active-learning/why-use-active-learning'
+      - 'Test scores improve by 54% in active learning sessions compared to traditional lectures. Seril, L. (2025, January 7). Active Learning Statistics: Benefits for Education & Training in 2025. Engageli Blog. https://www.engageli.com/blog/active-learning-statistics-2025'
+  '20':
+    source_title: 'Tool integration'
+    description: 'All tools align with course objectives, enhance engagement, and include learner-facing technical guides or support.'
+    measurable_criteria:
+      - 'Intentional use of approved tools that support learner engagement with the learning objectives, encourage interaction with peers and/or the instructional team, and provide reasonable support for technical guidance and troubleshooting.'
+    expectations:
+      - 'Course tools should be intentionally selected to align with objectives and enhance engagement.'
+      - 'Technical support and clear usage guides should be provided to reduce barriers to access and help learners use the tools.'
+    considerations:
+      - 'The tool has passed security reviews and can be used by your department.'
+      - 'The tool should be integrated with Canvas and not burden learners with an undue financial burden.'
+      - 'The tool is (or will be) familiar to learners in their program of study.'
+      - 'Tools serve a specific purpose and are aligned with learning objectives.'
+      - 'Ensure the selected tool is one that the faculty have the skills, instructions, and support needed to update, facilitate, and manage.'
+      - 'Provide set-up and troubleshooting instructions for future facilitator(s).'
+      - 'Support and guides for interacting with and using the tool for course-related activities are provided in a centralized location for learners.'
+      - 'Access to the tool is open for enrolled users at least by the sync date (3 days before the session start date), so learners can familiarize themselves with the tools and technologies leveraged in the course.'
+    examples:
+      - 'To develop evidence-based arguments from primary sources, students use a collaborative annotation tool to analyze and discuss historical documents in context.'
+      - 'To apply mathematical models to real-world problems, students engage with interactive simulations that let them test variables and observe outcomes dynamically.'
+      - 'To communicate effectively in a professional context, students create video presentations or participate in recorded discussions, allowing for practice, feedback, and self-reflection.'
+    research:
+      - 'Research has found that all QM Standards increased student learning and engagement, with Course Technology being one of the top two QM Standards impacting engagement. Sadaf, A., Martin, F., & Ahlgrim-Delzell, L. (2019). Student Perceptions of the Impact of "Quality Matters" Certified Online Courses on their Learning and Engagement. Online Learning, 23(4). https://doi.org/10.24059/olj.v23i4.2009'
+      - 'UDL framework supports accessible, purposeful technology use. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+  '21':
+    source_title: 'Technical and academic support'
+    description: 'The course prominently displays contact information for IT support, accessibility services, and academic resources, as well as language that encourages learners to use them.'
+    measurable_criteria:
+      - 'Information about IT support, accessibility services, and academic resources (e.g., tutoring, the library, success coaching, 360 Life Services [for ASU Online students]) is included in the syllabus and course menu, along with language normalizing and encouraging engagement with them.'
+    expectations:
+      - 'Highlight support options early and provide links to support resources at the beginning of the course outline and/or in a centralized location.'
+      - 'Provide links to resources in standard course documents (e.g., syllabus) that learners will likely access early on.'
+    considerations:
+      - 'Clearly displaying IT, accessibility, and academic resource information in multiple locations (e.g., syllabus, course homepage) encourages learners to seek assistance.'
+      - 'Remind students throughout the course about available resources, especially when they are most pertinent (e.g., tutoring before an exam).'
+      - 'In assignment descriptions/instructions/overviews, include links to specific resources that can support that work.'
+    examples:
+      - 'Sample statement on academic support: If you''re struggling with course material, please use the available support resources, including tutoring, study groups, and office hours. Seeking academic help early is a smart strategy for success, not a sign of failure.'
+      - 'Sample statement on well-being support: Your mental health is important. ASU''s 360 Life Services offers free, confidential support 24/7 for stress, anxiety, and other personal concerns. Reaching out for help is a strong and healthy choice.'
+      - 'The course "Home" page provides links to help or support pages that can guide learners to appropriate resources.'
+      - 'In the introductory module (Module 0), highlight appropriate support resources in a "Getting Started" section and/or a "Course Introduction" video.'
+      - 'Highlight SAILS information on the syllabus and/or before proctored assessments (e.g., exams) so learners who require accommodations know how to get that support on file.'
+    research:
+      - 'Research has shown that technostress has a negative effect on the quality of online learning by reducing student engagement and motivation. Saleem, F., Chikhaoui, E., & Malik, M. I. (2024). Technostress in students and quality of online learning: Role of instructor and university support. Frontiers in Education, 9, 1309642. https://doi.org/10.3389/feduc.2024.1309642'
+      - 'UDL emphasizes removing barriers through comprehensive support. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+  '22':
+    source_title: 'Material accessibility'
+    description: 'All course content meets WCAG 2.1 AA standards as supported by FRAME.'
+    measurable_criteria:
+      - 'All content must meet WCAG 2.1 AA standards, ensuring compatibility with screen readers, captions for videos, and alternative text for images.'
+    expectations:
+      - 'Conduct accessibility testing for all materials (e.g., alt text, captions, screen-reader compatibility).'
+      - 'Follow the FRAME expectations to meet this standard.'
+    considerations:
+      - 'Access to course content is foundational to learner success.'
+      - 'Use Microsoft products to create documents and slides, and run Microsoft Accessibility Checker before saving files.'
+      - 'Confirm the accessibility of files before loading them into Canvas.'
+      - 'Use Canvas Accessibility Checker on Canvas Pages.'
+      - 'Include verbal descriptions of important visual information.'
+      - 'Upload videos to MediaPlus (or other platforms) to add captions and generate transcripts.'
+      - 'Use FRAME to access training and resources.'
+    examples:
+      - 'All images have alternative (alt) text or are marked "decorative" if the image''s content is not important for understanding the material or assessment.'
+      - 'Images that are critical for correctly answering or completing assessments (e.g., "Analyze this image...") have detailed, descriptive alt text.'
+      - 'All graphs and tables have descriptive text.'
+    research:
+      - 'WCAG compliance improves outcomes for all students, not just those with disabilities. CAST. (2025). Evidence and benefits of UDL. What We Do. https://www.cast.org/what-we-do/evidence/'
+      - 'Accessible materials benefit 100% of learners according to UDL research. Sharma, B. U. (2024, August). Impact of Universal Design for Learning (UDL) on student engagement and achievement in inclusive education. International Journal of Novel Research and Development, 9(8). https://ijnrd.org/papers/IJNRD2408322.pdf'
+  '23':
+    source_title: 'Tool accessibility'
+    description: 'All third-party tools used in the course meet WCAG 2.1 AA standards.'
+    measurable_criteria:
+      - 'Accessibility documentation confirms that any third-party tools used in the course meet WCAG 2.1 AA standards.'
+    expectations:
+      - 'Third-party tools should be vetted for accessibility compliance, with alternative options provided when necessary.'
+    considerations:
+      - 'Only use licensed tools as approved by ASU. For more information, review the ASU Integrated Products list. If faculty are interested in adding a tool to the ASU Integrated Products list, they should contact their EdPlus instructional designer.'
+      - 'Using non-approved tools can compromise learner privacy and safety.'
+    examples:
+      - 'An interactive video platform used in the course provides accurate closed captioning, keyboard navigation, and screen reader compatibility, meeting WCAG 2.1 AA standards.'
+      - 'A web-based simulation tool includes alt text for all images, supports color contrast requirements, and allows full functionality without a mouse.'
+      - 'An external quiz platform offers accessible form fields, logical tab order, and compatibility with assistive technologies such as screen readers and voice input.'
+    research:
+      - 'Course completion rates for students with disabilities improve with accessible third-party tools. Level Access. (2025, January 30). Understanding the web content accessibility guidelines (WCAG). Compliance. https://www.levelaccess.com/compliance-overview/wcag-web-content-accessibility-guidelines/'
+      - 'More than 1 in 4 people in the US have disabilities, this includes an estimated 13.9% US adults with a cognitive disability impacting their concentration, memory, or decision making, 6.2% with a vision disability, and 5.5% with a hearing disability. Damren, C. (2025, July 11). Updates to digital accessibility regulations. Online Teaching, University of Michigan. https://onlineteaching.umich.edu/articles/updates-to-digital-accessibility-regulations/'
+  '24':
+    source_title: 'Mobile and offline optimization'
+    description: 'Navigation and materials are designed for mobile and offline access when possible, clearly indicating which materials are fully accessible on mobile.'
+    measurable_criteria:
+      - 'Course tools and materials are tested for mobile compatibility and signal to learners what may be accessed on mobile devices.'
+    expectations:
+      - 'Course materials are tested for mobile accessibility.'
+      - 'The course signals to learners which material, pages, tools, or activities may be accessed by a mobile device.'
+    considerations:
+      - 'Common items that could have optional mobile access are documents, videos, formative assessments, and activities.'
+      - 'Use icons to indicate which items are accessible in mobile applications and when items need to be completed on a desktop computer.'
+      - 'Consider bandwidth limitations based on location or technology access.'
+      - 'Consider creating mobile-friendly courses using mobile-friendly technologies.'
+    examples:
+      - 'Use the Canvas LMS app to test mobile access.'
+      - 'Use a mobile phone icon in the name of a Canvas page to indicate that it is optimized for mobile devices.'
+      - 'Provide links to publicly available videos embedded in Canvas so learners can reduce the video quality to conserve mobile data.'
+    research:
+      - 'CHLOE reports show growing demand for flexible access options. Encoura. (2024, August 13). CHLOE 9 report by Quality Matters, EduVentures, and EDUCAUSE highlights continuing shift of learner demand and institutional strategy toward online learning. Press Room. https://www.encoura.org/resources/press-room/CHLOE-9-Report/'
+      - 'Simunich, B., Garrett, R., Fredericksen, E. E., McCormack, M., Robert, J., & Ubell, R. (2024). CHLOE 9: Strategy Shift: Institutions Respond to Sustained Online Demand, The Changing Landscape of Online Education, 2024. https://www.qualitymatters.org/sites/default/files/research-docs-pdfs/QM-Eduventures-EDUCAUSE-CHLOE%209-Report-2024.pdf'
+      - 'Student engagement increases by 20% when courses are optimized for mobile access. Course completion rates improve for students who primarily use mobile devices for learning. Time-to-access decreases significantly when materials are mobile-optimized. Dong, Y. (2023). Research on Offline Interaction in English Education from the Perspective of Mobile Media. Frontiers in Educational Research, 6(13). https://doi.org/10.25236/fer.2023.061313 Sharma, D., Sood, A. K., Darius, P. S. H., Gundabattini, E., Gnanaraj, S. D., & Jeyapaul, A. J. (2022). A study on the Online-Offline and Blended learning methods. Journal of the Institution of Engineers (India) Series B, 103(4), 1373-1382. https://doi.org/10.1007/s40031-022-00766-y Ferguson, R., Perryman, L.-A., & Ball, S. J. (2024). The Importance of offline options for online learners. Journal of Interactive Media in Education, 2024(1),16. https://doi.org/10.5334/jime.898'
+  '25':
+    source_title: 'Low-cost resources'
+    description: 'The course prioritizes low-cost or open educational materials to reduce financial barriers and increase accessibility to high-quality learning materials.'
+    measurable_criteria:
+      - 'Evidence of or due diligence to include low-cost or Open Educational Resources (OER) resources in the course, verified by faculty and/or instructional designers.'
+    expectations:
+      - 'Prioritize Open Educational Resources (OER) or low-cost materials.'
+      - 'Use Ask a Librarian services to curate open education resources.'
+      - 'Use the ASU Library Resource Organizer to curate free access to learning materials (e.g., eBooks, articles, videos, etc.).'
+      - 'Add a justification in the syllabus for items that require a learner cost.'
+    considerations:
+      - 'Learners have varied financial security, and access to materials is foundational to learner success.'
+      - 'Review Fair Use considerations.'
+    examples:
+      - 'Learning materials that can be curated through the ASU Library include: eBooks, articles, videos, etc.'
+    research:
+      - 'Students save at least $65 per course on average with OER implementation. Research shows 41% of students say OER courses significantly affect their ability to afford college. Studies indicate 93% of students using OER perform as well or better than those using traditional materials. Georgetown University''s Office of Advancement. (2020, March 6). Study finds open educational resources are cost-effective. THE FEED. https://feed.georgetown.edu/access-affordability/study-finds-open-educational-resources-are-cost-effective/Giovannini, J. (2025, February 28). From access to success: The impact of open educational resources. University of Massachusetts Amherst, Instructional Design, Engagement, and Support (IDEAS). https://www.umass.edu/ideas/news/access-success-impact-open-educational-resourcesPennState. (2025). Benefits of using OER. OER and Low-Cost materials at Penn State. https://oer.psu.edu/benefits-of-using-oer/'
+      - 'Studies show that 93% of students who use OER do as well or better than those using traditional materials, especially since they have easy access to the materials on the first day of the course. Open Education Group. (n.d.). The review project. Open Education Group. https://openedgroup.org/the-review-project/'

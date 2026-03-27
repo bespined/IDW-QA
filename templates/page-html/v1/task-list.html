@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas Preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --canvas-bg: #f5f5f5;
+      --canvas-surface: #ffffff;
+      --canvas-text: #2d3b45;
+      --canvas-text-secondary: #6a7883;
+      --canvas-link: #0374b5;
+      --canvas-border: #c7cdd1;
+      --canvas-table-head: #f5f5f5;
+      --canvas-code-bg: #f8f8f8;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Roboto', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--canvas-text);
+      background: var(--canvas-bg);
+      padding: 24px;
+    }
+    .ic-Layout-contentMain {
+      max-width: 980px;
+      margin: 0 auto;
+      background: var(--canvas-surface);
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+      padding: 24px 32px;
+      min-height: 400px;
+    }
+    /* Canvas user_content styles */
+    .show-content h1 { font-size: 1.75em; font-weight: 500; margin: 0.5em 0; color: var(--canvas-text); }
+    .show-content h2 { font-size: 1.5em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h3 { font-size: 1.25em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h4 { font-size: 1.1em; font-weight: 500; margin: 1em 0 0.5em; color: var(--canvas-text); }
+    .show-content h5 { font-size: 1em; font-weight: 700; margin: 1em 0 0.5em; }
+    .show-content h6 { font-size: 0.9em; font-weight: 700; margin: 1em 0 0.5em; color: var(--canvas-text-secondary); }
+    .show-content p { margin: 0 0 1em; }
+    .show-content a { color: var(--canvas-link); text-decoration: none; }
+    .show-content a:hover { text-decoration: underline; }
+    .show-content ul, .show-content ol { margin: 0 0 1em 1.5em; }
+    .show-content li { margin: 0.25em 0; }
+    .show-content blockquote {
+      border-left: 4px solid var(--canvas-border);
+      margin: 1em 0;
+      padding: 0.5em 1em;
+      color: var(--canvas-text-secondary);
+    }
+    .show-content table {
+      border-collapse: collapse;
+      width: 100%;
+      margin: 1em 0;
+    }
+    .show-content th, .show-content td {
+      border: 1px solid var(--canvas-border);
+      padding: 8px 12px;
+      text-align: left;
+    }
+    .show-content th {
+      background: var(--canvas-table-head);
+      font-weight: 500;
+    }
+    .show-content img {
+      max-width: 100%;
+      height: auto;
+    }
+    .show-content code {
+      background: var(--canvas-code-bg);
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-size: 0.9em;
+    }
+    .show-content pre {
+      background: var(--canvas-code-bg);
+      padding: 12px;
+      border-radius: 4px;
+      overflow-x: auto;
+      margin: 1em 0;
+    }
+    .show-content pre code { background: none; padding: 0; }
+    .show-content hr {
+      border: none;
+      border-top: 1px solid var(--canvas-border);
+      margin: 1.5em 0;
+    }
+    .show-content iframe {
+      max-width: 100%;
+      border: 1px solid var(--canvas-border);
+      border-radius: 4px;
+    }
+    /* Preview label */
+    .preview-label {
+      text-align: center;
+      color: var(--canvas-text-secondary);
+      font-size: 12px;
+      padding: 8px;
+      border-bottom: 1px solid var(--canvas-border);
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="ic-Layout-contentMain">
+    <div class="preview-label">Canvas Preview — Staged Content</div>
+    <div class="show-content user_content">
+      <!-- RAW_CONTENT_START -->
+<div style="background: linear-gradient(135deg, #8C1D40 0%, #4A0A24 70%, #2D0618 100%); color: white; padding: 35px 30px; border-radius: 10px; margin-bottom: 25px;">
+  <p style="color: #FFC627; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; margin: 0 0 8px 0;">Module 1 · Jan 12–18</p>
+  <h2 style="color: white; margin: 0 0 8px 0; font-size: 28px;">Task List</h2>
+  <p style="color: #f0f0f0; margin: 0; font-size: 16px;">Everything due this week — in the order you should complete it</p>
+</div>
+
+<div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+  <p style="color: #333; line-height: 1.6; margin: 0;">
+    <strong>Before you begin:</strong> This module introduces Signal Detection Theory, a framework you'll apply throughout the course. Complete readings and videos before the discussions so you have the vocabulary to engage meaningfully with your peers.
+  </p>
+</div>
+
+<h2>📚 Prepare</h2>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Read</strong> Chapter 1: Introduction to Human Factors &amp; Performance<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Wickens et al. — foundational concepts, error taxonomies, human performance models</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Read</strong> Chapter 2: Signal Detection Theory<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Wickens et al. — hits, misses, false alarms, correct rejections, sensitivity and criterion</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Read</strong> Overview of Special Issues (article — provided via course link)<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Foundation for this week's article discussion; come ready with at least one observation from your forensic domain</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Watch</strong> Lecture video: Signal and Noise — Hits, Misses, False Alarms, and Correct Rejections<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Core SDT lecture (~15–20 min)</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Watch</strong> Lecture video: Improving Sensitivity and Setting Criteria<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Forensic applications of SDT decision thresholds (~15 min)</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Watch</strong> Lecture video: Forensic Specialties and Finding Existing Standards<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Prepares you for Assignment 1 — how to locate and read a standard for your specialty</span>
+  </p>
+</div>
+
+<h2>💬 Engage</h2>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Post</strong> in the Intro Discussion — introduce yourself to the class<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Share your forensic background, specialty, and what brings you to human factors (200–300 words)</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Post + reply</strong> in the Article Discussion — Overview of Special Issues<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Initial post (250–350 words) + replies to at least 2 peers (150–200 words each)</span>
+  </p>
+</div>
+
+<h2>✅ Assess</h2>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 12px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Complete</strong> Module 1 Quiz — Human Factors &amp; Signal Detection Theory<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">Timed, open-book · Covers Chapters 1–2 and core SDT vocabulary</span>
+  </p>
+</div>
+
+<div style="border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin-bottom: 20px;">
+  <p style="margin: 0; line-height: 1.7; color: #333;">
+    <input type="checkbox" disabled style="margin-right: 10px;">
+    <strong>Submit</strong> Substantive Assignment 1 — Identify and Analyze a Forensic Standard<br>
+    <span style="color: #595959; font-size: 14px; margin-left: 25px;">500–750 words · Word (.docx) or PDF · See assignment page for full instructions and rubric</span>
+  </p>
+</div>
+
+<div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+  <p style="color: #333; line-height: 1.6; margin: 0;">⏱ <strong>Estimated total time this week:</strong> 5–7 hours &nbsp;·&nbsp; All work due by <strong>Sunday, January 18, 2026</strong> at 11:59 PM Arizona time</p>
+</div>
+
+<!-- RAW_CONTENT_END -->
+    </div>
+  </div>
+</body>
+</html>

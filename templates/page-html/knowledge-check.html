@@ -1,0 +1,63 @@
+<!-- Knowledge Check Page Template -->
+<!-- Replace all {{PLACEHOLDERS}} with module-specific content -->
+<!-- Design system: standards/page-design.md -->
+
+<div style="max-width: 900px; margin: 0 auto;">
+
+  <h2 style="color: #8C1D40; margin-bottom: 5px;">Knowledge Check {{MODULE_NUMBER}}</h2>
+  <p style="color: #595959; font-size: 14px; margin-top: 0;">Module {{MODULE_NUMBER}}: {{MODULE_TITLE}} | ~5 minutes | {{KC_POINTS}} points</p>
+
+  <p style="font-size: 16px; line-height: 1.6; color: #333;">
+    Test your understanding of the key concepts from this module. This is a low-stakes formative assessment — you have <strong>2 attempts</strong> and your highest score counts.
+  </p>
+
+  <!-- Quiz Details — Left-Border Info Box -->
+  <div style="background-color: #f8f4f0; border-left: 4px solid #8C1D40; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <h3 style="color: #8C1D40; margin: 0 0 10px 0;">Quiz Details</h3>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8; color: #333;">
+      <li><strong>Questions</strong>: 5 (mix of question types)</li>
+      <li><strong>Points</strong>: {{KC_POINTS}} (3 points each)</li>
+      <li><strong>Time limit</strong>: ~5 minutes</li>
+      <li><strong>Attempts</strong>: 2 (highest score kept)</li>
+      <li><strong>Feedback</strong>: Shown after each attempt with explanations</li>
+    </ul>
+  </div>
+
+  <!-- Topics Covered -->
+  <h3 style="color: #8C1D40;">Topics Covered</h3>
+  <p style="color: #333; line-height: 1.6;">This Knowledge Check covers:</p>
+  <ul style="line-height: 1.8; color: #333;">
+    <li>{{TOPIC_1}}</li>
+    <li>{{TOPIC_2}}</li>
+    <li>{{TOPIC_3}}</li>
+  </ul>
+
+  <!-- Tips — Left-Border Alert (Gold) -->
+  <div style="background-color: #FFF8E1; border-left: 4px solid #FFC627; padding: 20px; border-radius: 0 8px 8px 0; margin: 20px 0;">
+    <h4 style="color: #8C1D40; margin: 0 0 10px 0;">Tips for Success</h4>
+    <ul style="margin: 0; padding-left: 20px; line-height: 1.8; color: #333;">
+      <li>Review the lecture video and key concepts before attempting</li>
+      <li>Read each question carefully — look for qualifiers like "most likely" or "best explains"</li>
+      <li>Use your first attempt to identify knowledge gaps, then review before your second attempt</li>
+      <li>Pay attention to the feedback — it explains <em>why</em> each answer is correct or incorrect</li>
+    </ul>
+  </div>
+
+  <hr style="border: none; border-top: 1px solid #ddd; margin: 25px 0;">
+
+  <!-- Quiz Launch — CTA Button -->
+  <div style="text-align: center; margin: 30px 0;">
+    <a href="/courses/{{COURSE_ID}}/quizzes/{{QUIZ_ID}}"
+       style="display: inline-block; background-color: #8C1D40; color: white; padding: 15px 40px; border-radius: 6px; text-decoration: none; font-size: 18px; font-weight: bold;">
+      Start Knowledge Check {{MODULE_NUMBER}} →
+    </a>
+  </div>
+
+  <!-- Attempt Info — Full-Card Alert -->
+  <div style="background-color: #f9f9f9; border: 1px solid #e0e0e0; border-radius: 8px; padding: 20px; margin: 25px 0;">
+    <p style="color: #333; line-height: 1.6; margin: 0;">
+      Remember: You have <strong>2 attempts</strong>. Your highest score is kept. Review the feedback after your first attempt to improve on your second try.
+    </p>
+  </div>
+
+</div>
