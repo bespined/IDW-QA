@@ -307,6 +307,7 @@ def sync_metrics(metrics_data):
                 "course_id": course_code,
                 "actions": actions,
                 "hours_saved": hours_saved,
+                "source": "idw-qa",
             }
 
             # Delete any existing rows for this tester + course to prevent duplication
