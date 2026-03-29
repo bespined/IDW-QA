@@ -394,11 +394,13 @@ Location: `/Users/bespined/claude-plugins/IDW-QA/skills/audit/SKILL.md`
 
 Old modes 1-4 (Design Standards, Accessibility, CRC, Full) and proposed Mode 5 (IDAsst Deterministic) are consolidated into 3 modes with scope filters.
 
-| Mode | Depth | What it runs | Who uses it |
+| Mode | Depth | Time | Who uses it |
 |---|---|---|---|
-| **Quick Scan** | Pass 1 only (deterministic) | All 107 Col B checks + 18 CRC items. No LLM calls. | QA team (for IDA review), IDs (quick pre-check) |
-| **Full Audit** | Pass 1 + Pass 2 (deterministic + AI) | All 107 Col B + all 42 Col C + 18 CRC items. | IDs (self-audit), QA team (comprehensive review) |
-| **Guided Review** | Pass 1 + Pass 2 + interactive | Same coverage as Full Audit, but walks through 9 standard groups conversationally with pause-and-fix after each group. | IDs during active course building (audit + remediate in one session) |
+| **Quick Check** | Pass 1 (deterministic) + light AI verification | ~1-2 min | QA team (recurring), IDs (pre-check) |
+| **Deep Audit** | Pass 1 + Pass 2 (full AI evaluation per standard) | ~10-15 min | IDs (self-audit), QA team (launch gate) |
+| **Guided Review** | Same as Deep Audit but interactive with live fixes | ~20-30 min | IDs during active course building |
+
+**Quick Check light AI pass**: After deterministic checks, one LLM call reviews results + raw content from flagged pages. Catches false positives (empty pages with correct titles, placeholder CLOs, template text). Does NOT evaluate instructional quality.
 
 ### Scope filters (apply to any mode)
 
