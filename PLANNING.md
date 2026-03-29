@@ -657,63 +657,84 @@ Single server on port 8111 (upgraded from static http.server to Flask/FastAPI)
 
 All 4 bugs fixed and verified against LAW 517 (course 223406). See Section 11 for details.
 
-### Phase 0.5 — Staging Preview Editor (Tiptap Lite)
+### Phase 0.5 — Staging Preview Editor ✅ COMPLETE
 
-| Task | File(s) | Est. Complexity |
-|---|---|---|
-| Build `staging_server.py` (Flask/FastAPI, serves files + PUT API) | `scripts/staging_server.py` | Medium |
-| Update `.claude/launch.json` to use new server | `.claude/launch.json` | Small |
-| Inject Tiptap Lite into `canvas-shell.html` or preview template | `templates/canvas-shell.html` or `unified_preview.py` | Medium |
-| Build minimal toolbar (bold, italic, link, headings, lists, undo/redo) | Inline JS in template | Small-Medium |
-| Add Canvas paste cleanup (strip Word/Google Docs formatting) | Tiptap paste transform | Small |
-| Auto-save with debounce → PUT `/api/staging/{slug}` | JS in template + server endpoint | Small |
-| Test full cycle: stage → edit in preview → save → push to Canvas | End-to-end | Small |
+Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scoped staging, Canvas paste cleanup, auto-save, course name in header.
 
-### Phase 1 — Audit Skill Foundation
+### Phase 1 — Audit Skill Foundation ✅ COMPLETE
 
-| Task | File(s) | Est. Complexity |
-|---|---|---|
-| Streamline to 3 modes (Quick Scan / Full Audit / Guided Review) | `skills/audit/SKILL.md` | Medium — rewrite mode selection logic |
-| Build unified check registry with tags (standard_id, criterion_id, reviewer_tier, category, essential) | `config/standards.yaml` | Medium — map 149 checks from both spreadsheets |
-| Map all Col B items to criterion_ids + add `reviewer_tier: id_assistant` | `config/standards.yaml` + Experience spreadsheet | Medium — cross-reference 107 items |
-| Map all Col C items to criterion_ids + add `reviewer_tier: id` | `config/standards.yaml` + Experience spreadsheet | Medium — cross-reference 42 items |
-| Add 18 CRC gap items as supplemental checks (category: crc) | `config/standards.yaml` + IDAsst QA Tasks spreadsheet | Medium — define crc.01-crc.18 |
-| Absorb WCAG checks from `audit_pages.py` into standards 22/23 | `scripts/deterministic_checks.py`, `scripts/audit_pages.py` | Medium — merge, don't duplicate |
-| Update `deterministic_checks.py` to cover all Col B items | `scripts/deterministic_checks.py` | Large — audit existing 18 checks vs 107 needed |
-| Add scope filters (all / essential / crc) | audit skill + `standards.yaml` | Small — filter by `essential` and `category` tags |
-| Add evidence capture (content_excerpt + canvas_link) to audit output | audit skill + `audit_report.py` | Medium |
-| Update audit_report.py to write new fields to Supabase | `scripts/audit_report.py` | Medium |
-| Add `IDW_TESTER_ID` + `IDW_AUDITOR_NAME` to setup flow | `scripts/setup_env.py` | Small |
+- 98 criteria tagged with reviewer_tier (57 id_assistant + 41 id) and category
+- 18 CRC gap items added (crc.01-crc.18)
+- Audit streamlined to 3 modes: Quick Scan / Full Audit / Guided Review
+- Scope filters: all / essential / crc (nested under Quick Scan only)
+- Finding schema updated with reviewer_tier, content_excerpt, canvas_link, criterion_id, category, essential
+- Verified via real audit on LAW 517
 
-### Phase 2 — Supabase Schema
+### Phase 2 — Supabase Schema ✅ COMPLETE
 
-| Task | Details |
+- Migration: `migrations/001_phase2_schema.sql`
+- New columns on audit_sessions: audit_purpose, audit_round, status, plugin_version, launch_gate fields
+- New columns on audit_findings: reviewer_tier, canvas_link, criterion_id, category, remediation_requested
+- New columns on finding_feedback: corrected_finding, correction_note, original_decision, override fields
+- New tables: testers, tester_course_assignments, error_reports
+- RLS: service_role full access on new tables
+- audit_report.py updated to write all new fields
+- Verified: 63/63 findings pushed with new fields populated
+
+### Phase 3 — Vercel App (NEXT)
+
+**Location**: `/Users/bespined/Desktop/idw-review-app/`
+
+**Current state** (what already exists):
+- Next.js 16.2.1, React 19, Tailwind CSS 4, Supabase client
+- 3 routes: `/` (session list), `/session/[id]` (review page), `/dashboard` (RLHF metrics)
+- FindingCard.tsx: approve/reject/false_positive with correction form
+- Session page: filter by finding_type + review status, progress bar
+- Dashboard: agreement rate by standard, reviewer activity table, JSON export
+- No auth — reviewer name is manual text input
+- All data access is direct Supabase queries from client components
+- Styling: Tailwind utilities, brand color #8C1D40
+
+**Existing files to modify**:
+
+| File | What to change |
 |---|---|
-| Add new fields to `audit_sessions` | audit_purpose, audit_round, previous_session_id, status, submitted_by, assigned_to, launch_gate fields, airtable_synced_at, plugin_version |
-| Add new fields to `audit_findings` | reviewer_tier, content_excerpt, canvas_link, page_slug, module_id, remediation_requested |
-| Update `finding_feedback` | new decision enum, add corrected_finding, correction_note, reviewer_id, reviewer_tier, original_decision, override fields |
-| Create `testers` table | id, name, email, role, password_hash, is_active |
-| Create `tester_course_assignments` table | tester_id, course_id, assigned_by, status |
-| Create `error_reports` table | reported_by, error_type, description, context, status |
-| Set up RLS policies | anon = read own data, service key = full CRUD |
-| Set up Supabase Auth | email+password provider, link to testers table |
+| `src/lib/supabase.ts` | Update TypeScript interfaces: add new fields to AuditSession, AuditFinding, FindingFeedback. Add Tester, TesterCourseAssignment, ErrorReport interfaces. |
+| `src/components/FindingCard.tsx` | Rename actions: Approved→Agree, Rejected→Disagree, False Positive→Not an Issue, add N/A. Show content_excerpt inline. Add canvas_link as clickable button. Update feedback insert to use new field names (corrected_finding, correction_note). |
+| `src/app/page.tsx` | Add role-based filtering: IDA sees assigned sessions only. Add session status badges (in_progress, pending_qa_review, etc.). Show audit_purpose tag. |
+| `src/app/session/[id]/page.tsx` | Add reviewer_tier filter (IDA sees Col B only). Replace text name input with auth-based reviewer. Add "Submit for QA Review" button (ID view). Show QA feedback when status=revisions_required. |
+| `src/app/dashboard/page.tsx` | Add IDA quality tracking (override rates). Add enrichment card effectiveness. |
+| `src/app/globals.css` | Minor — update any hardcoded color values if needed. |
 
-### Phase 3 — Vercel App
+**New files to create**:
 
-| Task | Details |
+| File | Purpose |
 |---|---|
-| Add login page | email + password form, Supabase Auth |
-| Role-based routing | redirect to IDA/ID/QA/Admin view based on role |
-| Rename finding actions | "Approved" → "Agree", "Rejected" → "Disagree", "False Positive" → "Not an Issue", add "N/A" |
-| Build IDA view | Col B findings only, inline evidence, canvas link, verdict buttons |
-| Build ID view | All findings, Submit for QA Review, QA feedback display |
-| Build QA team view | Pending review queue, assign IDAs, override verdicts, launch gate |
-| Build Admin view | /admin route, password gate, error queue, RLHF patterns, tester management |
-| Finding card component | inline content_excerpt, canvas_link, verdict buttons, corrected_finding input |
-| Session resume | load from Supabase, show un-verdicted findings |
-| Real-time verdict writes | every click → Supabase POST |
-| In-app notification badges | assignment notifications for IDAs, QA status updates for IDs (no email) |
-| Update TypeScript interfaces | new fields, new enums |
+| `src/app/login/page.tsx` | Email + password login form via Supabase Auth |
+| `src/lib/auth.ts` | Auth helpers: getCurrentUser, requireAuth, getUserRole |
+| `src/components/AuthGuard.tsx` | Wrapper component that checks auth + role, redirects to login |
+| `src/components/NotificationBadge.tsx` | In-app badge for assignments/status changes |
+| `src/app/admin/page.tsx` | Admin dashboard: error queue, RLHF patterns, tester management |
+| `src/app/api/auth/route.ts` | Server-side auth endpoints if needed |
+
+**Implementation order for Phase 3**:
+1. Update TypeScript interfaces (supabase.ts) — foundation for everything else
+2. Update FindingCard.tsx — rename actions, add evidence inline, add N/A
+3. Add Supabase Auth (login page + auth helpers) — unblocks role-based views
+4. Add role-based routing + AuthGuard — IDA/ID/QA/Admin views
+5. Update session page — reviewer_tier filter, Submit for QA Review
+6. Update home page — role-based session list, status badges
+7. Build admin page — error queue, RLHF patterns, tester management
+8. Add notification badges
+9. Update dashboard — IDA quality tracking
+
+**Key decisions already made**:
+- Auth: email + password via Supabase Auth (not SSO — new hires don't have ASU email)
+- Notifications: in-app badges only (no email)
+- IDA view: Col B findings only (reviewer_tier = id_assistant)
+- ID view: all findings + Submit for QA Review button
+- QA team view: Pending Review queue + assign IDAs + override verdicts
+- Admin: /admin route, password-gated via env var
 
 ### Phase 4 — Airtable Integration
 
