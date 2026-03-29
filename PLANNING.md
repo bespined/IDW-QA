@@ -737,11 +737,17 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Admin: /admin route, password-gated via env var
 
 **Phase 3 progress**:
-- Step 1 ✅ TypeScript interfaces updated (supabase.ts)
-- Step 2 ✅ FindingCard updated (Agree/Disagree/Not an Issue/N/A + evidence inline + canvas link)
-- Step 3 NEXT: Add Supabase Auth (login page + auth helpers)
-- Steps 4-9: remaining (role routing, session page, home page, admin, notifications, dashboard)
-- Build verified: zero TypeScript errors
+- Step 1 ✅ TypeScript interfaces updated (supabase.ts) — all Phase 2 fields + new table interfaces
+- Step 2 ✅ FindingCard updated — Agree/Disagree/Not an Issue/N/A + evidence inline + canvas link + reviewer_tier badges
+- Step 3 ✅ Supabase Auth — login page (src/app/login/page.tsx), auth helpers (src/lib/auth.ts)
+- Step 4 ✅ AuthGuard component — render prop wrapper, redirects to /login, role checking
+- Step 5 NEXT: Update session page — wrap in AuthGuard, add reviewer_tier filter (IDA sees Col B only), add Submit for QA Review button
+- Step 6: Update home page — wrap in AuthGuard, role-based session filtering, status badges
+- Step 7: Build admin page (/admin route)
+- Step 8: Add notification badges
+- Step 9: Update dashboard — IDA quality tracking
+- Build verified: zero TypeScript errors, /login route registered
+- NOTE: Supabase Auth email+password provider must be enabled in Supabase dashboard (Authentication → Providers → Email). User must create test accounts manually before testing login.
 
 ### Phase 4 — Airtable Integration
 
