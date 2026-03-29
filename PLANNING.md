@@ -801,7 +801,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - ✅ Assignment table search filter (by IDA name or course)
 - **Bug: Assignment INSERT blocked by RLS** — need to run SQL: policy for authenticated users on tester_course_assignments
 - **Bug: Admin round 2 shows Undo** — root cause: admin's agree/disagree UPDATEs the feedback row's overridden_at. When ID re-reviews (new row), the new row is clean, but if admin already agreed on it, overridden_at is set → shows Undo. Test session has been reset for clean round testing.
-- **Feedback history UI** — show most recent decision, collapsible "Show history" link to see previous decisions. Important for RLHF data tracking.
+- ✅ Feedback history UI — collapsible "Show decision history (N entries)" per finding, reverse chronological, shows all decisions + admin comments
 - **Admin round 2 Undo bug** — admin may still see Undo instead of Agree/Disagree after ID re-reviews. Verify with testing.
 - **IDA end-to-end test** — assign course → audit session exists → IDA sees Col B only → Correct/Incorrect/N/A → admin reviews IDA verdicts
 - **IDA → Admin review flow** — admin reviews IDA verdicts same as ID (Agree/Disagree). Needs testing.
