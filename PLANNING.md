@@ -766,15 +766,17 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Decision values: correct / incorrect / not_applicable
 - finding_feedback reviewer_id FK issue resolved (omitted from inserts — FK points to auth.users not testers)
 
-**Remaining Phase 3 work (continue in next session)**:
-- **Admin FindingCard view** (CRITICAL): When admin reviews an ID/IDA's session:
-  - Show WHO made the decision ("Marked Correct by Test ID")
-  - "Override" button instead of "Undo" — preserves original_decision, records override_reason
-  - "Confirm" button — admin agrees with the verdict (no override needed)
-  - Admin should NOT be able to change/delete the original decision, only add their assessment
-  - Use original_decision, overridden_by, overridden_at, override_reason fields from finding_feedback schema
+- **Admin FindingCard view** ✅ COMPLETE:
+  - Shows "Reviewed by [name] — Marked Correct/Incorrect/N/A" with attribution
+  - "Confirm" button (admin agrees) — green, instant
+  - "Override" button (admin disagrees) — ASU Gold accent, requires reason
+  - Override preserves original_decision, records overridden_by + override_reason
+  - Overridden cards get gold border + "Overridden" badge
+  - Confirmed cards get green "Confirmed" badge
+  - Admin can still Correct/Incorrect/N/A on unreviewed findings
 - Notification badges (deferred — post-pilot)
 - Dashboard IDA quality tracking (deferred — post-pilot)
+- **Phase 3 COMPLETE for pilot MVP.**
 
 ### Phase 4 — Airtable Integration
 
