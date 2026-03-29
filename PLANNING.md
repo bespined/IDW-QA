@@ -808,7 +808,10 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - ✅ IDA "Mark as Complete" flow (no QA gate — IDA verdicts are final for Col B)
 - **IDA end-to-end test** — assign course → IDA reviews Col B → marks complete → verdicts ready for Airtable
 - **IDA workflow clarification**: Admin does NOT Agree/Disagree on IDA verdicts. IDA's correction is final say for Col B. Admin only spot-checks quality via dashboard metrics.
-- Comment/decision history per finding (who decided what and when) — deferred
+- ✅ IDA only sees recurring sessions (not ID self-audits)
+- ✅ Completed filter count includes IDA 'complete' status
+- ✅ Reopen button for IDA after marking complete
+- **Advanced filters (post-Phase 3)**: Jira/Asana-style dropdowns + checkboxes for tester, role, course, status. Save View button for persistent default views per user (localStorage or Supabase). Major UI feature.
 - Notification badges — deferred
 - Dashboard IDA quality tracking — deferred
 
