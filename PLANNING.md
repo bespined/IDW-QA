@@ -781,15 +781,26 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Undo for Approve/Request Revisions decisions
 - ASU brand colors on all buttons and badges
 
-**Remaining Phase 3 work**:
-- ✅ Admin revision comments visible to ID — pink box shows "Admin disagreed" + reason on ID view after revisions requested
-- **ID re-review after revisions**: When admin requests revisions, findings where admin disagreed should auto-reset the ID's verdict so Correct/Incorrect/N/A buttons show again (instead of Undo). The ID needs to re-decide with admin feedback visible.
-- **Session list filters on home page**: filter by status (in_progress, pending_qa_review, qa_approved, revisions_required). Approved sessions should be hidden by default, shown with a "Completed" filter. All roles need this.
-- Session list filters: filter by tester, course, status, audit_purpose (admin page enhancement)
-- Comment history: show full decision/override history per finding (who decided what and when)
-- Notification badges (deferred — post-pilot)
-- Dashboard IDA quality tracking (deferred — post-pilot)
-- IDA sessions: admin Agree/Disagree applies the same way as ID sessions
+**Recently completed**:
+- ✅ Admin revision comments visible to ID — pink "Admin disagreed" box
+- ✅ ID auto-reset after admin disagrees — Correct/Incorrect/N/A show again with admin comment
+- ✅ Session list filters: Pending Review (default) | Active | Completed | All with counts
+- ✅ Admin search bar: filter by course name, code, or auditor
+- ✅ "Needs Revision" filter on session page (ID view, revisions_required)
+- ✅ Custom UI modals replacing all window.alert/confirm
+- ✅ Admin unreviewed findings show "Awaiting ID review" not action buttons
+
+**Remaining Phase 3 work (continue next session)**:
+- **Bug: Admin sees "Undo decision" after ID re-reviews post-revision** — admin should see Agree/Disagree again, not Undo. The admin's previous disagree decision was acted upon (ID re-reviewed), so admin needs to re-evaluate.
+- **IDA view testing** — IDA only sees Col B findings, uses Correct/Incorrect/N/A. Not yet tested end-to-end.
+- **Course assignment to IDAs** — admin needs to assign specific courses to IDAs via tester_course_assignments table. Build assignment UI on admin page. IDAs should only see sessions for courses assigned to them.
+- **IDA → Admin review flow** — admin reviews IDA verdicts the same way as ID verdicts (Agree/Disagree). Needs testing.
+- Comment/decision history per finding (who decided what and when) — deferred
+- Notification badges — deferred
+- Dashboard IDA quality tracking — deferred
+
+**Phase order discussion**:
+- Consider swapping Phase 4 (Airtable) and Phase 5 (RLHF/Admin skills) — Airtable sync may be less critical than getting the admin/IDA skills working in Claude Code. Discuss before proceeding.
 
 ### Phase 4 — Airtable Integration
 
