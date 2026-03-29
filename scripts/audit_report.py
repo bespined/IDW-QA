@@ -172,6 +172,11 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             "a11y_score": a11y_score,
             "qa_score": qa_score,
             "readiness_score": r_score,
+            # Phase 2 fields
+            "audit_purpose": data.get("audit_purpose", "self_audit"),
+            "audit_round": data.get("audit_round", 1),
+            "status": data.get("audit_status", "complete"),
+            "plugin_version": data.get("plugin_version", "0.3.0"),
         }
         inserted = _supabase_post(sb_url, sb_key, "audit_sessions", [session_row])
         if not inserted:
@@ -214,6 +219,12 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                 "ai_reasoning": item.get("evidence", ""),
                 "content_excerpt": item.get("content_excerpt", item.get("recommendation", "")),
                 "confidence_tier": (item.get("confidence", "")).lower() or None,
+                # Phase 2 fields
+                "reviewer_tier": item.get("reviewer_tier", "id"),
+                "canvas_link": item.get("canvas_link"),
+                "criterion_id": item.get("criterion_id"),
+                "category": "crc" if item.get("id", "").startswith("crc") else "design_standard",
+                "remediation_requested": False,
             }
             findings_rows.append(row)
 
@@ -221,7 +232,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
         for item in qa.get("items", []):
             findings_rows.append({
                 "session_id": session_id,
-                "finding_type": "design",  # QA is still design-related
+                "finding_type": "design",
                 "standard_id": item.get("id", ""),
                 "page_url": "",
                 "page_title": item.get("category", item.get("name", "")),
@@ -229,6 +240,11 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                 "ai_reasoning": item.get("detail", ""),
                 "content_excerpt": "",
                 "confidence_tier": None,
+                "reviewer_tier": "id_assistant",
+                "canvas_link": None,
+                "criterion_id": item.get("id"),
+                "category": "design_standard",
+                "remediation_requested": False,
             })
 
         # Accessibility
@@ -236,13 +252,18 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             findings_rows.append({
                 "session_id": session_id,
                 "finding_type": "accessibility",
-                "standard_id": "",
+                "standard_id": "22",
                 "page_url": item.get("page_url", ""),
                 "page_title": item.get("page", ""),
                 "ai_verdict": item.get("severity", "").lower(),
                 "ai_reasoning": item.get("issue", ""),
                 "content_excerpt": item.get("element", ""),
                 "confidence_tier": None,
+                "reviewer_tier": "id_assistant",
+                "canvas_link": item.get("canvas_link"),
+                "criterion_id": None,
+                "category": "design_standard",
+                "remediation_requested": False,
             })
 
         # Readiness
@@ -250,13 +271,18 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             findings_rows.append({
                 "session_id": session_id,
                 "finding_type": "readiness",
-                "standard_id": item.get("id", ""),
+                "standard_id": item.get("id", "crc"),
                 "page_url": "",
                 "page_title": item.get("name", ""),
                 "ai_verdict": item.get("status", "").lower(),
                 "ai_reasoning": item.get("detail", ""),
                 "content_excerpt": "",
                 "confidence_tier": None,
+                "reviewer_tier": "id_assistant",
+                "canvas_link": None,
+                "criterion_id": item.get("criterion_id"),
+                "category": "crc",
+                "remediation_requested": False,
             })
 
         if findings_rows:
