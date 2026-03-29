@@ -774,9 +774,20 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
   - Overridden cards get gold border + "Overridden" badge
   - Confirmed cards get green "Confirmed" badge
   - Admin can still Correct/Incorrect/N/A on unreviewed findings
+- Admin view: based on session status — pending_qa_review=QA mode, in_progress=ID mode
+- 3-color progress bar: green (correct/agreed), red (incorrect/disagreed), gray (N/A)
+- Unified single-row filter bar: All/Unreviewed/Reviewed/Correct/Incorrect/N/A (or Agreed/Disagreed for admin)
+- Approve requires all findings reviewed + all agreed. Request Revisions requires at least one disagreement.
+- Undo for Approve/Request Revisions decisions
+- ASU brand colors on all buttons and badges
+
+**Remaining Phase 3 work**:
+- **CRITICAL: Admin revision comments visible to ID** — when admin requests revisions, ID must see admin's disagree reasons on each finding. Currently ID only sees "Undo decision" with no context. Fix: after revisions requested, ID view should show admin's disagree comment + reset to allow ID to re-review.
+- Session list filters: filter by tester, course, status, audit_purpose (admin page enhancement)
+- Comment history: show full decision/override history per finding (who decided what and when)
 - Notification badges (deferred — post-pilot)
 - Dashboard IDA quality tracking (deferred — post-pilot)
-- **Phase 3 COMPLETE for pilot MVP.**
+- IDA sessions: admin Agree/Disagree applies the same way as ID sessions
 
 ### Phase 4 — Airtable Integration
 
