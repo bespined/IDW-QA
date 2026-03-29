@@ -791,10 +791,11 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - ✅ Admin unreviewed findings show "Awaiting ID review" not action buttons
 
 **Remaining Phase 3 work (continue next session)**:
-- **Bug: Admin sees "Undo decision" after ID re-reviews post-revision** — admin should see Agree/Disagree again, not Undo. The admin's previous disagree decision was acted upon (ID re-reviewed), so admin needs to re-evaluate.
-- **IDA view testing** — IDA only sees Col B findings, uses Correct/Incorrect/N/A. Not yet tested end-to-end.
-- **Course assignment to IDAs** — admin needs to assign specific courses to IDAs via tester_course_assignments table. Build assignment UI on admin page. IDAs should only see sessions for courses assigned to them.
-- **IDA → Admin review flow** — admin reviews IDA verdicts the same way as ID verdicts (Agree/Disagree). Needs testing.
+- ✅ Bug fixed: Admin re-review after ID revision — old feedback deleted, fresh Agree/Disagree shown
+- ✅ Course assignment UI — admin page "Course Assignments" tab with assign/remove
+- **IDA home page filtering** — IDA should only see sessions for courses in tester_course_assignments. Currently sees all. Need to filter by course_id matching assignments.
+- **IDA view end-to-end test** — IDA sees Col B only, Correct/Incorrect/N/A. Assign a course, create audit session, test full flow.
+- **IDA → Admin review flow** — admin reviews IDA verdicts same as ID. Needs testing.
 - Comment/decision history per finding (who decided what and when) — deferred
 - Notification badges — deferred
 - Dashboard IDA quality tracking — deferred
