@@ -831,11 +831,12 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 
 | Task | Details |
 |---|---|
-| Design Airtable base structure | one row per finding, columns matching Supabase fields |
+| Design Airtable base structure | one row per finding, columns matching Supabase fields. IDA corrections are authoritative for Col B — override AI finding in Airtable row. |
 | Build Supabase → Airtable sync function | Edge Function or pg_net, batch Airtable API |
-| Trigger on session complete | all findings verdicted → fire sync |
-| Nightly catch-up job | cron, sync sessions where airtable_synced_at IS NULL |
+| Admin-triggered sync | Admin clicks "Sync to Airtable" button on session or admin page. NOT auto-triggered on complete — gives IDAs time to undo/edit. |
+| Nightly catch-up job | cron, sync sessions where airtable_synced_at IS NULL (backup for missed manual syncs) |
 | Test sync with real audit data | end-to-end validation |
+| Airtable row content | AI finding + final verdict (IDA's correction if Incorrect, or AI finding if Correct) + session metadata |
 
 ---
 
