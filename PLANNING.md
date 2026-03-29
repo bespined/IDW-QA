@@ -60,9 +60,10 @@ Supabase is ALWAYS the source of truth. Airtable is a downstream read-only sync.
 | Role | Claude Code | Vercel App | What they do |
 |---|---|---|---|
 | **ID** (course builder) | Yes (own token) | Yes | Self-audit during course dev, remediate, submit for QA review |
-| **QA team ID** | Yes (QA token) | Yes | Run recurring audits, review all findings (Col B + C), approve launch gate |
-| **IDA** (ID Assistant) | TBD (see [Q1](#13-unresolved-questions)) | Yes | Verdict Col B findings only, assigned specific courses |
-| **Admin** | Yes | Yes (/admin route) | Error queue, RLHF review, tester management, releases |
+| **IDA** (ID Assistant) | TBD (see [Q1](#17-unresolved-questions)) | Yes | Verdict Col B findings only, assigned specific courses |
+| **Admin** (QA team + admins) | Yes (QA token) | Yes (/admin route) | Run recurring audits, review all findings (Col B + C), approve launch gate, manage testers, error queue, RLHF review |
+
+**Note**: The `qa_team` role was merged into `admin` — there are now 3 roles, not 4. All QA team members are admins.
 
 ### Key role rules
 - IDs can audit ANY course (use Canvas API to list their courses)
