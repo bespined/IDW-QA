@@ -1,0 +1,141 @@
+%%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
+
+%% ============================================================
+%% OPTION B: IDAs HAVE Canvas API + Claude Code
+%% IDAs can trigger audits themselves
+%% ============================================================
+
+flowchart TD
+
+    %% ─────────────────────────────────────────────
+    %% NEW COURSE DEVELOPMENT
+    %% ─────────────────────────────────────────────
+
+    subgraph NEW["NEW COURSE DEVELOPMENT"]
+        direction TB
+
+        N1([ID builds course]) --> N2
+        N2[ID runs self-audit\nvia Claude Code\nusing own Canvas token] --> N3
+        N3[Findings → Supabase\naudit_purpose=self_audit\nreviewer_tier assigned per finding\nevidence attached] --> N4
+        N4[ID reviews + remediates\nvia Claude Code\nStage → Preview → Push] --> N5
+        N5{Ready for\nQA review?}
+        N5 -->|Not yet| N2
+        N5 -->|Yes| N6[ID clicks\nSubmit for QA Review\nin Vercel app]
+    end
+
+    %% ─────────────────────────────────────────────
+    %% QA REVIEW — NEW COURSE
+    %% ─────────────────────────────────────────────
+
+    subgraph QA_NEW["QA REVIEW — New Course Gate"]
+        direction TB
+
+        Q1[QA team sees course\nin Pending Review queue\nin Vercel app] --> Q2
+        Q2[QA team assigns IDAs\nto session via /assign] --> Q3
+
+        Q3["IDAs open Vercel app
+See ONLY Col B findings
+(reviewer_tier = id_assistant)
+
+Evidence shown inline:
+• Content excerpt flagged by AI
+• Direct Canvas link to page
+
+IDA clicks into Canvas link
+to manually verify finding"] --> Q4
+
+        Q4["IDA verdicts each finding:
+agree / disagree / not_an_issue / N/A
+If disagree → types corrected_finding
+Each click → Supabase immediately"] --> Q5
+
+        Q5[QA team IDs open session\nSee ALL findings\nCol B + Col C] --> Q6
+        Q6["QA team IDs:
+• Verdict Col C findings (qualitative)
+• Review IDA verdicts on Col B
+• Override IDA verdicts if needed"] --> Q7
+
+        Q7{Revisions\nneeded?}
+        Q7 -->|Yes| Q8["status = revisions_required
+audit_round increments
+ID sees feedback in Vercel app"]
+        Q7 -->|No| Q9["launch_gate_approved = true
+Course launches"]
+    end
+
+    N6 --> Q1
+    Q8 --> N2
+
+    %% ─────────────────────────────────────────────
+    %% RECURRING COURSE AUDIT
+    %% ─────────────────────────────────────────────
+
+    subgraph RECUR["RECURRING COURSE AUDIT"]
+        direction TB
+
+        R1([QA team assigns IDA\nto a recurring course\nvia /assign or Vercel app]) --> R2
+
+        R2["IDA runs audit themselves
+via Claude Code
+using own Canvas token
+audit_purpose = recurring
+Mode 5: deterministic only"] --> R3
+
+        R3[Findings → Supabase\nreviewer_tier assigned\nevidence attached] --> R4
+
+        R4["IDA reviews own audit results
+in Vercel app (Col B only)
+Verdict: agree / disagree / N/A
+Verify via Canvas link"] --> R5
+
+        R5["QA team IDs review session
+See ALL findings (Col B + Col C)
+Verdict Col C (qualitative)
+Review IDA verdicts on Col B"] --> R6
+
+        R6[Session complete\nAll findings verdicted] --> R7
+        R7["Airtable sync fires (batch)
+Findings land in read-only Airtable view"]
+
+        R7 --> R8["Remediation: passive
+Findings visible in Airtable
+Faculty/IDs fix if they have time
+NOT launch-gated"]
+    end
+
+    %% ─────────────────────────────────────────────
+    %% KEY CHARACTERISTICS OF OPTION B
+    %% ─────────────────────────────────────────────
+
+    subgraph NOTES_B["OPTION B — Key Characteristics"]
+        direction TB
+
+        NB1["WHO RUNS AUDITS:
+• New course: ID runs own audit (own token + Claude Code)
+• Recurring: IDA runs audit (own token + Claude Code)
+• QA team: reviews + assigns, runs audits only when needed"]
+
+        NB2["WHAT IDAs NEED:
+• Vercel app access (Supabase auth)
+• Canvas API token (personal access token)
+• Claude Code installed on their machine
+• Training on running /audit in Claude Code"]
+
+        NB3["QA TEAM BOTTLENECK: REMOVED
+• IDAs can trigger recurring audits independently
+• QA team only reviews, not triggers
+• Scales with IDA headcount (more IDAs = more throughput)"]
+
+        NB4["IDA COMPLEXITY: HIGHER
+• Must install + learn Claude Code
+• Must obtain Canvas API token (admin approval?)
+• Must run terminal commands
+• Higher onboarding friction
+• More points of failure (token issues, setup, etc.)"]
+
+        NB5["AUDIT SCOPE DIFFERENCE:
+• IDA runs Mode 5 (deterministic only) — Col B checks
+• IDA does NOT run qualitative checks (Col C)
+• QA team IDs still do the qualitative pass
+• IDA audit is effectively a structured pre-screen"]
+    end

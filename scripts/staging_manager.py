@@ -33,13 +33,79 @@ except ImportError:
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-STAGING_DIR = PLUGIN_ROOT / "staging"
+STAGING_ROOT = PLUGIN_ROOT / "staging"
 SHELL_PATH = PLUGIN_ROOT / "templates" / "canvas-shell.html"
 
 # Marker used to extract raw content from staged files
 CONTENT_MARKER = "{{CONTENT}}"
 RAW_START = '<!-- RAW_CONTENT_START -->'
 RAW_END = '<!-- RAW_CONTENT_END -->'
+
+
+def _sanitize_folder_name(name):
+    """Sanitize a course name for use as a folder name."""
+    import re
+    name = re.sub(r'[^\w\s\-]', '', name)
+    name = re.sub(r'\s+', '-', name.strip())
+    return name[:80] or 'unknown-course'
+
+
+def _get_course_name():
+    """Get the active course name from course-config.json, cache, or .env fallback."""
+    # Try course-config.json
+    config_path = PLUGIN_ROOT / "course-config.json"
+    if config_path.exists():
+        try:
+            cfg = json.loads(config_path.read_text(encoding="utf-8"))
+            name = cfg.get("course", {}).get("name") or cfg.get("course_name") or cfg.get("name")
+            if name:
+                return name
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    # Try .course-name cache file (written by setup/concierge)
+    cache_path = PLUGIN_ROOT / ".course-name"
+    if cache_path.exists():
+        name = cache_path.read_text(encoding="utf-8").strip()
+        if name:
+            return name
+
+    # Try fetching from Canvas API (and cache the result)
+    course_id = os.environ.get("CANVAS_COURSE_ID", "")
+    if course_id:
+        try:
+            from canvas_api import get_config
+            config = get_config()
+            import requests
+            resp = requests.get(
+                f"{config['base_url']}/courses/{course_id}",
+                headers=config['headers'],
+                timeout=10
+            )
+            if resp.status_code == 200:
+                name = resp.json().get("name", "")
+                if name:
+                    cache_path.write_text(name, encoding="utf-8")
+                    return name
+        except Exception:
+            pass
+        return f"course-{course_id}"
+
+    return "unknown-course"
+
+
+def get_staging_dir():
+    """Get the course-specific staging directory.
+
+    Returns staging/{sanitized-course-name}/ based on the active course.
+    Creates the directory if it doesn't exist.
+    """
+    course_name = _get_course_name()
+    staging_dir = STAGING_ROOT / _sanitize_folder_name(course_name)
+    staging_dir.mkdir(parents=True, exist_ok=True)
+    return staging_dir
+
+
 
 
 def _load_shell():
@@ -77,8 +143,8 @@ def stage_page(slug, html_content, validate=True):
     Returns:
         Path to the staged file.
     """
-    STAGING_DIR.mkdir(parents=True, exist_ok=True)
-    staged_path = STAGING_DIR / f"{slug}.html"
+    get_staging_dir().mkdir(parents=True, exist_ok=True)
+    staged_path = get_staging_dir() / f"{slug}.html"
     full_html = _wrap_content(html_content)
     staged_path.write_text(full_html, encoding="utf-8")
 
@@ -130,7 +196,7 @@ def _run_preflight(slug, html_content):
     summary = summarize_issues(issues)
 
     # Write sidecar JSON
-    issues_path = STAGING_DIR / f"{slug}.issues.json"
+    issues_path = get_staging_dir() / f"{slug}.issues.json"
     issues_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     # Log summary
@@ -147,10 +213,10 @@ def list_staged():
     Returns:
         List of slug strings.
     """
-    if not STAGING_DIR.exists():
+    if not get_staging_dir().exists():
         return []
     slugs = []
-    for f in sorted(STAGING_DIR.glob("*.html")):
+    for f in sorted(get_staging_dir().glob("*.html")):
         if not f.name.startswith(".") and not f.name.startswith("_"):  # Skip hidden files and generated files like _unified_preview.html
             slugs.append(f.stem)
     return slugs
@@ -166,7 +232,7 @@ def get_staged(slug, raw=False):
     Returns:
         HTML content string, or None if not found.
     """
-    staged_path = STAGING_DIR / f"{slug}.html"
+    staged_path = get_staging_dir() / f"{slug}.html"
     if not staged_path.exists():
         return None
     content = staged_path.read_text(encoding="utf-8")
@@ -185,7 +251,7 @@ def update_staged(slug, html_content):
     Returns:
         Path to the updated file, or None if not found.
     """
-    staged_path = STAGING_DIR / f"{slug}.html"
+    staged_path = get_staging_dir() / f"{slug}.html"
     if not staged_path.exists():
         return None
     full_html = _wrap_content(html_content)
@@ -202,11 +268,11 @@ def clear_staged(slug=None):
     Returns:
         Number of files removed.
     """
-    if not STAGING_DIR.exists():
+    if not get_staging_dir().exists():
         return 0
     if slug:
-        staged_path = STAGING_DIR / f"{slug}.html"
-        issues_path = STAGING_DIR / f"{slug}.issues.json"
+        staged_path = get_staging_dir() / f"{slug}.html"
+        issues_path = get_staging_dir() / f"{slug}.issues.json"
         if staged_path.exists():
             staged_path.unlink()
             if issues_path.exists():
@@ -215,12 +281,12 @@ def clear_staged(slug=None):
         return 0
     else:
         count = 0
-        for f in STAGING_DIR.glob("*.html"):
+        for f in get_staging_dir().glob("*.html"):
             if not f.name.startswith(".") and not f.name.startswith("_"):
                 f.unlink()
                 count += 1
         # Clean up all issues.json files too
-        for f in STAGING_DIR.glob("*.issues.json"):
+        for f in get_staging_dir().glob("*.issues.json"):
             f.unlink()
         return count
 
@@ -259,7 +325,7 @@ def main():
             parser.error("--stage requires --html-file or --html-stdin")
         path = stage_page(args.slug, html, validate=not args.no_validate)
         # Include preflight results in output if available
-        issues_path = STAGING_DIR / f"{args.slug}.issues.json"
+        issues_path = get_staging_dir() / f"{args.slug}.issues.json"
         result = {"ok": True, "path": path, "slug": args.slug}
         if issues_path.exists():
             try:

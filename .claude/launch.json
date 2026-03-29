@@ -4,7 +4,7 @@
     {
       "name": "staging-preview",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8111", "--directory", "staging"],
+      "runtimeArgs": ["scripts/staging_server.py", "--port", "8111"],
       "port": 8111,
       "autoPort": true
     },

@@ -30,9 +30,32 @@ except ImportError:
 
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
-STAGING_DIR = PLUGIN_ROOT / "staging"
-COURSE_TREE = STAGING_DIR / ".course-tree.json"
-OUTPUT_FILE = STAGING_DIR / "_unified_preview.html"
+STAGING_ROOT = PLUGIN_ROOT / "staging"
+
+
+def _get_staging_dir():
+    """Get the course-specific staging directory (mirrors staging_manager.py)."""
+    from dotenv import load_dotenv
+    load_dotenv(PLUGIN_ROOT / ".env")
+    try:
+        from staging_manager import get_staging_dir
+        return get_staging_dir()
+    except ImportError:
+        return STAGING_ROOT
+
+
+# Module-level defaults (resolved lazily in main() for CLI usage)
+STAGING_DIR = STAGING_ROOT
+COURSE_TREE = STAGING_ROOT / ".course-tree.json"
+OUTPUT_FILE = STAGING_ROOT / "_unified_preview.html"
+
+
+def _resolve_dirs():
+    """Resolve course-specific staging directory. Call before any file operations."""
+    global STAGING_DIR, COURSE_TREE, OUTPUT_FILE
+    STAGING_DIR = _get_staging_dir()
+    COURSE_TREE = STAGING_DIR / ".course-tree.json"
+    OUTPUT_FILE = STAGING_DIR / "_unified_preview.html"
 
 # Markers from staging_manager.py
 RAW_START = '<!-- RAW_CONTENT_START -->'
@@ -252,6 +275,11 @@ def generate_html(pages: list, course_tree: dict) -> str:
     """Generate the unified preview HTML document."""
     timestamp = datetime.now().strftime('%B %d, %Y at %I:%M %p')
     total_pages = len(pages)
+    try:
+        from staging_manager import _get_course_name
+        course_name = _get_course_name()
+    except ImportError:
+        course_name = "Unknown Course"
 
     # Group pages by module for sidebar TOC
     modules = {}
@@ -330,7 +358,6 @@ def generate_html(pages: list, course_tree: dict) -> str:
           </div>
           <div class="page-counter">
             {page_num} of {total_pages}
-            <button class="page-delete-btn" data-slug="{slug}" onclick="deleteStagedPage('{slug}')" title="Remove from staging">🗑</button>
           </div>
         </div>
         <h2 class="page-title">{_escape(page_title)}</h2>
@@ -338,13 +365,30 @@ def generate_html(pages: list, course_tree: dict) -> str:
           <code class="page-slug">{slug}</code>
           <span class="page-size">{page['file_size'] // 1024}KB</span>
           <span class="page-modified">Modified {page['modified'].strftime('%b %d, %I:%M %p')}</span>
-          <span class="save-status saved" data-slug="{slug}">Saved</span>
-          <button class="page-push-btn" data-slug="{slug}" onclick="pushSingle('{slug}')" title="Push this page to Canvas">▲ Push</button>
+          <span class="save-status saved" data-slug="{slug}">Staged</span>
+        </div>
+        <span class="edit-save-status" data-slug="{slug}">Click to edit</span>
+        <div class="tiptap-toolbar" data-slug="{slug}">
+          <button data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>
+          <button data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>
+          <button data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>
+          <span class="toolbar-sep"></span>
+          <button data-cmd="heading2" title="Heading 2">H2</button>
+          <button data-cmd="heading3" title="Heading 3">H3</button>
+          <button data-cmd="heading4" title="Heading 4">H4</button>
+          <span class="toolbar-sep"></span>
+          <button data-cmd="bulletList" title="Bullet List">&#8226; List</button>
+          <button data-cmd="orderedList" title="Numbered List">1. List</button>
+          <span class="toolbar-sep"></span>
+          <button data-cmd="link" title="Add Link (Ctrl+K)">&#128279; Link</button>
+          <span class="toolbar-sep"></span>
+          <button data-cmd="undo" title="Undo (Ctrl+Z)">&#8617;</button>
+          <button data-cmd="redo" title="Redo (Ctrl+Y)">&#8618;</button>
         </div>
       </div>
       {_build_issue_banner(page)}
       <div class="page-canvas-frame">
-        <div class="show-content user_content" contenteditable="true" data-slug="{slug}">
+        <div class="show-content user_content tiptap-content" data-slug="{slug}">
           {page['raw_html']}
         </div>
       </div>
@@ -359,6 +403,17 @@ def generate_html(pages: list, course_tree: dict) -> str:
   <title>Unified Preview — {total_pages} Staged Pages</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <!-- Tiptap Lite Editor (via esm.sh with shared deps) -->
+  <script type="importmap">
+  {{
+    "imports": {{
+      "@tiptap/core": "https://esm.sh/@tiptap/core@2",
+      "@tiptap/starter-kit": "https://esm.sh/@tiptap/starter-kit@2",
+      "@tiptap/extension-underline": "https://esm.sh/@tiptap/extension-underline@2",
+      "@tiptap/extension-link": "https://esm.sh/@tiptap/extension-link@2"
+    }}
+  }}
+  </script>
   <style>
     :root {{
       --canvas-bg: #f5f5f5;
@@ -568,10 +623,13 @@ def generate_html(pages: list, course_tree: dict) -> str:
     }}
 
     .page-header {{
-      padding: 16px 24px;
-      border-bottom: 2px solid #eee;
+      padding: 16px 24px 0 24px;
       background: #fafbfc;
       border-radius: 6px 6px 0 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }}
     .page-header-top {{
       display: flex;
@@ -981,94 +1039,72 @@ def generate_html(pages: list, course_tree: dict) -> str:
     }}
     .page-push-btn:hover {{ opacity: 1; }}
 
-    /* ── Editing: Contenteditable focus ── */
-    .show-content[contenteditable]:focus {{
-      outline: 2px solid var(--canvas-link);
-      outline-offset: -2px;
-      border-radius: 4px;
-    }}
-
-    /* ── Drag and Drop ── */
-    [data-drag-block] {{
-      position: relative;
-      transition: transform 0.15s ease, opacity 0.15s ease;
-    }}
-    .drag-handle-bar {{
-      position: absolute;
-      left: -32px;
-      top: 0;
-      width: 24px;
-      height: 100%;
-      cursor: grab;
-      opacity: 0;
+    /* ── Tiptap Lite Editor ── */
+    .tiptap-toolbar {{
       display: flex;
-      align-items: flex-start;
-      padding-top: 6px;
-      justify-content: center;
-      transition: opacity 0.2s;
-      z-index: 10;
+      align-items: center;
+      gap: 1px;
+      padding: 4px 16px;
+      background: #f2f3f5;
+      border-top: 1px solid #e4e6e9;
+      border-bottom: 2px solid #eee;
     }}
-    [data-drag-block]:hover .drag-handle-bar {{ opacity: 0.4; }}
-    .drag-handle-bar:hover {{ opacity: 1 !important; cursor: grab; }}
-    .drag-handle-bar::before {{
-      content: '';
-      display: grid;
-      grid-template-columns: repeat(2, 4px);
-      grid-template-rows: repeat(3, 4px);
-      gap: 2px;
-      width: 10px;
-      height: 16px;
-    }}
-    .drag-handle-bar::after {{
-      content: none;
-    }}
-    .drag-handle-dot {{
-      display: none;
-    }}
-    /* Six-dot grip icon via box-shadow */
-    .drag-handle-bar::before {{
-      content: '';
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: #999;
-      box-shadow:
-        6px 0 0 #999,
-        0 6px 0 #999,
-        6px 6px 0 #999,
-        0 12px 0 #999,
-        6px 12px 0 #999;
-    }}
-    .drag-placeholder {{
-      border: 2px dashed var(--asu-gold);
-      background: rgba(255,198,39,0.08);
-      border-radius: 4px;
-      min-height: 8px;
-      margin: 2px 0;
-      transition: height 0.15s ease;
-    }}
-    [data-drag-block].dragging {{
-      opacity: 0.85;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.18);
-      border-radius: 4px;
-      background: white;
-      transition: none;
-    }}
-
-    /* ── Delete button ── */
-    .page-delete-btn {{
+    .tiptap-toolbar button {{
       background: none;
-      border: 1px solid #ddd;
+      border: none;
       cursor: pointer;
-      font-size: 14px;
-      opacity: 0.7;
-      padding: 2px 6px;
+      padding: 5px 7px;
       border-radius: 3px;
-      transition: all 0.15s;
-      vertical-align: middle;
-      margin-left: 6px;
+      font-size: 12px;
+      color: #4a5568;
+      font-family: 'Roboto', sans-serif;
+      line-height: 1;
+      transition: all 0.1s;
     }}
-    .page-delete-btn:hover {{ opacity: 1; background: #fde8e8; border-color: #c62828; }}
+    .tiptap-toolbar button:hover {{
+      background: #f5f5f5;
+      color: var(--canvas-text);
+    }}
+    .tiptap-toolbar button.is-active {{
+      background: rgba(140,29,64,0.1);
+      color: var(--asu-maroon);
+    }}
+    .toolbar-sep {{
+      width: 1px;
+      height: 16px;
+      background: #e8e8e8;
+      margin: 0 3px;
+    }}
+    .toolbar-right {{ display: none; }}
+
+    .edit-save-status {{
+      position: absolute;
+      top: 16px;
+      right: 24px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--canvas-text-secondary);
+      padding: 2px 10px;
+      border-radius: 3px;
+      background: #f5f5f5;
+      z-index: 101;
+      transition: all 0.2s;
+    }}
+    .edit-save-status.saving {{ color: #e67700; background: #fff8e1; }}
+    .edit-save-status.saved {{ color: #2b8a3e; background: #e8f5e9; }}
+    .edit-save-status.unsaved {{ color: #c92a2a; background: #fde8e8; }}
+
+    .tiptap-content {{
+      outline: none;
+      min-height: 100px;
+    }}
+    .tiptap-content .ProseMirror {{
+      outline: none;
+      min-height: 100px;
+    }}
+    .tiptap-content .ProseMirror:focus {{
+      outline: none;
+    }}
 
     /* ── Pushed state ── */
     .page-section.pushed {{
@@ -1100,7 +1136,7 @@ def generate_html(pages: list, course_tree: dict) -> str:
         <line x1="16" y1="13" x2="8" y2="13"/>
         <line x1="16" y1="17" x2="8" y2="17"/>
       </svg>
-      Unified Staging Preview
+      {_escape(course_name)}
     </div>
     <div class="top-bar-stats">
       <span class="top-bar-stat">📄 {total_pages} pages</span>
@@ -1142,15 +1178,10 @@ def generate_html(pages: list, course_tree: dict) -> str:
         <button class="action-bar-select-btn" onclick="selectAll()">Select All</button>
         <button class="action-bar-select-btn" onclick="selectNone()">Deselect All</button>
         <button class="action-bar-select-btn" onclick="selectByModule()">Select by Module...</button>
-        <button class="action-bar-delete-btn" id="deleteSelectedBtn" onclick="deleteSelected()" disabled title="Delete selected staged files (does not affect Canvas)">🗑 Delete Selected</button>
       </div>
     </div>
     <div class="action-bar-right">
       <button class="export-btn" onclick="exportApprovalList()" title="Copy approved slugs to clipboard">📋 Copy Slugs</button>
-      <button class="push-btn" id="pushBtn" onclick="pushApproved()" disabled>
-        <svg width="16" height="16" viewBox="0 0 24 24" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>
-        Push Approved to Canvas
-      </button>
     </div>
   </div>
 
@@ -1189,7 +1220,6 @@ def generate_html(pages: list, course_tree: dict) -> str:
   <button class="back-to-top" id="backToTop" onclick="window.scrollTo({{top:0,behavior:'smooth'}})">↑</button>
 
   <script>
-    const API_BASE = 'http://localhost:3847';
     const TOTAL_PAGES = {total_pages};
 
     // ── Scroll progress ──
@@ -1267,8 +1297,6 @@ def generate_html(pages: list, course_tree: dict) -> str:
         }}
       }});
       document.getElementById('approvedCount').textContent = count;
-      document.getElementById('pushBtn').disabled = count === 0;
-      document.getElementById('deleteSelectedBtn').disabled = count === 0;
       document.getElementById('actionBar').classList.toggle('visible', count > 0);
       localStorage.setItem('idw_approved_pages', JSON.stringify(approved));
     }}
@@ -1369,365 +1397,13 @@ def generate_html(pages: list, course_tree: dict) -> str:
 
     // Hide toolbar when clicking outside
     document.addEventListener('mousedown', (e) => {{
-      if (!toolbar.contains(e.target) && !e.target.closest('[contenteditable]')) {{
+      if (!toolbar.contains(e.target)) {{
         toolbar.classList.remove('visible');
         toolbar.style.top = '-9999px';
       }}
     }});
-
-    // ── Auto-save ──
-    const saveTimers = {{}};
-
-    function markDirty(slug) {{
-      const el = document.querySelector(`.save-status[data-slug="${{slug}}"]`);
-      if (el) {{ el.textContent = 'Unsaved...'; el.className = 'save-status dirty'; }}
-    }}
-    function markSaved(slug) {{
-      const el = document.querySelector(`.save-status[data-slug="${{slug}}"]`);
-      if (el) {{ el.textContent = 'Saved'; el.className = 'save-status saved'; }}
-    }}
-    function markSaving(slug) {{
-      const el = document.querySelector(`.save-status[data-slug="${{slug}}"]`);
-      if (el) {{ el.textContent = 'Saving...'; el.className = 'save-status saving'; }}
-    }}
-
-    function getCleanHtml(contentEl) {{
-      const clone = contentEl.cloneNode(true);
-      clone.querySelectorAll('.drag-handle-bar').forEach(h => h.remove());
-      clone.querySelectorAll('[data-drag-block]').forEach(el => {{
-        el.removeAttribute('data-drag-block');
-        el.classList.remove('dragging');
-      }});
-      return clone.innerHTML;
-    }}
-
-    function scheduleSave(slug) {{
-      clearTimeout(saveTimers[slug]);
-      saveTimers[slug] = setTimeout(() => saveToStaging(slug), 1000);
-    }}
-
-    async function saveToStaging(slug) {{
-      const el = document.querySelector(`.show-content[data-slug="${{slug}}"]`);
-      if (!el) return;
-      const html = getCleanHtml(el);
-      markSaving(slug);
-      try {{
-        const resp = await fetch(`${{API_BASE}}/api/staging/${{slug}}`, {{
-          method: 'PUT',
-          headers: {{ 'Content-Type': 'application/json' }},
-          body: JSON.stringify({{ html }})
-        }});
-        const data = await resp.json();
-        if (data.ok) markSaved(slug);
-        else {{ markDirty(slug); showToast(`Save failed for ${{slug}}`, true); }}
-      }} catch (e) {{
-        markDirty(slug);
-        showToast(`Save error: ${{e.message}}. Is content-studio running on port 3847?`, true);
-      }}
-    }}
-
-    async function flushAllSaves() {{
-      const promises = [];
-      Object.keys(saveTimers).forEach(slug => {{
-        clearTimeout(saveTimers[slug]);
-        delete saveTimers[slug];
-        promises.push(saveToStaging(slug));
-      }});
-      await Promise.all(promises);
-    }}
-
-    // Hook input events on all contenteditable areas
-    document.querySelectorAll('.show-content[contenteditable]').forEach(el => {{
-      el.addEventListener('input', () => {{
-        markDirty(el.dataset.slug);
-        scheduleSave(el.dataset.slug);
-      }});
-    }});
-
-    // Warn before leaving with unsaved changes
-    window.addEventListener('beforeunload', (e) => {{
-      const hasDirty = document.querySelector('.save-status.dirty');
-      if (hasDirty) {{
-        e.preventDefault();
-        e.returnValue = '';
-      }}
-    }});
-
-    // ── Push to Canvas ──
-    async function pushSingle(slug) {{
-      if (!confirm(`Push "${{slug}}" to Canvas?`)) return;
-      await flushAllSaves();
-      const btn = document.querySelector(`.page-push-btn[data-slug="${{slug}}"]`);
-      if (btn) {{ btn.textContent = '\u23F3...'; btn.disabled = true; }}
-      try {{
-        const resp = await fetch(`${{API_BASE}}/api/push/${{slug}}`, {{
-          method: 'POST',
-          headers: {{ 'Content-Type': 'application/json' }}
-        }});
-        const data = await resp.json();
-        if (data.ok) {{
-          showToast(`Pushed ${{slug}} to Canvas \u2713`);
-          const section = document.getElementById(`page-${{slug}}`);
-          if (section) section.classList.add('pushed');
-        }} else {{
-          showToast(`Push failed: ${{data.error || 'Unknown error'}}`, true);
-        }}
-      }} catch (e) {{
-        showToast(`Push error: ${{e.message}}`, true);
-      }} finally {{
-        if (btn) {{ btn.textContent = '\u25B2 Push'; btn.disabled = false; }}
-      }}
-    }}
-
-    async function pushApproved() {{
-      const approved = [];
-      document.querySelectorAll('.page-approve-cb:checked').forEach(cb => approved.push(cb.dataset.slug));
-      if (approved.length === 0) return;
-      if (!confirm(`Push ${{approved.length}} page(s) to Canvas?`)) return;
-
-      await flushAllSaves();
-      const pushBtn = document.getElementById('pushBtn');
-      pushBtn.disabled = true;
-      pushBtn.innerHTML = '\u23F3 Pushing...';
-
-      try {{
-        const resp = await fetch(`${{API_BASE}}/api/push/batch`, {{
-          method: 'POST',
-          headers: {{ 'Content-Type': 'application/json' }},
-          body: JSON.stringify({{ slugs: approved }})
-        }});
-        const data = await resp.json();
-        if (data.summary) {{
-          showToast(`Pushed ${{data.summary.succeeded}}/${{data.summary.total}} pages to Canvas`);
-          data.results.forEach(r => {{
-            if (r.ok) {{
-              const section = document.getElementById(`page-${{r.slug}}`);
-              if (section) section.classList.add('pushed');
-            }}
-          }});
-        }}
-      }} catch (e) {{
-        showToast(`Push failed: ${{e.message}}`, true);
-      }} finally {{
-        pushBtn.disabled = false;
-        pushBtn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" fill="none"><path d="M12 19V5M5 12l7-7 7 7"/></svg> Push Approved to Canvas';
-      }}
-    }}
-
-    // ── Delete staged page ──
-    async function deleteStagedPage(slug) {{
-      if (!confirm(`Remove "${{slug}}" from staging? This only deletes the local staged file — it does NOT delete anything from Canvas.`)) return;
-      try {{
-        const resp = await fetch(`${{API_BASE}}/api/staging/${{slug}}`, {{
-          method: 'DELETE',
-          headers: {{ 'Content-Type': 'application/json' }}
-        }});
-        const data = await resp.json();
-        if (data.ok) {{
-          // Remove the page section from DOM with animation
-          const section = document.getElementById(`page-${{slug}}`);
-          if (section) {{
-            section.style.transition = 'opacity 0.3s, transform 0.3s';
-            section.style.opacity = '0';
-            section.style.transform = 'scale(0.95)';
-            setTimeout(() => section.remove(), 300);
-          }}
-          // Remove from TOC
-          const tocLink = document.querySelector(`.toc-page[href="#page-${{slug}}"]`);
-          if (tocLink) tocLink.remove();
-          showToast(`Removed ${{slug}} — reloading preview...`);
-          setTimeout(() => rebuildAndReload(), 500);
-        }} else {{
-          showToast(`Delete failed: ${{data.error || 'Unknown error'}}`, true);
-        }}
-      }} catch (e) {{
-        showToast(`Delete error: ${{e.message}}`, true);
-      }}
-    }}
-
-    async function rebuildAndReload() {{
-      try {{
-        await fetch(`${{API_BASE}}/api/rebuild-preview`, {{ method: 'POST' }});
-      }} catch(e) {{}}
-      window.location.href = '/_unified_preview.html';
-    }}
-
-    async function deleteSelected() {{
-      const selected = [];
-      document.querySelectorAll('.page-approve-cb:checked').forEach(cb => selected.push(cb.dataset.slug));
-      if (selected.length === 0) return;
-      if (!confirm(`Remove ${{selected.length}} staged file(s) from staging?\\n\\n${{selected.join('\\n')}}\\n\\nThis only deletes local staged files — nothing is removed from Canvas.`)) return;
-      let deleted = 0, failed = 0;
-      for (const slug of selected) {{
-        try {{
-          const resp = await fetch(`${{API_BASE}}/api/staging/${{slug}}`, {{
-            method: 'DELETE',
-            headers: {{ 'Content-Type': 'application/json' }}
-          }});
-          const data = await resp.json();
-          if (data.ok) {{
             const section = document.getElementById(`page-${{slug}}`);
             if (section) {{
-              section.style.transition = 'opacity 0.3s, transform 0.3s';
-              section.style.opacity = '0';
-              section.style.transform = 'scale(0.95)';
-              setTimeout(() => section.remove(), 300);
-            }}
-            const tocLink = document.querySelector(`.toc-page[href="#page-${{slug}}"]`);
-            if (tocLink) tocLink.remove();
-            deleted++;
-          }} else {{ failed++; }}
-        }} catch (e) {{ failed++; }}
-      }}
-      const msg = failed > 0
-        ? `Deleted ${{deleted}}, failed ${{failed}} — reloading preview...`
-        : `Deleted ${{deleted}} staged file(s) — reloading preview...`;
-      showToast(msg, failed > 0);
-      setTimeout(() => rebuildAndReload(), 500);
-    }}
-
-    // ── Drag and Drop (per page card) ──
-    function attachDragHandlesForPage(contentEl) {{
-      contentEl.querySelectorAll('.drag-handle-bar').forEach(h => h.remove());
-      contentEl.querySelectorAll('[data-drag-block]').forEach(el => el.removeAttribute('data-drag-block'));
-      const children = [...contentEl.children];
-      children.forEach(child => {{
-        if (child.tagName === 'BR' || child.tagName === 'SPAN' || child.classList.contains('drag-handle-bar') || child.classList.contains('drag-placeholder')) return;
-        child.setAttribute('data-drag-block', 'true');
-        const handle = document.createElement('div');
-        handle.className = 'drag-handle-bar';
-        handle.setAttribute('contenteditable', 'false');
-        child.insertBefore(handle, child.firstChild);
-      }});
-    }}
-
-    let dragState = {{ target: null, placeholder: null, container: null, animFrame: null }};
-
-    document.addEventListener('mousedown', (e) => {{
-      const handle = e.target.closest('.drag-handle-bar');
-      if (!handle) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const block = handle.parentElement;
-      const container = block.closest('.show-content[contenteditable]');
-      if (!container) return;
-
-      container.setAttribute('contenteditable', 'false');
-
-      const rect = block.getBoundingClientRect();
-      const containerRect = container.getBoundingClientRect();
-
-      // Create placeholder matching block dimensions
-      const placeholder = document.createElement('div');
-      placeholder.className = 'drag-placeholder';
-      placeholder.style.height = rect.height + 'px';
-      container.insertBefore(placeholder, block);
-
-      // Position block as fixed overlay exactly where it was
-      block.classList.add('dragging');
-      block.style.position = 'fixed';
-      block.style.width = rect.width + 'px';
-      block.style.zIndex = '1500';
-      block.style.top = rect.top + 'px';
-      block.style.left = rect.left + 'px';
-      block.style.pointerEvents = 'none';
-      document.body.appendChild(block);
-
-      dragState = {{
-        target: block,
-        placeholder,
-        container,
-        offsetY: e.clientY - rect.top,
-        offsetX: e.clientX - rect.left,
-        containerLeft: containerRect.left,
-        containerWidth: containerRect.width
-      }};
-    }});
-
-    document.addEventListener('mousemove', (e) => {{
-      if (!dragState.target) return;
-      e.preventDefault();
-
-      // Use requestAnimationFrame for smooth movement
-      if (dragState.animFrame) cancelAnimationFrame(dragState.animFrame);
-      dragState.animFrame = requestAnimationFrame(() => {{
-        // Move block to follow cursor
-        dragState.target.style.top = (e.clientY - dragState.offsetY) + 'px';
-        // Keep horizontal position aligned with container
-        dragState.target.style.left = dragState.containerLeft + 'px';
-
-        // Find the correct insertion point among siblings
-        const siblings = [...dragState.container.querySelectorAll('[data-drag-block]:not(.dragging), .drag-placeholder')];
-        let insertBefore = null;
-        for (const sib of siblings) {{
-          if (sib === dragState.placeholder) continue;
-          const r = sib.getBoundingClientRect();
-          const midY = r.top + r.height / 2;
-          if (e.clientY < midY) {{
-            insertBefore = sib;
-            break;
-          }}
-        }}
-
-        // Only move placeholder if position changed
-        if (insertBefore) {{
-          if (insertBefore !== dragState.placeholder.nextElementSibling) {{
-            dragState.container.insertBefore(dragState.placeholder, insertBefore);
-          }}
-        }} else {{
-          // Append at end if past all siblings
-          const lastChild = dragState.container.lastElementChild;
-          if (lastChild !== dragState.placeholder) {{
-            dragState.container.appendChild(dragState.placeholder);
-          }}
-        }}
-      }});
-    }});
-
-    document.addEventListener('mouseup', () => {{
-      if (!dragState.target) return;
-      if (dragState.animFrame) cancelAnimationFrame(dragState.animFrame);
-
-      const block = dragState.target;
-      const placeholder = dragState.placeholder;
-      const container = dragState.container;
-
-      // Animate block to placeholder position before finalizing
-      const placeholderRect = placeholder.getBoundingClientRect();
-      block.style.transition = 'top 0.15s ease, left 0.15s ease, opacity 0.15s ease';
-      block.style.top = placeholderRect.top + 'px';
-      block.style.left = placeholderRect.left + 'px';
-
-      setTimeout(() => {{
-        // Clean up styles and insert at placeholder position
-        block.classList.remove('dragging');
-        block.style.position = '';
-        block.style.width = '';
-        block.style.zIndex = '';
-        block.style.top = '';
-        block.style.left = '';
-        block.style.transition = '';
-        block.style.pointerEvents = '';
-
-        container.insertBefore(block, placeholder);
-        placeholder.remove();
-        container.setAttribute('contenteditable', 'true');
-
-        const slug = container.dataset.slug;
-        if (slug) {{
-          markDirty(slug);
-          scheduleSave(slug);
-        }}
-      }}, 160);
-
-      dragState = {{ target: null, placeholder: null, container: null, animFrame: null }};
-    }});
-
-    // Attach drag handles on load
-    document.querySelectorAll('.show-content[contenteditable]').forEach(el => {{
-      attachDragHandlesForPage(el);
-    }});
-
     // ── Restore approvals ──
     (function restoreApprovals() {{
       try {{
@@ -1740,9 +1416,9 @@ def generate_html(pages: list, course_tree: dict) -> str:
       }} catch(e) {{}}
     }})();
 
-    // ── Keyboard shortcuts (updated guard for contenteditable) ──
+    // ── Keyboard shortcuts ──
     document.addEventListener('keydown', (e) => {{
-      if (e.target.tagName === 'INPUT' || e.target.isContentEditable) return;
+      if (e.target.tagName === 'INPUT') return;
 
       const sections = [...pageSections];
       const current = sections.findIndex(s => {{
@@ -1763,9 +1439,168 @@ def generate_html(pages: list, course_tree: dict) -> str:
           if (cb) {{ cb.checked = !cb.checked; updateApprovalState(); }}
         }}
       }}
-      if (e.key === 'a' && !e.metaKey && !e.ctrlKey) {{ selectAll(); }}
-      if (e.key === 'd' && !e.metaKey && !e.ctrlKey) {{ selectNone(); }}
+      if (e.key === 'a' && !e.metaKey && !e.ctrlKey && !e.target.closest('.ProseMirror')) {{ selectAll(); }}
+      if (e.key === 'd' && !e.metaKey && !e.ctrlKey && !e.target.closest('.ProseMirror')) {{ selectNone(); }}
     }});
+
+    // ── Tiptap Lite Editor (loaded via ES module) ──
+  </script>
+  <script type="module">
+    import {{ Editor }} from '@tiptap/core';
+    import {{ StarterKit }} from '@tiptap/starter-kit';
+    import {{ Underline }} from '@tiptap/extension-underline';
+    import {{ Link }} from '@tiptap/extension-link';
+
+    (function initTiptapEditors() {{
+
+      const editors = {{}};
+      const saveTimers = {{}};
+
+      // Canvas paste cleanup: strip Word/Google Docs formatting
+      function cleanPastedHtml(html) {{
+        return html
+          .replace(/<o:p[^>]*>.*?<[/]o:p>/gi, '')
+          .replace(/class="Mso[^"]*"/gi, '')
+          .replace(/style="[^"]*mso-[^"]*"/gi, '')
+          .replace(/<span[^>]*id="docs-internal-guid-[^"]*"[^>]*>/gi, '<span>')
+          .replace(/<[/]?o:[^>]*>/gi, '')
+          .replace(/<b>/gi, '<strong>').replace(/<[/]b>/gi, '</strong>')
+          .replace(/<i>/gi, '<em>').replace(/<[/]i>/gi, '</em>')
+          .replace(/<span>[\\s]*<[/]span>/gi, '');
+      }}
+
+      function setStatus(slug, status, text) {{
+        const el = document.querySelector(`.edit-save-status[data-slug="${{slug}}"]`);
+        if (el) {{
+          el.textContent = text;
+          el.className = 'edit-save-status ' + status;
+        }}
+      }}
+
+      async function saveToStaging(slug) {{
+        const editor = editors[slug];
+        if (!editor) return;
+        const html = editor.getHTML();
+        setStatus(slug, 'saving', 'Saving...');
+        try {{
+          const resp = await fetch('/api/staging/' + slug, {{
+            method: 'PUT',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ html }})
+          }});
+          const data = await resp.json();
+          if (data.ok) setStatus(slug, 'saved', 'Saved');
+          else setStatus(slug, 'unsaved', 'Save failed');
+        }} catch (e) {{
+          setStatus(slug, 'unsaved', 'Save error');
+        }}
+      }}
+
+      function scheduleSave(slug) {{
+        clearTimeout(saveTimers[slug]);
+        saveTimers[slug] = setTimeout(() => saveToStaging(slug), 1000);
+      }}
+
+      // Update toolbar button active states
+      function updateToolbar(slug, editor) {{
+        const toolbar = document.querySelector(`.tiptap-toolbar[data-slug="${{slug}}"]`);
+        if (!toolbar) return;
+        toolbar.querySelectorAll('button[data-cmd]').forEach(btn => {{
+          const cmd = btn.dataset.cmd;
+          let active = false;
+          if (cmd === 'bold') active = editor.isActive('bold');
+          else if (cmd === 'italic') active = editor.isActive('italic');
+          else if (cmd === 'underline') active = editor.isActive('underline');
+          else if (cmd === 'heading2') active = editor.isActive('heading', {{ level: 2 }});
+          else if (cmd === 'heading3') active = editor.isActive('heading', {{ level: 3 }});
+          else if (cmd === 'heading4') active = editor.isActive('heading', {{ level: 4 }});
+          else if (cmd === 'bulletList') active = editor.isActive('bulletList');
+          else if (cmd === 'orderedList') active = editor.isActive('orderedList');
+          else if (cmd === 'link') active = editor.isActive('link');
+          btn.classList.toggle('is-active', active);
+        }});
+      }}
+
+      // Initialize an editor for each content area
+      document.querySelectorAll('.tiptap-content').forEach(el => {{
+        const slug = el.dataset.slug;
+        const extensions = [StarterKit];
+        if (Underline) extensions.push(Underline);
+        if (Link) extensions.push(Link.configure({{ openOnClick: false, HTMLAttributes: {{ target: '_blank', rel: 'noopener noreferrer' }} }}));
+
+        try {{
+          const originalHtml = el.innerHTML;
+          el.innerHTML = '';
+          const editor = new Editor({{
+            element: el,
+            extensions,
+            content: originalHtml,
+            editorProps: {{
+              transformPastedHTML: cleanPastedHtml
+            }},
+            onUpdate: ({{ editor: ed }}) => {{
+              setStatus(slug, 'unsaved', 'Unsaved');
+              scheduleSave(slug);
+              updateToolbar(slug, ed);
+            }},
+            onSelectionUpdate: ({{ editor: ed }}) => {{
+              updateToolbar(slug, ed);
+            }},
+            onFocus: () => {{
+              setStatus(slug, '', 'Editing...');
+            }},
+            onBlur: () => {{
+              const statusEl = document.querySelector(`.edit-save-status[data-slug="${{slug}}"]`);
+              if (statusEl && !statusEl.classList.contains('unsaved') && !statusEl.classList.contains('saving')) {{
+                setStatus(slug, '', 'Click to edit');
+              }}
+            }}
+          }});
+          editors[slug] = editor;
+
+          // Wire toolbar buttons
+          const toolbar = document.querySelector(`.tiptap-toolbar[data-slug="${{slug}}"]`);
+          if (toolbar) {{
+            toolbar.querySelectorAll('button[data-cmd]').forEach(btn => {{
+              btn.addEventListener('click', (e) => {{
+                e.preventDefault();
+                const cmd = btn.dataset.cmd;
+                if (cmd === 'bold') editor.chain().focus().toggleBold().run();
+                else if (cmd === 'italic') editor.chain().focus().toggleItalic().run();
+                else if (cmd === 'underline') editor.chain().focus().toggleUnderline().run();
+                else if (cmd === 'heading2') editor.chain().focus().toggleHeading({{ level: 2 }}).run();
+                else if (cmd === 'heading3') editor.chain().focus().toggleHeading({{ level: 3 }}).run();
+                else if (cmd === 'heading4') editor.chain().focus().toggleHeading({{ level: 4 }}).run();
+                else if (cmd === 'bulletList') editor.chain().focus().toggleBulletList().run();
+                else if (cmd === 'orderedList') editor.chain().focus().toggleOrderedList().run();
+                else if (cmd === 'link') {{
+                  if (editor.isActive('link')) {{
+                    editor.chain().focus().unsetLink().run();
+                  }} else {{
+                    const url = prompt('Enter URL:');
+                    if (url) editor.chain().focus().setLink({{ href: url }}).run();
+                  }}
+                }}
+                else if (cmd === 'undo') editor.chain().focus().undo().run();
+                else if (cmd === 'redo') editor.chain().focus().redo().run();
+                updateToolbar(slug, editor);
+              }});
+            }});
+          }}
+        }} catch (err) {{
+          console.error('Failed to init Tiptap for ' + slug + ':', err);
+        }}
+      }});
+
+      // Warn before leaving with unsaved changes
+      window.addEventListener('beforeunload', (e) => {{
+        const hasUnsaved = document.querySelector('.edit-save-status.unsaved');
+        if (hasUnsaved) {{
+          e.preventDefault();
+          e.returnValue = '';
+        }}
+      }});
+    }})();
   </script>
 
 </body>
@@ -1789,6 +1624,7 @@ def main():
     parser.add_argument('--output', type=str, help='Custom output path (default: staging/_unified_preview.html)')
     args = parser.parse_args()
 
+    _resolve_dirs()
     output_path = Path(args.output) if args.output else OUTPUT_FILE
 
     # Load course tree for metadata

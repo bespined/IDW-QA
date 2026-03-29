@@ -43,6 +43,11 @@ STAGING_DIR = PLUGIN_ROOT / "staging"
 REPORTS_DIR = PLUGIN_ROOT / "reports"
 
 
+def _resolve_auditor(data: dict) -> str:
+    """Resolve auditor name: env var > data dict > fallback."""
+    return os.getenv("IDW_AUDITOR_NAME") or data.get("auditor") or "ID Workbench"
+
+
 # ── RLHF Supabase Integration ──────────────────────────────────────
 def _get_supabase_config():
     """Load Supabase credentials from .env / .env.local."""
@@ -105,7 +110,7 @@ def _supabase_upload_file(url, key, bucket, path_in_bucket, local_path):
             timeout=60,
         )
     if resp.status_code in (200, 201):
-        return f"{url}/storage/v1/object/authenticated/{bucket}/{path_in_bucket}"
+        return f"{url}/storage/v1/object/public/{bucket}/{path_in_bucket}"
     _log.warning("Supabase upload %s failed: %s %s", path_in_bucket, resp.status_code, resp.text[:200])
     return None
 
@@ -117,6 +122,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
     Optionally uploads HTML/XLSX report files to the rlhf-reports bucket.
     Non-blocking — failures are logged but never raise.
     """
+    data = _normalize_audit_data(data)
     sb_url, sb_key = _get_supabase_config()
     if not sb_url or not sb_key:
         _log.info("Supabase not configured — skipping RLHF push")
@@ -125,7 +131,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
     try:
         course = data.get("course", {})
         sections = data.get("sections", {})
-        auditor = data.get("auditor", "ID Workbench")
+        auditor = _resolve_auditor(data)
 
         # Compute scores for session row
         ds = sections.get("design_standards", {})
@@ -198,7 +204,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
 
         # Design standards
         for item in ds.get("items", []):
-            findings_rows.append({
+            row = {
                 "session_id": session_id,
                 "finding_type": "design",
                 "standard_id": item.get("id", ""),
@@ -206,9 +212,10 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                 "page_title": item.get("page_title", item.get("name", "")),
                 "ai_verdict": item.get("status", "").lower().replace(" ", "_"),
                 "ai_reasoning": item.get("evidence", ""),
-                "content_excerpt": item.get("recommendation", ""),
+                "content_excerpt": item.get("content_excerpt", item.get("recommendation", "")),
                 "confidence_tier": (item.get("confidence", "")).lower() or None,
-            })
+            }
+            findings_rows.append(row)
 
         # QA categories
         for item in qa.get("items", []):
@@ -675,6 +682,61 @@ def generate_demo_data() -> dict:
     }
 
 
+def _normalize_audit_data(data: dict) -> dict:
+    """Normalize audit data to expected schema.
+
+    Fixes common mismatches:
+    1. Sections at top level instead of nested under 'sections'
+    2. Lowercase summary keys (met -> Met, pass -> Pass)
+    3. Missing 'items' arrays
+    """
+    SECTION_KEYS = ("design_standards", "qa_categories", "accessibility", "readiness")
+
+    # Fix 1: Unwrapped sections — top-level keys need wrapping
+    if not data.get("sections"):
+        wrapped = {}
+        for key in SECTION_KEYS:
+            if key in data:
+                wrapped[key] = data.pop(key)
+        if wrapped:
+            data["sections"] = wrapped
+
+    if not data.get("sections"):
+        data["sections"] = {}
+
+    sections = data["sections"]
+
+    # Fix 2: Normalize summary key casing
+    CASE_MAP = {
+        "met": "Met", "partially met": "Partially Met", "not met": "Not Met",
+        "not auditable": "Not Auditable",
+        "pass": "Pass", "warn": "Warn", "fail": "Fail",
+        "critical": "Critical", "warning": "Warning", "info": "Info",
+    }
+    for key in SECTION_KEYS:
+        section = sections.get(key, {})
+        if "summary" in section:
+            normalized = {}
+            for k, v in section["summary"].items():
+                normalized[CASE_MAP.get(k.lower(), k)] = v
+            section["summary"] = normalized
+
+    # Fix 3: Ensure 'items' arrays exist
+    for key in ("design_standards", "qa_categories", "accessibility"):
+        section = sections.get(key, {})
+        if "items" not in section:
+            section["items"] = []
+        sections[key] = section
+
+    # Readiness uses 'categories' not 'items'
+    readiness = sections.get("readiness", {})
+    if "categories" not in readiness:
+        readiness["categories"] = []
+    sections["readiness"] = readiness
+
+    return data
+
+
 def _build_remediation_html(sections: dict, overall_score: float) -> str:
     """Build the Remediation Roadmap section HTML from audit findings.
 
@@ -902,9 +964,10 @@ def _build_remediation_html(sections: dict, overall_score: float) -> str:
 
 def generate_report(data: dict) -> str:
     """Generate the full HTML audit report."""
+    data = _normalize_audit_data(data)
     course = data.get('course', {})
     audit_date = data.get('audit_date', datetime.now().isoformat())
-    auditor = data.get('auditor', 'ID Workbench')
+    auditor = _resolve_auditor(data)
     sections = data.get('sections', {})
     clo_data = data.get('clo_alignment', {})
 
@@ -1895,7 +1958,7 @@ def _create_dashboard_sheet(wb, data, standards_stats):
 
     # ── Course Info ──
     ds.merge_cells("A2:H2")
-    ds["A2"] = f"Course: {course.get('name', 'N/A')}  •  ID: {course.get('id', 'N/A')}  •  Date: {date_display}  •  Auditor: {data.get('auditor', 'ID Workbench')}"
+    ds["A2"] = f"Course: {course.get('name', 'N/A')}  •  ID: {course.get('id', 'N/A')}  •  Date: {date_display}  •  Auditor: {_resolve_auditor(data)}"
     ds["A2"].font = Font(name="Arial", size=10, italic=True)
     ds["A2"].alignment = Alignment(horizontal="center")
 
@@ -2429,6 +2492,8 @@ def main():
         else:
             _log.error("Error: provide --input <file>, --demo, or pipe JSON to stdin")
             sys.exit(1)
+
+    data = _normalize_audit_data(data)
 
     if args.faculty:
         summary = generate_faculty_summary(data)

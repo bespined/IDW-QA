@@ -16,36 +16,60 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 ## Purpose
 
-One skill for all course quality checks: full design standards evaluation, WCAG accessibility scanning, or pre-launch readiness checklist.
+Unified audit skill with 3 modes: Quick Scan (deterministic only), Full Audit (deterministic + AI), and Guided Review (interactive with live fixes). All modes use a single check registry with scope filters.
 
 ## When to Use
 
-- "Audit my course" / "Check my course" / "Let's audit LAW 517" → **Ask which type** (see Entry Point below)
-- "Run a design standards audit" → **Standards mode** (skip prompt)
-- "Check accessibility" / "WCAG audit" → **Accessibility mode** (skip prompt)
-- "Is my course ready to launch?" → **Readiness mode** (skip prompt)
-- "Full audit — everything" → Run all three modes sequentially (skip prompt)
+- "Audit my course" / "Check my course" / "Quick scan" → **Ask which mode** (see Entry Point below)
+- "Quick scan" / "Fast audit" / "Deterministic check" → **Quick Scan** (skip prompt)
+- "Full audit" / "Complete audit" / "Comprehensive audit" → **Full Audit** (skip prompt)
+- "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
+- "Just check essential standards" → **Full Audit --scope essential** (skip prompt)
 
-## Entry Point — Audit Type Selection
+## Entry Point — Audit Mode Selection
 
 When the user asks for a general audit without specifying a mode, **always present the choice first** before fetching any data. Use `AskUserQuestion` with these options:
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **Design Standards** | Evaluates all 25 ASU course design standards + 19 QA structural checks. Covers objectives alignment, assessment quality, materials, engagement, and accessibility standards. Produces an HTML dashboard + XLSX report. |
-| 2 | **Accessibility (WCAG 2.1 AA)** | Scans every page for accessibility issues: alt text, heading hierarchy, link text, table structure, color contrast, and media captions. Optional deep mode adds vision-based image analysis. |
-| 3 | **Course Readiness (CRC)** | Pre-launch operational checklist across 9 categories: syllabus, navigation, content availability, assessment setup, grading, dates, communication, publishing, and technical checks. Pass/Fail per item. |
-| 4 | **Full Audit — All Three** | Runs Design Standards + Accessibility + Course Readiness sequentially. Most comprehensive but takes the longest. |
+| 1 | **Quick Scan** | Deterministic checks only — no AI calls. Checks all Col B criteria (existence, structure, measurable verbs, settings) + CRC operational items. Fast. Best for QA team running audits for IDA review. |
+| 2 | **Full Audit** | Deterministic + AI judgment. Evaluates all 25 standards (Col B + Col C) + CRC items. Uses enrichment cards for qualitative assessment. Comprehensive. Best for ID self-audit. |
+| 3 | **Guided Review** | Same checks as Full Audit but walks through 9 standard groups interactively, pausing after each for review and live fixes. Best for IDs building new courses. |
 
-If the user says "walk me through it", "audit with me", or "interactive audit", skip this prompt and go directly to **Mode 4: Interactive Audit Walkthrough**.
+Only skip this prompt when the user's message clearly specifies a mode.
 
-Only skip this prompt when the user's message clearly specifies a mode (e.g., "design standards audit", "check accessibility", "is my course ready?").
+### Scope Filters (optional, apply to any mode)
+
+After mode selection, if the user specifies a scope, filter accordingly:
+
+| Scope | What's included | Use when |
+|---|---|---|
+| `all` (default) | All 25 standards + CRC items (98 criteria) | Standard audit |
+| `essential` | Only 7 essential standards: 01, 02, 06, 08, 12, 22, 23 | Quick course readiness check |
+| `crc` | Only 18 CRC operational items | Operational checklist only |
+| `essential,crc` | Essential standards + CRC items | Pre-launch minimum check |
+
+To filter: load `config/standards.yaml`, include only criteria where the parent standard has `essential: true` (for essential scope) or criteria with `category: "crc"` (for crc scope).
 
 ---
 
-## Mode 1: Design Standards Audit (25 ASU Standards + 19 QA Categories)
+## Two-Pass Architecture (used by all modes)
 
-Comprehensive evaluation against all 25 ASU Online Course Design Standards plus 19 structural QA categories.
+All modes use the same check registry from `config/standards.yaml`. Quick Scan runs Pass 1 only. Full Audit and Guided Review run both passes.
+
+### Reviewer Tier Tagging
+
+Every finding MUST be tagged with `reviewer_tier` from `standards.yaml`:
+- `reviewer_tier: "id_assistant"` — Col B checks (deterministic/existence). IDAs can verdict these.
+- `reviewer_tier: "id"` — Col C checks (qualitative/judgment). Only QA team IDs verdict these.
+
+### Quick Scan (Mode 1)
+
+Runs **Pass 1 only** — deterministic checks via `deterministic_checks.py`. Zero AI calls. All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for IDA review of recurring courses.
+
+### Full Audit (Mode 2)
+
+Runs **Pass 1 + Pass 2**. Comprehensive evaluation against all 25 ASU Online Course Design Standards plus 18 CRC operational checks. Findings tagged with appropriate `reviewer_tier` from standards.yaml.
 
 ### Standards Reference Files
 - `config/standards.yaml` — Base definitions of 25 standards
@@ -312,79 +336,21 @@ CLO ALIGNMENT MATRIX:
 
 ---
 
-## Mode 2: Accessibility Audit (WCAG 2.1 AA)
+## Accessibility Checks (absorbed into all modes)
 
-Focused accessibility evaluation with optional vision-based image analysis.
+WCAG accessibility checks are now part of the unified check registry under Standards 22 and 23 (deterministic checks in `audit_pages.py`). They run automatically in all modes as part of Pass 1.
 
-### Scan Procedure
+Optional deep analysis is still available:
+- **Vision-based analysis** (`--deep`): Extract images via `scripts/vision_audit.py`, compare alt text vs actual content
+- **Semantic alt text validation** (`--semantic`): Download images, rate alt text as good/partial/mismatch/decorative
 
-1. Fetch all pages with HTML body content
-2. Run automated checks:
-   - Image alt text (present, descriptive, not "image.png")
-   - Heading hierarchy (no skipped levels)
-   - Link text (no "click here", has descriptive text)
-   - Table structure (thead, th, scope attributes)
-   - Color contrast (check inline styles for known violations)
-   - Lists (proper ol/ul structure, not manual numbering)
-   - Language attributes
-   - Form labels (if applicable)
-
-3. **Vision-based analysis** (when `--deep` flag or user requests):
-   - Extract all images from pages using `scripts/vision_audit.py`
-   - Download images for Claude vision analysis
-   - Check: alt text accuracy vs actual image content, text-in-images detection, decorative image flagging, complex image description adequacy
-
-4. **Semantic alt text validation** (when `--semantic` flag or user requests deeper analysis):
-   - Run `scripts/vision_audit.py --page-slug <slug> --semantic --output vision_data.json`
-   - This downloads images AND prepares semantic comparison instructions
-   - For each downloaded image, read the image file and compare against current alt text
-   - Rate each as: `good` (accurate), `partial` (vaguely correct), `mismatch` (wrong), or `decorative`
-   - Suggest corrected alt text for any `partial` or `mismatch` findings
-   - Use `--max-images N` to limit scope (default 15 per page)
-   - No additional API key required — uses Claude Code's native vision capability
-
-### Output Format
-
-```
-=== WCAG 2.1 AA Accessibility Audit ===
-Course: [Name]
-
-CRITICAL:  [count] (must fix before launch)
-WARNING:   [count] (should fix)
-INFO:      [count] (best practice)
-
-[Detailed findings with page, element, issue, and fix suggestion]
-```
-
-### WCAG Success Criteria Checked
-
-| Criterion | Description | How Checked |
-|---|---|---|
-| 1.1.1 | Non-text content | Alt text on images |
-| 1.3.1 | Info and relationships | Heading hierarchy, table structure |
-| 1.4.3 | Contrast (minimum) | Inline style analysis |
-| 2.4.4 | Link purpose | Link text analysis |
-| 2.4.6 | Headings and labels | Heading presence and order |
-| 3.1.1 | Language of page | Lang attribute check |
-| 4.1.2 | Name, role, value | Form label check |
+These are add-on passes, not separate modes. Run them with: "also check image alt text accuracy" or "run deep accessibility scan".
 
 ---
 
-## Mode 3: Course Readiness Check (9 Categories)
+## CRC Items (absorbed into all modes)
 
-Pre-launch operational checklist — is the course ready for students on Day 1?
-
-### 9 CRC Categories
-
-1. **Course Information**: Syllabus published, course description set, instructor info visible
-2. **Navigation**: Home page configured, navigation tabs cleaned up, modules ordered
-3. **Content Availability**: All modules have content, no empty pages, no placeholder text
-4. **Assessment Setup**: All quizzes configured (attempts, time, dates), all assignments with due dates, rubrics attached
-5. **Grading**: Assignment groups with weights, grading scheme set, late policy configured
-6. **Dates & Availability**: All due dates set, module availability dates (if used), no past dates
-7. **Communication**: Welcome announcement drafted, discussion boards ready, instructor contact info
-8. **Publishing**: All intended modules published, no accidentally published draft content
-9. **Technical**: No broken links, all media playable, external tools configured
+The 18 Course Readiness Check items that don't map to the 25 design standards are now in `standards.yaml` under `id: "crc"`. They run automatically in all modes as deterministic checks (Pass 1). Use `--scope crc` to see only these items.
 
 ### Scan Procedure
 
@@ -407,14 +373,6 @@ Status: [READY / NOT READY]
 ```
 
 ---
-
-## Combined Audit
-
-When user says "full audit" or "audit everything":
-1. Run Mode 1 (Design Standards) → summary
-2. Run Mode 2 (Accessibility) → summary
-3. Run Mode 3 (Readiness) → summary
-4. Generate combined report with overall score
 
 ## HTML Report Output
 
@@ -448,13 +406,34 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 
 ```json
 {
-  "course": {"name": "...", "id": "..."},
+  "course": {"name": "...", "id": "...", "domain": "canvas.asu.edu"},
   "audit_date": "2026-03-25T09:41:00",
   "auditor": "ID Workbench v1.5.0",
+  "audit_mode": "quick_scan|full_audit|guided_review",
+  "audit_scope": "all|essential|crc|essential,crc",
   "sections": {
     "design_standards": {
       "summary": {"Met": 9, "Partially Met": 14, "Not Met": 1, "Not Auditable": 1},
-      "items": [{"id":"01","name":"...","status":"Met|Partially Met|Not Met|Not Auditable","evidence":"...","recommendation":"...","confidence":"High|Medium|Low","coverage":"..."}]
+      "items": [
+        {
+          "id": "01",
+          "name": "Course-Level Alignment",
+          "status": "Met|Partially Met|Not Met|Not Auditable",
+          "evidence": "Description of what was found",
+          "recommendation": "What to fix (null if Met)",
+          "confidence": "High|Medium|Low",
+          "coverage": "13/13 modules",
+          "reviewer_tier": "id_assistant|id",
+          "content_excerpt": "The actual text/HTML that triggered this finding",
+          "canvas_link": "https://canvas.asu.edu/courses/223406/pages/syllabus",
+          "category": "design_standard|crc",
+          "essential": true,
+          "criterion_id": "01.1",
+          "criteria_results": [
+            {"criterion_id": "01.1", "status": "Met", "evidence": "...", "reviewer_tier": "id_assistant"}
+          ]
+        }
+      ]
     },
     "qa_categories": {
       "summary": {"Pass": 9, "Warn": 7, "Fail": 2},
@@ -474,7 +453,15 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 }
 ```
 
-⚠️ **Common failure**: putting `design_standards`, `qa_categories` etc. at the top level instead of inside `"sections"` — and using lowercase keys (`met`, `pass`) instead of title-case (`"Met"`, `"Pass"`) inside `"summary"`. Both cause all counts to silently render as 0.
+**New required fields per finding** (added for pilot):
+- `reviewer_tier` — from `standards.yaml`. Determines who can verdict this finding in the Vercel review app.
+- `content_excerpt` — the specific text/HTML that triggered the finding. Shown inline to reviewers.
+- `canvas_link` — direct URL to the Canvas page/item. Reviewers click to verify.
+- `category` — `"design_standard"` or `"crc"`. Used for scope filtering.
+- `essential` — whether the parent standard is essential. Used for essential scope filter.
+- `criterion_id` — the specific criterion from `standards.yaml` (e.g., "01.1", "crc.04").
+
+⚠️ **Common failure**: putting `design_standards`, `qa_categories` etc. at the top level instead of inside `"sections"` — and using lowercase keys (`met`, `pass`) instead of title-case (`"Met"`, `"Pass"`) inside `"summary"`. Both cause all counts to silently render as 0. The normalization layer in `audit_report.py` will attempt to fix these, but always use the correct format.
 
 **Workflow integration:**
 1. Run `/audit` → results display in conversation + saved as `audit_results.json`
@@ -564,7 +551,7 @@ All audit modes are **read-only by default**. No content is modified. If finding
 
 ---
 
-## Mode 4: Interactive Audit Walkthrough (S4.5 — "Audit With Me")
+## Guided Review (Mode 3) — Interactive Audit Walkthrough
 
 An alternative to batch auditing — walk through standards conversationally with the ID so they can review, fix, and approve findings in real time.
 
@@ -618,7 +605,7 @@ I found 6 CLOs. Let me check each one...
 | 6 | 14, 15, 16 | Relevance, UDL, media |
 | 7 | 17, 18, 19 | Community, instructor media, active learning |
 | 8 | 20, 21 | Tools & support |
-| 9 | 22, 23, 24, 25 | Accessibility & cost |
+| 9 | 22, 23, 24, 25, CRC | Accessibility, cost & operational readiness |
 
 6. **Fixing on the spot**: When the ID says "fix now," handle fixes directly:
    - **Measurability**: Suggest replacement verbs and update `course-config.json`
