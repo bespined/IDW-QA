@@ -32,21 +32,21 @@ When the user asks for a general audit without specifying a mode, **always prese
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **Quick Scan** | Fast structural check — verifies course setup, page structure, syllabus content, navigation, and accessibility basics. Runs in under a minute. |
-| 2 | **Full Audit** | Comprehensive quality review — everything in Quick Scan plus in-depth evaluation of alignment, assessment design, content quality, and instructional effectiveness. Takes 10-15 minutes. |
-| 3 | **Guided Review** | Same depth as Full Audit but walks through the course with you section by section, pausing after each to review findings and fix issues on the spot. Best when you're actively building the course. |
+| 1 | **Quick Check** | Fast structural check with AI verification — catches setup issues and obvious content gaps. Takes 1-2 minutes. Best for recurring audits and pre-checks. |
+| 2 | **Deep Audit** | Comprehensive quality review — evaluates alignment, assessment design, content quality, and instructional effectiveness in depth. Takes 10-15 minutes. |
+| 3 | **Guided Review** | Same depth as Deep Audit but walks through the course with you section by section, pausing after each to review findings and fix issues on the spot. Best when you're actively building the course. |
 
 Only skip this prompt when the user's message clearly specifies a mode.
 
-**If the user picks Quick Scan**, follow up with a scope question using `AskUserQuestion`:
+**If the user picks Quick Check**, follow up with a scope question using `AskUserQuestion`:
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **All standards + course readiness** | Checks all 25 design standards and course readiness items for structural issues (does it exist? is it set up correctly?) but does not evaluate quality or instructional effectiveness — that's what Full Audit adds. |
+| 1 | **All standards + course readiness** | Checks all 25 design standards and course readiness items for structural issues (does it exist? is it set up correctly?) with a light AI verification pass to catch false positives. |
 | 2 | **Essential standards only** | Focus on the 7 core standards required for course launch (alignment, workload, assessments, materials, accessibility). |
 | 3 | **Course readiness** | Template setup, navigation links, syllabus content, dates, and other launch-day checks. |
 
-**If the user picks Full Audit or Guided Review**, always run all standards — no scope question.
+**If the user picks Deep Audit or Guided Review**, always run all standards — no scope question.
 
 ### Scope Filter Reference (internal — do not present to user)
 
@@ -74,13 +74,17 @@ Every finding MUST be tagged with `reviewer_tier` from `standards.yaml`:
 - `reviewer_tier: "id_assistant"` — Col B checks (deterministic/existence). IDAs can verdict these.
 - `reviewer_tier: "id"` — Col C checks (qualitative/judgment). Only QA team IDs verdict these.
 
-### Quick Scan (Mode 1)
+### Quick Check (Mode 1)
 
-Runs **Pass 1 only** — deterministic checks via `deterministic_checks.py`. Zero AI calls. All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for IDA review of recurring courses.
+Runs **Pass 1 (deterministic) + light AI verification**. Two steps:
+1. All deterministic checks run via `deterministic_checks.py`
+2. One AI verification call: Claude receives a summary of all deterministic results + raw content from flagged pages (syllabus body, module overviews, CLO text). The AI checks for obvious false positives and false negatives — pages that exist but are empty, CLOs that technically use measurable verbs but are meaningless, template placeholders that weren't caught by regex. The AI does NOT evaluate instructional quality — that's what Deep Audit does.
 
-### Full Audit (Mode 2)
+All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for IDA review of recurring courses.
 
-Runs **Pass 1 + Pass 2**. Comprehensive evaluation against all 25 ASU Online Course Design Standards plus 18 CRC operational checks. Findings tagged with appropriate `reviewer_tier` from standards.yaml.
+### Deep Audit (Mode 2)
+
+Runs **Pass 1 + Pass 2 (full AI evaluation)**. Comprehensive evaluation against all 25 ASU Online Course Design Standards plus 18 CRC operational checks. Each standard gets individual AI judgment using enrichment cards from `standards_enrichment.yaml`. Findings tagged with appropriate `reviewer_tier` from standards.yaml.
 
 ### Standards Reference Files
 - `config/standards.yaml` — Base definitions of 25 standards
