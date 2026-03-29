@@ -42,9 +42,9 @@ Only skip this prompt when the user's message clearly specifies a mode.
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **Everything** | Check all 25 standards + operational readiness items. Most thorough quick scan. |
+| 1 | **All standards + course readiness** | Check all 25 design standards and course readiness items. Most thorough quick scan. |
 | 2 | **Essential standards only** | Focus on the 7 core standards required for course launch (alignment, workload, assessments, materials, accessibility). |
-| 3 | **Operational readiness** | Template setup, navigation links, syllabus content, dates, and other launch-day checks. |
+| 3 | **Course readiness** | Template setup, navigation links, syllabus content, dates, and other launch-day checks. |
 
 **If the user picks Full Audit or Guided Review**, always run all standards — no scope question.
 
