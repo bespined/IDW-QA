@@ -32,24 +32,30 @@ When the user asks for a general audit without specifying a mode, **always prese
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **Quick Scan** | Deterministic checks only — no AI calls. Checks all Col B criteria (existence, structure, measurable verbs, settings) + CRC operational items. Fast. Best for QA team running audits for IDA review. |
-| 2 | **Full Audit** | Deterministic + AI judgment. Evaluates all 25 standards (Col B + Col C) + CRC items. Uses enrichment cards for qualitative assessment. Comprehensive. Best for ID self-audit. |
-| 3 | **Guided Review** | Same checks as Full Audit but walks through 9 standard groups interactively, pausing after each for review and live fixes. Best for IDs building new courses. |
+| 1 | **Quick Scan** | Fast structural check — verifies course setup, page structure, syllabus content, navigation, and accessibility basics. Runs in under a minute. |
+| 2 | **Full Audit** | Comprehensive quality review — everything in Quick Scan plus in-depth evaluation of alignment, assessment design, content quality, and instructional effectiveness. Takes 10-15 minutes. |
+| 3 | **Guided Review** | Same depth as Full Audit but walks through the course with you section by section, pausing after each to review findings and fix issues on the spot. Best when you're actively building the course. |
 
 Only skip this prompt when the user's message clearly specifies a mode.
 
-### Scope Filters (optional, apply to any mode)
+**Do NOT ask for a scope filter.** Default to checking all standards. Only apply scope filtering if the user explicitly mentions it in their request:
+- "just check essential standards" → filter to 7 essential standards only
+- "only CRC items" / "operational checklist" → filter to 18 CRC items only
+- Otherwise → run all 98 criteria (default, no prompt needed)
 
-After mode selection, if the user specifies a scope, filter accordingly:
+### Scope Filter Reference (internal — do not present to user)
 
-| Scope | What's included | Use when |
+| Scope | What's included | Triggered by |
 |---|---|---|
-| `all` (default) | All 25 standards + CRC items (98 criteria) | Standard audit |
-| `essential` | Only 7 essential standards: 01, 02, 06, 08, 12, 22, 23 | Quick course readiness check |
-| `crc` | Only 18 CRC operational items | Operational checklist only |
-| `essential,crc` | Essential standards + CRC items | Pre-launch minimum check |
+| `all` (default) | All 25 standards + CRC items (98 criteria) | Default — no user prompt |
+| `essential` | 7 essential standards: 01, 02, 06, 08, 12, 22, 23 | User says "essential" or "essential standards only" |
+| `crc` | 18 CRC operational items | User says "CRC" or "operational checklist" or "readiness check" |
 
 To filter: load `config/standards.yaml`, include only criteria where the parent standard has `essential: true` (for essential scope) or criteria with `category: "crc"` (for crc scope).
+
+### Staging Requirement
+
+**All page content changes MUST go through staging.** If the audit finds issues and the user asks to fix them, stage the fix first — never push HTML directly to Canvas. The flow is always: stage → preview → user approves → push. This applies to Quick Scan, Full Audit, and Guided Review equally. See CLAUDE.md for the full staging workflow.
 
 ---
 
