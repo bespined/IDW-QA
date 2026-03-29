@@ -782,7 +782,9 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - ASU brand colors on all buttons and badges
 
 **Remaining Phase 3 work**:
-- **CRITICAL: Admin revision comments visible to ID** — when admin requests revisions, ID must see admin's disagree reasons on each finding. Currently ID only sees "Undo decision" with no context. Fix: after revisions requested, ID view should show admin's disagree comment + reset to allow ID to re-review.
+- ✅ Admin revision comments visible to ID — pink box shows "Admin disagreed" + reason on ID view after revisions requested
+- **ID re-review after revisions**: When admin requests revisions, findings where admin disagreed should auto-reset the ID's verdict so Correct/Incorrect/N/A buttons show again (instead of Undo). The ID needs to re-decide with admin feedback visible.
+- **Session list filters on home page**: filter by status (in_progress, pending_qa_review, qa_approved, revisions_required). Approved sessions should be hidden by default, shown with a "Completed" filter. All roles need this.
 - Session list filters: filter by tester, course, status, audit_purpose (admin page enhancement)
 - Comment history: show full decision/override history per finding (who decided what and when)
 - Notification badges (deferred — post-pilot)
