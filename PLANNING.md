@@ -736,6 +736,13 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - QA team view: Pending Review queue + assign IDAs + override verdicts
 - Admin: /admin route, password-gated via env var
 
+**Phase 3 progress**:
+- Step 1 ✅ TypeScript interfaces updated (supabase.ts)
+- Step 2 ✅ FindingCard updated (Agree/Disagree/Not an Issue/N/A + evidence inline + canvas link)
+- Step 3 NEXT: Add Supabase Auth (login page + auth helpers)
+- Steps 4-9: remaining (role routing, session page, home page, admin, notifications, dashboard)
+- Build verified: zero TypeScript errors
+
 ### Phase 4 — Airtable Integration
 
 | Task | Details |
