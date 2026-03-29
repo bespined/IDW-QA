@@ -803,17 +803,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 **Phase order discussion**:
 - Consider swapping Phase 4 (Airtable) and Phase 5 (RLHF/Admin skills) — Airtable sync may be less critical than getting the admin/IDA skills working in Claude Code. Discuss before proceeding.
 
-### Phase 4 — Airtable Integration
-
-| Task | Details |
-|---|---|
-| Design Airtable base structure | one row per finding, columns matching Supabase fields |
-| Build Supabase → Airtable sync function | Edge Function or pg_net, batch Airtable API |
-| Trigger on session complete | all findings verdicted → fire sync |
-| Nightly catch-up job | cron, sync sessions where airtable_synced_at IS NULL |
-| Test sync with real audit data | end-to-end validation |
-
-### Phase 5 — RLHF + Admin Skills
+### Phase 4 — RLHF + Admin Skills (was Phase 5)
 
 | Task | Details |
 |---|---|
@@ -824,6 +814,16 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 | `fetch_fix_queue.py` script | query Supabase for remediation_requested findings |
 | Update `/course-review` to use fix queue | pull from Supabase instead of local |
 | Admin RLHF pattern analysis | aggregate queries on finding_feedback |
+
+### Phase 5 — Airtable Integration (was Phase 4)
+
+| Task | Details |
+|---|---|
+| Design Airtable base structure | one row per finding, columns matching Supabase fields |
+| Build Supabase → Airtable sync function | Edge Function or pg_net, batch Airtable API |
+| Trigger on session complete | all findings verdicted → fire sync |
+| Nightly catch-up job | cron, sync sessions where airtable_synced_at IS NULL |
+| Test sync with real audit data | end-to-end validation |
 
 ---
 
