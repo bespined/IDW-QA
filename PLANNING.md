@@ -751,7 +751,30 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Step 9: Dashboard IDA quality tracking — deferred to post-pilot-testing (existing dashboard already shows agreement rates)
 - Build verified: zero TypeScript errors, all routes registered (/, /login, /admin, /dashboard, /session/[id])
 - NOTE: Before testing login, user must: (1) Enable email+password in Supabase Auth dashboard (Authentication → Providers → Email), (2) Create user in Supabase Auth, (3) Create matching row in testers table with same email
-- Phase 3 COMPLETE for pilot MVP. Notifications and dashboard enhancements are polish for after initial pilot testing.
+- Phase 3 IN PROGRESS — core MVP working, admin review UX remaining.
+
+**Completed in Phase 3**:
+- Login page + Supabase Auth (email+password)
+- AuthGuard + role-based routing (3 roles: id, id_assistant, admin)
+- FindingCard: Correct/Incorrect/N/A verdicts with Undo, ASU brand colors, evidence inline, canvas link
+- Session page: reviewer_tier filter (IDA=Col B only), Submit for QA Review, pending banner
+- Home page: auth, sign out, status badges, audit purpose
+- Admin page: tester management (add/edit role/delete/activate), error queue, RLHF summary
+- Audit modes renamed: Quick Check / Deep Audit / Guided Review
+- qa_team role merged into admin (migration 002 applied)
+- Supabase RLS: finding_feedback INSERT/DELETE for authenticated, testers SELECT by email
+- Decision values: correct / incorrect / not_applicable
+- finding_feedback reviewer_id FK issue resolved (omitted from inserts — FK points to auth.users not testers)
+
+**Remaining Phase 3 work (continue in next session)**:
+- **Admin FindingCard view** (CRITICAL): When admin reviews an ID/IDA's session:
+  - Show WHO made the decision ("Marked Correct by Test ID")
+  - "Override" button instead of "Undo" — preserves original_decision, records override_reason
+  - "Confirm" button — admin agrees with the verdict (no override needed)
+  - Admin should NOT be able to change/delete the original decision, only add their assessment
+  - Use original_decision, overridden_by, overridden_at, override_reason fields from finding_feedback schema
+- Notification badges (deferred — post-pilot)
+- Dashboard IDA quality tracking (deferred — post-pilot)
 
 ### Phase 4 — Airtable Integration
 
