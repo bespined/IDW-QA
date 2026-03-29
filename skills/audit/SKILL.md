@@ -42,7 +42,7 @@ Only skip this prompt when the user's message clearly specifies a mode.
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **All standards + course readiness** | Check all 25 design standards and course readiness items. Most thorough quick scan. |
+| 1 | **All standards + course readiness** | Checks all 25 design standards and course readiness items for structural issues (does it exist? is it set up correctly?) but does not evaluate quality or instructional effectiveness — that's what Full Audit adds. |
 | 2 | **Essential standards only** | Focus on the 7 core standards required for course launch (alignment, workload, assessments, materials, accessibility). |
 | 3 | **Course readiness** | Template setup, navigation links, syllabus content, dates, and other launch-day checks. |
 
