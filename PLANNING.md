@@ -743,11 +743,12 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Step 4 ✅ AuthGuard component — render prop wrapper, redirects to /login, role checking
 - Step 5 ✅ Session page — AuthGuard, IDA sees Col B only (reviewer_tier filter), Submit for QA Review button (ID), Approve/Request Revisions (QA), status badges, round indicator, revisions banner
 - Step 6 ✅ Home page — AuthGuard, sign out, user name+role in header, session status badges, audit purpose labels, round numbers
-- Step 7 NEXT: Build admin page (/admin route) — error queue, RLHF patterns, tester management
-- Step 8: Add notification badges
-- Step 9: Update dashboard — IDA quality tracking
-- Build verified: zero TypeScript errors, all routes registered (/, /login, /dashboard, /session/[id])
-- NOTE: Supabase Auth email+password provider must be enabled in Supabase dashboard (Authentication → Providers → Email). User must create test accounts in testers table + Supabase Auth before testing login.
+- Step 7 ✅ Admin page — /admin route (admin-only AuthGuard), testers management (add/activate/deactivate), error queue (list/resolve), RLHF summary stats
+- Step 8: Notification badges — deferred to post-pilot-testing (needs real usage data to be meaningful)
+- Step 9: Dashboard IDA quality tracking — deferred to post-pilot-testing (existing dashboard already shows agreement rates)
+- Build verified: zero TypeScript errors, all routes registered (/, /login, /admin, /dashboard, /session/[id])
+- NOTE: Before testing login, user must: (1) Enable email+password in Supabase Auth dashboard (Authentication → Providers → Email), (2) Create user in Supabase Auth, (3) Create matching row in testers table with same email
+- Phase 3 COMPLETE for pilot MVP. Notifications and dashboard enhancements are polish for after initial pilot testing.
 
 ### Phase 4 — Airtable Integration
 
