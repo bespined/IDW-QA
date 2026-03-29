@@ -820,15 +820,37 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 
 ### Phase 4 — RLHF + Admin Skills (was Phase 5)
 
-| Task | Details |
+**Claude Code skills to build** (in `/Users/bespined/claude-plugins/IDW-QA/skills/`):
+
+| Skill | Trigger | Role gate | What it does |
+|---|---|---|---|
+| `/assignments` | "my assignments", "what courses" | IDA only | Query tester_course_assignments → show assigned courses + status |
+| `/assign` | "assign IDA to course" | Admin only | Insert into tester_course_assignments via Supabase service key |
+| `/report-error` | "report a bug", "something broke" | All roles | Insert into error_reports table with context (session_id, skill, etc.) |
+| `/update-idw` | "update plugin", "pull latest" | Admin only | git pull to get latest prompts/config, show changelog |
+| `/admin` | "admin", "error queue" | Admin only | View error_reports, RLHF stats, manage testers from Claude Code |
+
+**Scripts to build** (in `scripts/`):
+
+| Script | Purpose |
 |---|---|
-| `/assignments` skill | IDA course list from tester_course_assignments |
-| `/assign` skill | Admin assigns IDAs to courses |
-| `/report-error` skill | User reports bug/issue → error_reports table |
-| `/update-idw` skill | git pull to distribute prompt/config updates |
-| `fetch_fix_queue.py` script | query Supabase for remediation_requested findings |
-| Update `/course-review` to use fix queue | pull from Supabase instead of local |
-| Admin RLHF pattern analysis | aggregate queries on finding_feedback |
+| `fetch_fix_queue.py` | Query Supabase for findings where remediation_requested=true, return as actionable list |
+| `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, by criterion, by reviewer, trends over time |
+
+**Role gating for skills**: Each skill checks `IDW_TESTER_ID` in `.env` → queries Supabase `testers` table → verifies role before executing. Non-authorized roles get "This skill requires [role] access."
+
+**Dashboard fix**: Update `/dashboard` page to use new decision values (correct/incorrect/not_applicable) and handle missing Supabase views gracefully.
+
+**Fix queue integration**: Update `/course-review` skill to pull from Supabase `audit_findings` where `remediation_requested=true` instead of local files.
+
+**Implementation order**:
+1. Fix dashboard (quick — update queries)
+2. Role gating helper (shared by all skills)
+3. `/assignments` + `/assign` (IDA + admin course management)
+4. `/report-error` (all roles)
+5. `fetch_fix_queue.py` + `/course-review` integration
+6. `/update-idw` + `/admin`
+7. `rlhf_analysis.py`
 
 ### Phase 5 — Airtable Integration (was Phase 4)
 
