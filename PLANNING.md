@@ -803,8 +803,11 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - **Bug: Admin round 2 shows Undo** — root cause: admin's agree/disagree UPDATEs the feedback row's overridden_at. When ID re-reviews (new row), the new row is clean, but if admin already agreed on it, overridden_at is set → shows Undo. Test session has been reset for clean round testing.
 - ✅ Feedback history UI — collapsible "Show decision history (N entries)" per finding, reverse chronological, shows all decisions + admin comments
 - **Admin round 2 Undo bug** — admin may still see Undo instead of Agree/Disagree after ID re-reviews. Verify with testing.
-- **IDA end-to-end test** — assign course → audit session exists → IDA sees Col B only → Correct/Incorrect/N/A → admin reviews IDA verdicts
-- **IDA → Admin review flow** — admin reviews IDA verdicts same as ID (Agree/Disagree). Needs testing.
+- ✅ Mass course assignment (comma-separated IDs)
+- ✅ Tester page search + role filter
+- ✅ IDA "Mark as Complete" flow (no QA gate — IDA verdicts are final for Col B)
+- **IDA end-to-end test** — assign course → IDA reviews Col B → marks complete → verdicts ready for Airtable
+- **IDA workflow clarification**: Admin does NOT Agree/Disagree on IDA verdicts. IDA's correction is final say for Col B. Admin only spot-checks quality via dashboard metrics.
 - Comment/decision history per finding (who decided what and when) — deferred
 - Notification badges — deferred
 - Dashboard IDA quality tracking — deferred
