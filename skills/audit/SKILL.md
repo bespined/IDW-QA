@@ -38,10 +38,15 @@ When the user asks for a general audit without specifying a mode, **always prese
 
 Only skip this prompt when the user's message clearly specifies a mode.
 
-**Do NOT ask for a scope filter.** Default to checking all standards. Only apply scope filtering if the user explicitly mentions it in their request:
-- "just check essential standards" → filter to 7 essential standards only
-- "only CRC items" / "operational checklist" → filter to 18 CRC items only
-- Otherwise → run all 98 criteria (default, no prompt needed)
+**If the user picks Quick Scan**, follow up with a scope question using `AskUserQuestion`:
+
+| Option | Label | Description |
+|---|---|---|
+| 1 | **Everything** | Check all 25 standards + operational readiness items. Most thorough quick scan. |
+| 2 | **Essential standards only** | Focus on the 7 core standards required for course launch (alignment, workload, assessments, materials, accessibility). |
+| 3 | **Operational readiness** | Template setup, navigation links, syllabus content, dates, and other launch-day checks. |
+
+**If the user picks Full Audit or Guided Review**, always run all standards — no scope question.
 
 ### Scope Filter Reference (internal — do not present to user)
 
