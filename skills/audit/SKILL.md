@@ -26,7 +26,27 @@ Unified audit skill with 3 modes: Quick Scan (deterministic only), Full Audit (d
 - "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
 - "Just check essential standards" → **Full Audit --scope essential** (skip prompt)
 
-## Entry Point — Audit Mode Selection
+## Entry Point — Course Selection
+
+Before asking about audit mode, determine which course(s) to audit. Use `AskUserQuestion`:
+
+| Option | Label | Description |
+|---|---|---|
+| 1 | **Current course** | Audit the course in `.env` (show course name for confirmation) |
+| 2 | **Pick from my assignments** | Show courses assigned to me via `/assignments` and let me choose |
+| 3 | **Batch audit** | Audit multiple courses sequentially — I'll pick which ones |
+| 4 | **Different course** | Let me provide a course URL or ID |
+
+**Skip this prompt** if the user already specified a course (e.g., "audit BIO 101" or "audit course 223406").
+
+**For Batch Audit:**
+1. Show the user's assigned courses (from `tester_course_assignments`) or let them paste a list of course IDs
+2. Confirm the list: "I'll audit these N courses sequentially: [list]. Each takes ~10 minutes for Deep Audit. Continue?"
+3. Run the audit on each course in sequence, generating separate reports and sessions for each
+4. At the end, show a summary table: Course | Score | Standards Met | Critical Issues
+5. Each course gets its own Supabase session and HTML report
+
+## Audit Mode Selection
 
 When the user asks for a general audit without specifying a mode, **always present the choice first** before fetching any data. Use `AskUserQuestion` with these options:
 
