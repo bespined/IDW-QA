@@ -684,7 +684,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - audit_report.py updated to write all new fields
 - Verified: 63/63 findings pushed with new fields populated
 
-### Phase 3 — Vercel App (NEXT)
+### Phase 3 — Vercel App ✅ COMPLETE
 
 **Location**: `/Users/bespined/Desktop/idw-review-app/`
 
@@ -818,7 +818,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 **Phase order discussion**:
 - Consider swapping Phase 4 (Airtable) and Phase 5 (RLHF/Admin skills) — Airtable sync may be less critical than getting the admin/IDA skills working in Claude Code. Discuss before proceeding.
 
-### Phase 4 — RLHF + Admin Skills (was Phase 5)
+### Phase 4 — RLHF + Admin Skills ✅ COMPLETE
 
 **Claude Code skills to build** (in `/Users/bespined/claude-plugins/IDW-QA/skills/`):
 
@@ -852,11 +852,9 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 6. `/update-idw` + `/admin`
 7. `rlhf_analysis.py`
 
-**Status**: Complete (built in session, pending commit + push).
+**Status**: Complete. Tagged v0.5.0.
 
-### Phase 4.5 — Report Updates + Fix Queue UX
-
-**Status**: Complete.
+### Phase 4.5 — Report Updates + Fix Queue UX ✅ COMPLETE
 
 **What was built:**
 
@@ -877,7 +875,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 
 5. **RLS migration** (`migrations/005_allow_anon_remediation_toggle.sql`) — allows anon key to read/update `audit_findings` for the remediation checkbox. Superseded by API route approach but kept for reference.
 
-### Phase 5 — Airtable Integration + Workflow Updates
+### Phase 5 — Airtable Integration + Workflow Updates (IN PROGRESS)
 
 #### Updated Workflow (March 2026)
 
