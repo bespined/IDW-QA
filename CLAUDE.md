@@ -231,6 +231,36 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `fetch_fix_queue.py` | Query Supabase for findings where remediation_requested=true |
 | `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, reviewer, criterion, trends |
 | `airtable_sync.py` | Sync approved findings to Airtable SCOUT ULTRA format (one row per course, 25 standards) |
+| `deterministic_checks.py` | Deterministic criterion checks — structural/existence checks for Col B criteria |
+| `build_checkpoint.py` | Save/restore audit progress checkpoints for long-running audits |
+| `metrics_sync.py` | Sync usage metrics to Supabase for admin dashboard |
+| `staging_server.py` | Local HTTP server for staging page previews (port 8111) |
+| `template_manager.py` | Manage Canvas page templates for course building |
+
+## Migrations
+
+All migrations are in `<plugin_root>/migrations/`. Run in order in the Supabase SQL Editor:
+
+| Migration | Purpose |
+|---|---|
+| `001_phase2_schema.sql` | Phase 2: testers, tester_course_assignments, error_reports tables + new columns on audit_sessions, audit_findings, finding_feedback |
+| `002_merge_qa_team_role.sql` | Merge qa_team role into admin (3 roles: id, id_assistant, admin) |
+| `003_update_decision_enum.sql` | Decision values: correct/incorrect/not_applicable (backward compatible with old values) |
+| `004_update_dashboard_views.sql` | Dashboard views: feedback_by_standard, reviewer_activity (new column names) |
+| `005_allow_anon_remediation_toggle.sql` | RLS policy for anon key to update audit_findings.remediation_requested |
+| `006_remediation_events.sql` | remediation_events table (tracks what was fixed, when, how, by whom) |
+| `007_session_assignment.sql` | Add `assigned_to` on audit_sessions for ID Assistant session assignment |
+
+## Review App API Routes
+
+The Vercel review app (`idw-review-app`) has server-side API routes using the Supabase service key:
+
+| Route | Method | Purpose |
+|---|---|---|
+| `/api/findings/remediation` | PATCH | Toggle `remediation_requested` on audit_findings (bypasses RLS) |
+| `/api/remediation-events` | GET, POST | Fetch or record remediation events for a finding |
+| `/api/session-complete` | POST | Mark session complete — Col C auto-approves, Col B → pending_qa_review |
+| `/api/sync-airtable` | POST | Trigger Airtable sync for a session (admin only) |
 
 ## MCP Connectors
 
