@@ -1073,15 +1073,51 @@ Airtable is NOT a separate system with its own structure. It mirrors Supabase da
 - HTML report — per-criterion expandable tables with B/C badges, met counts, evidence.
 - `audit_report.py` — pushes per-criterion findings to Supabase (one row per criterion).
 
-**In Progress:**
-- FindingCards grouped view — session page needs to group 100+ findings under standard headers with expandable criteria. Verdict buttons only on failing items.
+**Completed (cont.):**
+- FindingCards grouped view — StandardGroup component groups findings by standard. Collapsible, shows met counts, Col B/C separation.
+- Category filter — Design/Readiness/A11y toggle buttons on session page.
+- Batch audit — audit skill asks course selection first (current/pick/batch/other).
+- Review app pushed to GitHub with all API routes and UI changes.
+
+**In Progress — Evidence Quality Fix (CRITICAL for demo + pilot):**
+
+The audit produces per-criterion findings but the evidence is not specific enough for reviewers to verify or for remediation skills to act on. Three problems identified:
+
+*Problem 1: Field mapping is swapped.*
+`audit_report.py` stores criterion QUESTION in `content_excerpt` and evidence summary in `ai_reasoning`. FindingCard renders `content_excerpt` in the "Evidence" box — so reviewers see the question labeled as evidence.
+
+Fix: In `audit_report.py` push_to_rlhf, swap fields:
+- `ai_reasoning` = criterion question + verdict explanation ("This criterion checks if... Result: Partially Met because...")
+- `content_excerpt` = actual evidence (specific pages, elements, content found/missing)
+
+*Problem 2: FindingCard display order is wrong.*
+Currently: ai_reasoning as body text (unlabeled), content_excerpt in "Evidence" box. Should be: criterion question as subtitle, evidence as the labeled evidence block.
+
+Fix: In FindingCard.tsx, restructure:
+- Card title area: criterion_id + verdict badge
+- Subtitle: criterion question (from content_excerpt after fix, or a new field)
+- Body: ai_reasoning as the verdict explanation
+- Evidence box: actual evidence with page/element specifics
+
+*Problem 3: Audit evaluation doesn't read page content.*
+The eval_criterion function returns generic summaries ("Module overviews present objectives but...") without reading actual page HTML. For remediation to work, evidence must include:
+- Which specific pages were checked
+- What was found or not found on each page
+- For images: page slug + img src
+- For headings: page slug + the heading skip
+- For missing content: where it should be
+
+Fix: The audit evaluation must use the fetched page_bodies to produce per-page evidence. For deterministic checks (Col B), parse HTML and list every instance. For AI checks (Col C), read relevant pages and cite specific content.
+
+This is the biggest remaining quality issue — without specific evidence, the review workflow and remediation skills are both blind.
 
 **Remaining:**
-- Vercel session page FindingCard grouping (standard → criteria dropdown)
+- Fix 1: Field mapping swap in audit_report.py (quick)
+- Fix 2: FindingCard display restructure (medium)
+- Fix 3: Content-aware audit evaluation (large — requires audit to parse page HTML per criterion)
 - ID Assistant Agree/Disagree vocabulary for post-remediation validation
 - Remediation event recording from Claude Code skills
-- Faculty outreach templates (Phase 6 candidate)
-- Airtable views (manual setup — give instructions to QA team)
+- Airtable views (manual — instructions provided to QA team)
 
 ---
 
