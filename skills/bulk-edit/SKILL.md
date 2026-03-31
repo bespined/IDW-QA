@@ -18,6 +18,27 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 One skill for all multi-page content modifications: apply content from a source document across pages, copy a page template across modules with variable substitution, or bulk-fix accessibility and branding issues.
 
+## Reviewer Tier Awareness
+
+When bulk-edit fixes issues from audit findings, tag each remediation with the correct `criterion_id` (B-XX.Y or C-XX.Y format). After pushing a fix, record a `remediation_events` row:
+
+```bash
+python3 -c "
+import requests, os, json
+from dotenv import load_dotenv
+from pathlib import Path
+load_dotenv(Path('.env'))
+load_dotenv(Path('.env.local'))
+# Record remediation event via API
+resp = requests.post('https://YOUR_VERCEL_URL/api/remediation-events',
+    json={'finding_id': '<FINDING_ID>', 'remediated_by': os.getenv('IDW_TESTER_ID'), 'skill_used': 'bulk-edit', 'description': '<WHAT_WAS_FIXED>'},
+    timeout=15)
+print(resp.json())
+"
+```
+
+This creates a trail visible on the FindingCard: "Remediated via /bulk-edit (Name, Date)".
+
 ## When to Use
 
 - "Add learning objectives to all overview pages" → **Batch mode**

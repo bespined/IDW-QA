@@ -1105,6 +1105,24 @@ Airtable is NOT a separate system with its own structure. It mirrors Supabase da
 
 ---
 
+### Phase 6 — Faculty Outreach, Analytics & Prioritization
+
+| Task | Details | Priority |
+|---|---|---|
+| Faculty outreach email templates | Template-based drafts from Airtable findings. Admin reviews + sends. Use standard-level notes as the email body. Include course name, top issues, specific action items. | High — QA team needs this for recurring course workflow |
+| Draft generation in Claude Code | `/admin` or new `/outreach` skill generates email draft from a session's findings. Plain text, no jargon, grouped by priority (critical → important → enhancement). | High |
+| Post-launch analytics | DWF (Drop/Withdraw/Fail) rates, grade distributions, summative/formative assessment analysis. IDs use this data for course improvements. Requires external data source from ASU institutional systems. | Medium — not blocking pilot, data source TBD |
+| Course prioritization | Filter/sort courses by enrollment count, DWF rates to decide which courses to audit first. Airtable view + Claude Code `/admin` integration. Requires enrollment data. | Medium — depends on post-launch analytics data |
+| Automated outreach triggers | Airtable automations that draft emails when findings reach certain thresholds (e.g., >5 Not Met standards). Admin still reviews before sending. | Low — manual outreach works for pilot scale |
+| IDA audit vs ID Assistant audit comparison | Dashboard view comparing what the ID found vs what the ID Assistant found on the same course. Highlights discrepancies for training. | Medium — valuable for RLHF but not launch-blocking |
+
+**Dependencies:**
+- Post-launch analytics requires DWF/enrollment data from ASU systems (API or spreadsheet import)
+- Faculty outreach requires a sending mechanism (ASU email system, or manual copy-paste from generated drafts)
+- Course prioritization requires enrollment data + Airtable integration
+
+---
+
 ## 14. Notifications
 
 - **In-app badges only** (no email) — QA team and IDAs are logged into Vercel app to review, so notifications live there

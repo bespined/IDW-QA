@@ -146,9 +146,26 @@ The review evaluates the course across 8 dimensions, each scored 1-4:
 
 ## How to Conduct a Review
 
-### Step 0: Check the Fix Queue (RLHF Integration)
+### Step 0: Course Selection + Fix Queue
 
-Before starting a full review, check if there are pending remediation items from previous audits:
+**If the user has multiple course assignments**, show them first so they can pick which course to review:
+
+```bash
+python3 scripts/fetch_fix_queue.py --summary
+```
+
+If there are remediation items across multiple courses, present a summary:
+
+> **Courses with pending remediations:**
+> 1. **CRJ 201** — 5 items flagged
+> 2. **LAW 517** — 3 items flagged
+> 3. **BIO 101** — 0 items (all clear)
+>
+> Which course would you like to review?
+
+If the user picks a course, switch to it (update `.env`) and proceed.
+
+**For the selected course**, check the fix queue:
 
 ```bash
 python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback --summary
@@ -167,7 +184,19 @@ If the user chooses to address the fix queue:
 python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback
 ```
 
-Present each finding with its reviewer feedback (if any), and offer to fix it using the appropriate remediation skill (quiz, assignment-generator, bulk-edit, etc.). After each fix, the finding's `remediation_requested` status should be cleared when the fix is pushed to Canvas.
+Present each finding with its `criterion_id` (B-XX.Y or C-XX.Y), reviewer feedback (if any), and offer to fix it using the appropriate remediation skill (quiz, assignment-generator, bulk-edit, etc.).
+
+**After each fix:**
+1. Clear the finding's `remediation_requested` flag
+2. Record a `remediation_events` row so the FindingCard shows the remediation history:
+```bash
+python3 -c "
+import requests, os
+resp = requests.post('https://YOUR_VERCEL_URL/api/remediation-events',
+    json={'finding_id': '<FINDING_ID>', 'remediated_by': os.getenv('IDW_TESTER_ID'), 'skill_used': '<SKILL>', 'description': '<WHAT_WAS_FIXED>'},
+    timeout=15)
+"
+```
 
 ### Step 1: Gather Course Data
 
