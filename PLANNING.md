@@ -91,29 +91,28 @@ Supabase is ALWAYS the source of truth. Airtable is a downstream read-only sync.
 6. Repeat 2-5 until satisfied
 7. ID clicks "Submit for QA Review" in Vercel app
    - audit_sessions.status = 'pending_qa_review'
-8. QA team sees course in "Pending Review" queue
-9. QA team assigns IDAs to session
-10. IDAs verdict Col B findings (agree/disagree/not_an_issue/N/A)
-    - If disagree → corrected_finding text required
-11. QA team IDs verdict ALL findings (Col B + Col C)
-    - Can override IDA verdicts
+8. Session appears in admin queue as "New Course Dev"
+9. Admin assigns ID Assistant to session (assigned_to field)
+10. ID Assistant verdicts Col B findings (correct/incorrect/not_applicable)
+    - If incorrect → corrected_finding text required
+11. Col C findings auto-approved when ID marks complete (no review gate)
 12. Decision:
-    - If revisions needed → status = 'revisions_required', audit_round++
-      - ID sees feedback in Vercel app, goes back to step 2
-    - If approved → launch_gate_approved = true, course launches
+    - If ID Assistant agrees on all Col B → qa_approved
+    - If ID Assistant disagrees on any → revisions_required, back to ID for remediation
+    - All approved → Airtable sync
 ```
 
 ### Workflow C — Recurring Course Audit (NOT launch-gated)
 
 ```
-1. QA team triggers audit via Claude Code (QA team's Canvas token)
-   - audit_purpose = 'recurring'
+1. Admin triggers audit via Claude Code → audit_purpose = 'recurring' (inferred from admin role)
 2. Findings → Supabase
-3. QA team assigns IDAs
-4. IDAs verdict Col B findings in Vercel app
-5. QA team IDs verdict ALL findings
-6. Session complete → Airtable sync
-7. Remediation is PASSIVE:
+3. Admin assigns ID Assistant to session
+4. ID Assistant verdicts Col B findings in Vercel app
+5. Admin spot-checks (not required for every finding)
+6. Admin sends faculty outreach based on findings
+7. Findings sync to Airtable
+8. Remediation is PASSIVE:
    - Findings visible in Airtable
    - Faculty/IDs fix if they have time
    - No gate, no required action
@@ -147,33 +146,36 @@ The existing `standards.yaml` already has `check_type` per criterion:
 
 ### Standards breakdown (Col B / Col C check counts)
 
+Updated 2026-03-31 from `config/standards.yaml`. Source: [QA+AI] Experience Stage sheet + existing criteria for standards without sheet entries.
+
 ```
-Standard 01 (Course-Level Alignment)*:      3B / 3C
-Standard 02 (Module-Level Alignment)*:      2B / 2C
-Standard 03 (Alignment Made Clear):         0B / 2C
-Standard 04 (Consistent Layout):           46B / 1C
-Standard 05 (Engaging Introductions):       0B / 0C
-Standard 06 (Clear Workload)*:              5B / 5C
-Standard 07 (Instructor Guide):             1B / 2C
-Standard 08 (Assessments Align)*:           1B / 1C
-Standard 09 (Clear Grading Criteria):       8B / 0C
-Standard 10 (Varied Assessments):           2B / 2C
-Standard 11 (Cognitive Skills):             0B / 2C
-Standard 12 (Materials Align)*:             0B / 1C
-Standard 13 (High-Quality Content):        14B / 2C
-Standard 14 (Real-World Relevance):         0B / 0C
-Standard 15 (Universally Designed Content): 0B / 1C
-Standard 16 (Universally Designed Media):   1B / 1C
-Standard 17 (Open Space for Questions):     4B / 1C
-Standard 18 (Instructor-Created Media):     2B / 4C
-Standard 19 (Active Learning):              0B / 5C
-Standard 20 (Tool Integration):             4B / 3C
-Standard 21 (Technical/Academic Support):   0B / 1C
-Standard 22 (Material Accessibility)*:     11B / 1C
-Standard 23 (Tool Accessibility)*:           0B / 0C
-Standard 24 (Mobile/Offline):               1B / 0C
-Standard 25 (Low-Cost Resources):           1B / 1C
-                                    TOTAL: 106B / 42C
+Standard 01 (Course-Level Alignment)*:      3B / 3C =  6
+Standard 02 (Module-Level Alignment)*:      2B / 2C =  4
+Standard 03 (Alignment Made Clear):         0B / 2C =  2
+Standard 04 (Consistent Layout):           46B / 1C = 47
+Standard 05 (Engaging Introductions):       0B / 3C =  3
+Standard 06 (Clear Workload)*:              5B / 5C = 10
+Standard 07 (Instructor Guide):             1B / 2C =  3
+Standard 08 (Assessments Align)*:           1B / 1C =  2
+Standard 09 (Clear Grading Criteria):       8B / 0C =  8
+Standard 10 (Varied Assessments):           2B / 2C =  4
+Standard 11 (Cognitive Skills):             0B / 2C =  2
+Standard 12 (Materials Align)*:             0B / 1C =  1
+Standard 13 (High-Quality Content):        14B / 2C = 16
+Standard 14 (Real-World Relevance):         0B / 3C =  3
+Standard 15 (Universally Designed Content): 0B / 1C =  1
+Standard 16 (Universally Designed Media):   1B / 1C =  2
+Standard 17 (Open Space for Questions):     4B / 1C =  5
+Standard 18 (Instructor-Created Media):     2B / 4C =  6
+Standard 19 (Active Learning):              0B / 5C =  5
+Standard 20 (Tool Integration):             4B / 3C =  7
+Standard 21 (Technical/Academic Support):   0B / 1C =  1
+Standard 22 (Material Accessibility)*:     11B / 1C = 12
+Standard 23 (Tool Accessibility)*:          0B / 2C =  2
+Standard 24 (Mobile/Offline):               1B / 0C =  1
+Standard 25 (Low-Cost Resources):           1B / 1C =  2
+CRC (Course Readiness Checks):             18B / 0C = 18
+                                   TOTAL: 124B / 49C = 173
 ```
 
 `*` = essential standard
@@ -246,7 +248,7 @@ id, finding_id, session_id, created_at
 
 -- UPDATED fields
 decision           TEXT NOT NULL
-                   -- 'agree' | 'disagree' | 'not_an_issue' | 'not_applicable'
+                   -- 'correct' | 'incorrect' | 'not_applicable'
                    -- (was: 'approved' | 'rejected' | 'false_positive')
 
 -- NEW fields
@@ -260,7 +262,7 @@ reviewer_tier      TEXT
                    -- 'id_assistant' | 'id' — who submitted
 original_decision  TEXT
                    -- the IDA's original verdict before ID override
-                   -- 'agree' | 'disagree' | 'not_an_issue' | 'not_applicable'
+                   -- 'correct' | 'incorrect' | 'not_applicable'
                    -- NULL if not overridden
 overridden_by      UUID REFERENCES testers(id)
                    -- if QA team ID overrides IDA verdict
@@ -538,7 +540,7 @@ Admin reviews patterns on Vercel /admin dashboard
 ## 9. Airtable Integration
 
 ### Sync mechanism
-- **Trigger**: all findings in a session have a verdict (agree/disagree/not_an_issue/N/A)
+- **Trigger**: all findings in a session have a verdict (correct/incorrect/not_applicable)
 - **Method**: Supabase webhook (pg_net or Edge Function) → Airtable API batch create
 - **Backup**: nightly cron job syncs any sessions not yet synced (`airtable_synced_at IS NULL`)
 - **Direction**: one-way, Supabase → Airtable (never Airtable → Supabase)
@@ -666,7 +668,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 
 ### Phase 1 — Audit Skill Foundation ✅ COMPLETE
 
-- 98 criteria tagged with reviewer_tier (57 id_assistant + 41 id) and category
+- 173 criteria tagged with reviewer_tier (124 id_assistant + 49 id) and category
 - 18 CRC gap items added (crc.01-crc.18)
 - Audit streamlined to 3 modes: Quick Scan / Full Audit / Guided Review
 - Scope filters: all / essential / crc (nested under Quick Scan only)
@@ -1268,15 +1270,15 @@ This is the biggest remaining quality issue — without specific evidence, the r
 │   └── standards_enrichment.yaml      # Enriched criteria with examples
 ├── scripts/
 │   ├── canvas_api.py                  # Canvas API utilities
-│   ├── audit_report.py                # Report generation + Supabase push (HAS BUGS)
-│   ├── deterministic_checks.py        # 18 hardcoded checks (needs expansion to 107)
+│   ├── audit_report.py                # Report generation + Supabase push (per-criterion)
+│   ├── deterministic_checks.py        # Deterministic criterion checks
 │   ├── preflight_checks.py            # Content validation
-│   ├── staging_manager.py             # Local staging (HAS BUGS)
+│   ├── staging_manager.py             # Local staging
 │   └── ... (see CLAUDE.md for full list)
 ├── skills/
 │   ├── audit/SKILL.md                 # Audit skill (needs 3-mode streamline + evidence)
 │   ├── staging/SKILL.md               # Staging skill (needs simplification)
-│   └── ... (16 skills total)
+│   └── ... (21 skills total)
 ├── standards/
 │   ├── canvas-standards.md            # ASU design standards
 │   ├── page-design.md                 # HTML/CSS design system

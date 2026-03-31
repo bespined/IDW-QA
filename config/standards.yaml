@@ -2,7 +2,7 @@
 # ASU Course Design Standards - QA Initiate Template
 # ============================================================
 # Source: [QA + AI] Experience Stage_Review Item Lists.xlsx
-# Updated: 2026-03-31 — Full 147 criteria from QA+AI sheet with B-/C- IDs
+# Updated: 2026-03-31 — 173 criteria (124B + 49C): 147 from QA+AI sheet + 8 for stds 05/14/23 + 18 CRC
 # ============================================================
 # criterion_id format: B-XX.Y (Col B, id_assistant) or C-XX.Y (Col C, id)
 #   B = deterministic/existence checks — ID Assistants can verdict
