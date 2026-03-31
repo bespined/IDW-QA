@@ -230,10 +230,12 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                         "finding_type": "design",
                         "standard_id": item.get("id", ""),
                         "page_url": cr.get("page_url", item.get("page_url", "")),
-                        "page_title": item.get("name", ""),  # Standard name (for grouping)
+                        "page_title": item.get("name", ""),  # Standard name (for grouping in review app)
                         "ai_verdict": cr.get("status", "").lower().replace(" ", "_"),
-                        "ai_reasoning": cr.get("evidence", ""),
-                        "content_excerpt": cr.get("criterion_text", cr.get("content_excerpt", "")),
+                        # ai_reasoning = criterion question (what was checked)
+                        "ai_reasoning": cr.get("criterion_text", ""),
+                        # content_excerpt = actual evidence (what was found, specific pages/elements)
+                        "content_excerpt": cr.get("evidence", ""),
                         "confidence_tier": (cr.get("confidence", item.get("confidence", ""))).lower() or None,
                         "reviewer_tier": cr.get("reviewer_tier", item.get("reviewer_tier", "id")),
                         "canvas_link": cr.get("canvas_link", item.get("canvas_link")),
