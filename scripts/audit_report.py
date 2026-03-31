@@ -225,17 +225,40 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             if criteria_results:
                 # Push one finding per criterion (granular)
                 for cr in criteria_results:
+                    # Resilient field extraction — Claude may use different field names
+                    # Criterion question: look in criterion_text, text, description
+                    crit_question = (
+                        cr.get("criterion_text")
+                        or cr.get("text")
+                        or cr.get("description")
+                        or ""
+                    )
+                    # Evidence: look in evidence, detail, reasoning, content_excerpt
+                    crit_evidence = (
+                        cr.get("evidence")
+                        or cr.get("detail")
+                        or cr.get("reasoning")
+                        or cr.get("content_excerpt")
+                        or ""
+                    )
+                    # If evidence looks like a question and question is empty, swap
+                    if not crit_question and crit_evidence and "?" in crit_evidence:
+                        crit_question = crit_evidence
+                        crit_evidence = ""
+                    # If question looks like evidence (no "?" and > 20 chars), swap
+                    if crit_question and "?" not in crit_question and len(crit_question) > 50 and not crit_evidence:
+                        crit_evidence = crit_question
+                        crit_question = ""
+
                     findings_rows.append({
                         "session_id": session_id,
                         "finding_type": "design",
                         "standard_id": item.get("id", ""),
                         "page_url": cr.get("page_url", item.get("page_url", "")),
-                        "page_title": item.get("name", ""),  # Standard name (for grouping in review app)
+                        "page_title": item.get("name", ""),  # Standard name (for grouping)
                         "ai_verdict": cr.get("status", "").lower().replace(" ", "_"),
-                        # ai_reasoning = criterion question (what was checked)
-                        "ai_reasoning": cr.get("criterion_text", ""),
-                        # content_excerpt = actual evidence (what was found, specific pages/elements)
-                        "content_excerpt": cr.get("evidence", ""),
+                        "ai_reasoning": crit_question,      # What was checked
+                        "content_excerpt": crit_evidence,    # What was found
                         "confidence_tier": (cr.get("confidence", item.get("confidence", ""))).lower() or None,
                         "reviewer_tier": cr.get("reviewer_tier", item.get("reviewer_tier", "id")),
                         "canvas_link": cr.get("canvas_link", item.get("canvas_link")),
