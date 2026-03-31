@@ -138,6 +138,37 @@ For EVERY standard, load its criteria from `standards.yaml` and evaluate each on
 
 **Col C criteria** (`C-XX.Y`, `reviewer_tier: id`): These are quality/judgment checks. Evaluate using the enrichment card from `standards_enrichment.yaml`. Apply instructional design expertise.
 
+### Evidence Requirements (CRITICAL)
+
+Every criterion MUST capture specific, actionable evidence — not just "yes it exists" or "no it doesn't." The evidence must be detailed enough for someone to locate and fix the issue without re-auditing.
+
+**For Met criteria:**
+- State WHAT was found and WHERE: "Syllabus page contains 14,813 chars of content including grading policy, late work policy, and AI statement"
+- Reference specific pages/elements when relevant: "Instructor introduction found at pages/meet-your-instructor"
+
+**For Not Met criteria:**
+- List EVERY specific instance of the failure:
+  - Images: list each page slug + img src or description. e.g., "m3-lesson-introduction: anatomy-diagram.png (no alt), m5-resources: chart-data.png (alt='')"
+  - Headings: list each page + the skip. e.g., "m12-dot-1-required-reading-2: h2→h4 ('CASE')"
+  - Missing content: state exactly what's missing and where it should be
+- This data goes into `content_excerpt` and is used by remediation skills to locate and fix issues
+
+**For Partially Met criteria:**
+- State what passes AND what fails with specific instances
+
+**Example — BAD evidence (unusable):**
+```
+"evidence": "Some images missing alt text"
+```
+
+**Example — GOOD evidence (actionable):**
+```
+"evidence": "96 of 100 images missing alt text",
+"content_excerpt": "m1-overview: banner.jpg (no alt), m1-lesson: fig1-torts.png (alt=''), m2-overview: header.jpg (no alt), m2-lesson: diagram-negligence.png (alt=''), m3-overview: banner.jpg (no alt) ... [showing 5 of 96, full list in audit data]"
+```
+
+**Per-criterion result model with evidence:**
+
 **Output per standard item must include `criteria_results`:**
 ```json
 {

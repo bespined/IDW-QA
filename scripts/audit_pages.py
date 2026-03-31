@@ -99,12 +99,15 @@ class AccessibilityAuditor(HTMLParser):
     def handle_starttag(self, tag, attrs):
         attrs_dict = dict(attrs)
 
-        # Check images for alt text
+        # Check images for alt text (missing OR empty)
         if tag == "img":
             alt = attrs_dict.get("alt")
+            src = attrs_dict.get("src", "unknown")[:80]
             if alt is None:
-                src = attrs_dict.get("src", "unknown")[:60]
                 self.issues.append(f"IMG missing alt: {src}")
+            elif alt.strip() == "":
+                # Empty alt is valid for decorative images but flag for review
+                self.issues.append(f"IMG empty alt (decorative?): {src}")
 
         # Track headings
         if tag in ("h1", "h2", "h3", "h4", "h5", "h6"):
@@ -227,6 +230,8 @@ def audit_course(config, output_path=None):
             for issue in issues:
                 if "IMG missing alt" in issue:
                     type_counts["Missing alt text"] += 1
+                elif "IMG empty alt" in issue:
+                    type_counts["Empty alt text (review needed)"] += 1
                 elif "Heading skip" in issue:
                     type_counts["Heading hierarchy skip"] += 1
                 elif "Generic link text" in issue:
