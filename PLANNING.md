@@ -1111,11 +1111,57 @@ Fix: The audit evaluation must use the fetched page_bodies to produce per-page e
 
 This is the biggest remaining quality issue — without specific evidence, the review workflow and remediation skills are both blind.
 
-**Remaining:**
-- Fix 1: Field mapping swap in audit_report.py (quick)
-- Fix 2: FindingCard display restructure (medium)
-- Fix 3: Content-aware audit evaluation (large — requires audit to parse page HTML per criterion)
+**Completed (cont.):**
+- Fix 1: Field mapping — `ai_reasoning` = criterion question, `content_excerpt` = actual evidence. Pushed + tested.
+- Fix 2: FindingCard — criterion question in italic, evidence in labeled bold box. Pushed.
+- Fix 3: Content-aware evaluation — audit now reads page HTML, collects per-page image/heading/content evidence. Tested on LAW 517 (96 specific images identified across 68 pages).
+
+**Remaining — Session Assignment + Routing:**
+
+*Session assignment for ID Assistants:*
+- New field: `audit_sessions.assigned_to` (UUID → testers). Admin assigns an ID Assistant to review a session.
+- ID Assistant's Vercel dashboard shows only sessions where `assigned_to = my_id`.
+- Assignment is sticky through rounds — same ID Asst reviews all rounds unless admin reassigns.
+- Migration needed: `ALTER TABLE audit_sessions ADD COLUMN IF NOT EXISTS assigned_to UUID REFERENCES testers(id);`
+
+*Audit purpose — inferred from role, no prompt:*
+- `id` role runs audit → `audit_purpose = self_audit` (new course dev). Always.
+- `admin` role runs audit → `audit_purpose = recurring`. Always.
+- No extra question needed. Role = purpose.
+
+*Vercel admin view:*
+- Filter: [All] [New Course Dev] [Recurring]
+- Badge on each session: 🔵 New Course Dev / 🟢 Recurring
+- Assign button per session → picks from active ID Assistants
+- Unassigned sessions highlighted
+
+*Vercel ID Assistant view:*
+- Shows only sessions where `assigned_to = my_id`
+- Separated into: "New Course Dev" (needs validation, may loop through remediation) and "Recurring" (validation only, no remediation)
+- Progress indicator per session
+
+*Post-validation routing by audit_purpose:*
+- `self_audit` (new course dev): ID Asst disagrees → `revisions_required` → back to ID for remediation
+- `recurring`: ID Asst disagrees → findings logged, admin notified for faculty outreach. No remediation loop.
+
+*Smart remediation (discussed, not yet implemented):*
+- Audit identifies problems at standard level ("96 images missing alt")
+- Remediation skill does focused re-scan at element level (finds every specific image)
+- ID says "fix Standard 22" → skill re-audits just that issue, generates fixes, stages, pushes
+- Checkbox "needs remediation" stays for data tracking (how many flagged vs fixed)
+
+*Manual-entry fields:*
+- Some criteria can't be checked via API: Ally score (B-22.9), SCOUT results (B-22.10), Readability (B-22.11)
+- Add text input on FindingCard when criterion is N/A due to "requires manual tool"
+- Value stored in `finding_feedback.corrected_finding` or new `manual_value` field
+- `airtable_sync.py` picks up manual values and writes to corresponding Airtable column
+
+**Still remaining:**
+- Migration for `assigned_to` on audit_sessions
+- Vercel admin assign UI
+- Vercel ID Asst dashboard (my assignments only)
 - ID Assistant Agree/Disagree vocabulary for post-remediation validation
+- Manual-entry text fields on FindingCard for Ally/SCOUT/readability scores
 - Remediation event recording from Claude Code skills
 - Airtable views (manual — instructions provided to QA team)
 
