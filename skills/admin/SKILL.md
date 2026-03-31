@@ -1,0 +1,284 @@
+---
+name: admin
+description: "Admin dashboard — error queue, RLHF stats, tester management. Admin role required."
+---
+
+# Admin
+
+> **Run**: `/admin`
+
+## Metric Tracking
+When this skill is invoked, immediately run this command before doing anything else:
+```bash
+python3 scripts/idw_metrics.py --track skill_invoked --context '{"skill": "admin"}'
+```
+
+## Purpose
+
+Central admin panel for the IDW QA plugin. Provides access to error reports, RLHF agreement statistics, tester management, and system health — all from within Claude Code.
+
+## Role Gate
+
+This skill requires the `admin` role. Run:
+
+```bash
+python3 scripts/role_gate.py --check admin
+```
+
+- If exit code is 0: proceed
+- If exit code is 1: show the error and stop.
+
+## Entry Point
+
+Present the admin menu using `AskUserQuestion`:
+
+> **Admin Panel**
+>
+> 1. **Error Queue** — View and manage bug reports
+> 2. **RLHF Stats** — Agreement rates and reviewer activity
+> 3. **Manage Testers** — Add, deactivate, or list testers
+> 4. **Course Assignments** — View all IDA assignments across courses
+> 5. **System Health** — Plugin version, migration status, config check
+
+---
+
+## 1. Error Queue
+
+### View Open Errors
+
+```bash
+python3 -c "
+import json, sys
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config, _supabase_get
+
+url, key = _get_supabase_config()
+errors = _supabase_get(url, key, 'error_reports', {
+    'status': 'eq.open',
+    'order': 'created_at.desc'
+})
+print(json.dumps(errors or [], indent=2, default=str))
+"
+```
+
+Present as a table:
+
+```
+## Open Error Reports (N total)
+
+| # | Type | Reporter | Description | Reported |
+|---|------|----------|-------------|----------|
+| 1 | bug | Alice Chen | Staging preview not loading... | Mar 25 |
+| 2 | wrong_finding | Bob Smith | Standard 4.1 flagged but page... | Mar 24 |
+```
+
+### Actions on Errors
+
+For each error, offer:
+- **Acknowledge** — mark as `acknowledged` (admin is aware, working on it)
+- **Resolve** — mark as `resolved` with resolution note
+- **View context** — show the full `context` JSON
+
+```bash
+python3 -c "
+import json, os, sys, requests
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config
+from datetime import datetime, timezone
+
+url, key = _get_supabase_config()
+admin_id = os.getenv('IDW_TESTER_ID', '').strip()
+
+resp = requests.patch(
+    f'{url}/rest/v1/error_reports?id=eq.<ERROR_ID>',
+    headers={
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+    },
+    json={
+        'status': '<STATUS>',
+        'resolved_by': admin_id,
+        'resolved_at': datetime.now(timezone.utc).isoformat()
+    },
+    timeout=15,
+)
+print(json.dumps(resp.json(), indent=2, default=str))
+"
+```
+
+### Filter Options
+- Show all (including resolved): add `--all`
+- Filter by type: "show crash reports only"
+- Filter by reporter: "show Bob's reports"
+
+---
+
+## 2. RLHF Stats
+
+Run the analysis script:
+
+```bash
+python3 scripts/rlhf_analysis.py --summary
+```
+
+Display the output — it includes:
+- Overall agreement rate
+- Agreement by standard (sorted worst to best)
+- Agreement by reviewer
+- Trend over time (by week)
+- Standards needing prompt attention (agreement < 70%)
+
+For deeper analysis:
+```bash
+python3 scripts/rlhf_analysis.py --by-standard
+python3 scripts/rlhf_analysis.py --by-reviewer
+python3 scripts/rlhf_analysis.py --trends
+python3 scripts/rlhf_analysis.py --low-agreement --threshold 70
+```
+
+---
+
+## 3. Manage Testers
+
+### List All Testers
+
+```bash
+python3 -c "
+import json, sys
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config, _supabase_get
+
+url, key = _get_supabase_config()
+testers = _supabase_get(url, key, 'testers', {'order': 'role.asc,name.asc'})
+print(json.dumps(testers or [], indent=2, default=str))
+"
+```
+
+Present as:
+
+```
+## Testers (N total)
+
+| Name | Email | Role | Active | Added |
+|------|-------|------|--------|-------|
+| Alice Chen | alice@asu.edu | id_assistant | Yes | Mar 10 |
+| Bob Smith | bob@asu.edu | id_assistant | Yes | Mar 12 |
+| Jane Doe | jane@asu.edu | admin | Yes | Mar 1 |
+```
+
+### Register New Tester
+
+```bash
+python3 scripts/role_gate.py --register --name "<NAME>" --email "<EMAIL>" --role <ROLE>
+```
+
+After registration, show the new tester's ID so the admin can share it:
+
+> Registered **[name]** as **[role]**. Their tester ID is: `<uuid>`
+> They need to add `IDW_TESTER_ID=<uuid>` to their `.env` file.
+
+### Deactivate Tester
+
+```bash
+python3 -c "
+import json, sys, requests
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config
+
+url, key = _get_supabase_config()
+resp = requests.patch(
+    f'{url}/rest/v1/testers?id=eq.<TESTER_ID>',
+    headers={
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+    },
+    json={'is_active': False},
+    timeout=15,
+)
+print(json.dumps(resp.json(), indent=2, default=str))
+"
+```
+
+### Change Role
+
+Same pattern as deactivate but with `{'role': '<NEW_ROLE>'}`.
+
+---
+
+## 4. Course Assignments
+
+### View All Assignments
+
+```bash
+python3 -c "
+import json, sys
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config, _supabase_get
+
+url, key = _get_supabase_config()
+assignments = _supabase_get(url, key, 'tester_course_assignments', {
+    'order': 'status.asc,assigned_at.desc',
+    'select': '*,testers(name,role)'
+})
+print(json.dumps(assignments or [], indent=2, default=str))
+"
+```
+
+Present grouped by status (assigned → in_progress → completed).
+
+### Quick Assign
+
+From here, the admin can jump to `/assign` to create new assignments.
+
+---
+
+## 5. System Health
+
+### Plugin Version
+
+```bash
+cd /Users/bespined/claude-plugins/IDW-QA && git log --oneline -1 && echo "---" && git describe --tags 2>/dev/null || echo "no tags"
+```
+
+### Migration Status
+
+Check which migrations exist:
+```bash
+ls -la /Users/bespined/claude-plugins/IDW-QA/migrations/*.sql
+```
+
+Remind admin if any new migrations need to be run.
+
+### Config Check
+
+Verify required environment variables are set:
+
+```bash
+python3 -c "
+import os, json
+from pathlib import Path
+from dotenv import load_dotenv
+load_dotenv(Path('$(pwd)/.env'))
+load_dotenv(Path('$(pwd)/.env.local'))
+
+checks = {
+    'CANVAS_TOKEN': bool(os.getenv('CANVAS_TOKEN', '')),
+    'CANVAS_DOMAIN': bool(os.getenv('CANVAS_DOMAIN', '')),
+    'CANVAS_COURSE_ID': bool(os.getenv('CANVAS_COURSE_ID', '')),
+    'SUPABASE_URL': bool(os.getenv('SUPABASE_URL', '')),
+    'SUPABASE_SERVICE_KEY': bool(os.getenv('SUPABASE_SERVICE_KEY', '')),
+    'IDW_TESTER_ID': bool(os.getenv('IDW_TESTER_ID', '')),
+}
+print(json.dumps(checks, indent=2))
+"
+```
+
+Present as a checklist with checkmarks/X marks.
+
+## Navigation
+
+After any sub-panel action, offer to return to the admin menu or exit.

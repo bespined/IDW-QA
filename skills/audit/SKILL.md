@@ -119,9 +119,51 @@ Detailed findings below...
    - If absent or stale (>7 days): run `python scripts/alignment_graph.py --build` to auto-extract CLO→MLO→Material→Assessment relationships
    - If present: load and display summary (`python scripts/alignment_graph.py --summary`)
    - Report: "Alignment graph loaded: X CLOs, Y MLOs, Z assessments, N gaps"
-3. **Evaluate each of the 25 standards** using the two-pass approach below
-4. **Score each standard**: Met / Partially Met / Not Met / Not Auditable
-5. **Include research citations** for Not Met/Partially Met standards
+3. **Load `config/standards.yaml`** — this contains all 173 criteria with `B-XX.Y` / `C-XX.Y` IDs
+4. **Evaluate each criterion individually** — see Per-Criterion Evaluation below
+5. **Derive standard-level status** from criteria (lowest wins: any Not Met → standard is Partially Met at best)
+6. **Include research citations** for Not Met/Partially Met standards
+
+### Per-Criterion Evaluation (CRITICAL)
+
+For EVERY standard, load its criteria from `standards.yaml` and evaluate each one individually. This is how the audit produces granular data that flows to Supabase → Vercel → Airtable.
+
+**For each criterion in a standard:**
+1. Read the criterion text (it's a question like "Does the syllabus have content?")
+2. Check the course data to answer Yes / No / N/A
+3. If No: provide brief evidence of what's missing or wrong
+4. Record: `criterion_id`, `status` (Met/Not Met/N/A), `evidence`, `reviewer_tier`, `check_type`
+
+**Col B criteria** (`B-XX.Y`, `reviewer_tier: id_assistant`): These are existence/structural checks. Check if something exists, is configured, or is present. Answer with the data — don't apply judgment.
+
+**Col C criteria** (`C-XX.Y`, `reviewer_tier: id`): These are quality/judgment checks. Evaluate using the enrichment card from `standards_enrichment.yaml`. Apply instructional design expertise.
+
+**Output per standard item must include `criteria_results`:**
+```json
+{
+  "id": "04",
+  "name": "Consistent Layout",
+  "status": "Partially Met",
+  "evidence": "43 of 47 criteria met. Getting Started module exists, syllabus published. Course tour page missing, assignment groups not configured.",
+  "recommendation": "Add a course tour page and configure assignment groups.",
+  "confidence": "High",
+  "reviewer_tier": "id_assistant",
+  "criteria_results": [
+    {"criterion_id": "B-04.1", "status": "Met", "evidence": "Welcome and Start Here module found", "check_type": "deterministic", "reviewer_tier": "id_assistant"},
+    {"criterion_id": "B-04.2", "status": "Met", "evidence": "Syllabus page has content (14,813 chars)", "check_type": "deterministic", "reviewer_tier": "id_assistant"},
+    {"criterion_id": "B-04.15", "status": "Not Met", "evidence": "No course tour page found", "check_type": "deterministic", "reviewer_tier": "id_assistant"},
+    {"criterion_id": "C-04.1", "status": "Met", "evidence": "Recurring elements follow consistent formatting", "check_type": "ai", "reviewer_tier": "id"}
+  ]
+}
+```
+
+**Standard-level status** = derived from criteria (lowest criterion wins):
+- ALL criteria Met → Standard "Met"
+- Any Not Met but most Met → Standard "Partially Met"
+- Most Not Met → Standard "Not Met"
+- Cannot evaluate (missing data) → Standard "Not Auditable"
+
+**Standard-level evidence** = summary sentence aggregating criteria results (e.g., "43 of 47 criteria met. Missing: course tour, assignment groups.")
 
 ### Two-Pass Evaluation (Graph + AI)
 
@@ -235,36 +277,16 @@ When prerequisite data is missing, mark the standard as **"Not Auditable"** inst
 
 "Not Auditable" standards are **excluded from the score denominator**. Report them separately with the recommendation to provide the missing prerequisite data.
 
-### Per-Criterion Evaluation
+### Enrichment Cards (for Col C / AI criteria)
 
-Each standard in `standards.yaml` has a `criteria:` list where every criterion has an explicit `criterion_id` and `check_type`. Evaluate each criterion individually:
+When evaluating `C-XX.Y` criteria (check_type: "ai"), load the corresponding enrichment card from `config/standards_enrichment.yaml`. The enrichment card provides:
+- `measurable_criteria` — specific things to look for
+- `expectations` — what "Met" looks like
+- `considerations` — edge cases and nuances
+- `examples` — concrete examples of good vs. poor
+- `research` — citations backing the standard
 
-1. **Load criteria** — Read the `criteria:` array for each standard. Each entry has `criterion_id`, `text`, and `check_type` ("deterministic" | "ai" | "hybrid").
-
-2. **Route by check_type:**
-   - `"deterministic"` → Run via `deterministic_checks.run_checks()` (see `scripts/deterministic_checks.py`). These produce automated, high-confidence results with no AI judgment.
-   - `"ai"` → Evaluate using the enrichment card context from `standards_enrichment.yaml`. Apply evidence verification and coverage checks.
-   - `"hybrid"` → Run the deterministic signal first. If it passes, apply AI judgment for quality aspects. If the deterministic signal fails, the criterion is at most "Partially Met" regardless of AI opinion.
-
-3. **Per-criterion result model:**
-   ```json
-   {
-     "criterion_id": "01.1",
-     "criterion_text": "Each course-level objective is written with a measurable action verb...",
-     "check_type": "deterministic",
-     "status": "Met",
-     "confidence": "High",
-     "evidence": "All 5 CLOs use measurable verbs: analyze, evaluate, apply, compare, design",
-     "graph_verified": true
-   }
-   ```
-
-4. **Standard-level status** = lowest criterion status ("lowest criterion wins"):
-   - If ANY criterion is "Not Met" → standard is at most "Partially Met"
-   - If ALL criteria are "Met" → standard is "Met"
-   - This is an intentional IDW scoring policy.
-
-5. **Report per-criterion findings** in the audit output JSON as `criteria_results` array per standard item. The audit report renders these as expandable sub-rows within each standard card.
+Inject the full enrichment card into your evaluation context for each C-criterion. This provides the evidence depth needed for qualitative judgments. Do NOT evaluate C-criteria without the enrichment card — the criteria text alone is too vague for reliable judgment.
 
 ### Enrichment-Injected Prompts
 

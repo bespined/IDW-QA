@@ -44,8 +44,20 @@ REPORTS_DIR = PLUGIN_ROOT / "reports"
 
 
 def _resolve_auditor(data: dict) -> str:
-    """Resolve auditor name: env var > data dict > fallback."""
-    return os.getenv("IDW_AUDITOR_NAME") or data.get("auditor") or "ID Workbench"
+    """Resolve auditor name: env var > tester lookup > data dict > fallback."""
+    if os.getenv("IDW_AUDITOR_NAME"):
+        return os.getenv("IDW_AUDITOR_NAME")
+    # Try looking up tester name from IDW_TESTER_ID
+    tester_id = os.getenv("IDW_TESTER_ID", "").strip()
+    if tester_id:
+        try:
+            from role_gate import get_current_tester
+            tester = get_current_tester()
+            if tester and tester.get("name"):
+                return tester["name"]
+        except Exception:
+            pass
+    return data.get("auditor") or "ID Workbench"
 
 
 # ── RLHF Supabase Integration ──────────────────────────────────────
@@ -207,26 +219,46 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
         # 3. Insert findings from all sections
         findings_rows = []
 
-        # Design standards
+        # Design standards — push per-criterion findings when available
         for item in ds.get("items", []):
-            row = {
-                "session_id": session_id,
-                "finding_type": "design",
-                "standard_id": item.get("id", ""),
-                "page_url": item.get("page_url", ""),
-                "page_title": item.get("page_title", item.get("name", "")),
-                "ai_verdict": item.get("status", "").lower().replace(" ", "_"),
-                "ai_reasoning": item.get("evidence", ""),
-                "content_excerpt": item.get("content_excerpt", item.get("recommendation", "")),
-                "confidence_tier": (item.get("confidence", "")).lower() or None,
-                # Phase 2 fields
-                "reviewer_tier": item.get("reviewer_tier", "id"),
-                "canvas_link": item.get("canvas_link"),
-                "criterion_id": item.get("criterion_id"),
-                "category": "crc" if item.get("id", "").startswith("crc") else "design_standard",
-                "remediation_requested": False,
-            }
-            findings_rows.append(row)
+            criteria_results = item.get("criteria_results", [])
+            if criteria_results:
+                # Push one finding per criterion (granular)
+                for cr in criteria_results:
+                    findings_rows.append({
+                        "session_id": session_id,
+                        "finding_type": "design",
+                        "standard_id": item.get("id", ""),
+                        "page_url": cr.get("page_url", item.get("page_url", "")),
+                        "page_title": cr.get("criterion_text", cr.get("evidence", item.get("name", ""))),
+                        "ai_verdict": cr.get("status", "").lower().replace(" ", "_"),
+                        "ai_reasoning": cr.get("evidence", ""),
+                        "content_excerpt": cr.get("content_excerpt", ""),
+                        "confidence_tier": (cr.get("confidence", item.get("confidence", ""))).lower() or None,
+                        "reviewer_tier": cr.get("reviewer_tier", item.get("reviewer_tier", "id")),
+                        "canvas_link": cr.get("canvas_link", item.get("canvas_link")),
+                        "criterion_id": cr.get("criterion_id"),
+                        "category": "crc" if item.get("id", "").startswith("crc") else "design_standard",
+                        "remediation_requested": False,
+                    })
+            else:
+                # Fallback: push standard-level finding (legacy)
+                findings_rows.append({
+                    "session_id": session_id,
+                    "finding_type": "design",
+                    "standard_id": item.get("id", ""),
+                    "page_url": item.get("page_url", ""),
+                    "page_title": item.get("page_title", item.get("name", "")),
+                    "ai_verdict": item.get("status", "").lower().replace(" ", "_"),
+                    "ai_reasoning": item.get("evidence", ""),
+                    "content_excerpt": item.get("content_excerpt", item.get("recommendation", "")),
+                    "confidence_tier": (item.get("confidence", "")).lower() or None,
+                    "reviewer_tier": item.get("reviewer_tier", "id"),
+                    "canvas_link": item.get("canvas_link"),
+                    "criterion_id": item.get("criterion_id"),
+                    "category": "crc" if item.get("id", "").startswith("crc") else "design_standard",
+                    "remediation_requested": False,
+                })
 
         # QA categories
         for item in qa.get("items", []):
@@ -516,29 +548,38 @@ def _render_criteria_results(criteria_results: list) -> str:
     """Render per-criterion results as expandable sub-rows within a standard card."""
     if not criteria_results:
         return ''
+    met_count = sum(1 for cr in criteria_results if cr.get('status', '').lower() in ('met', 'pass', 'yes'))
+    total = len(criteria_results)
     rows = []
     for cr in criteria_results:
         cid = _escape(cr.get('criterion_id', ''))
         status = cr.get('status', 'Unknown')
         ct = cr.get('check_type', 'ai')
         evidence = _escape(cr.get('evidence', ''))
+        tier = cr.get('reviewer_tier', '')
+        tier_badge = ''
+        if cid.startswith('B-') or tier == 'id_assistant':
+            tier_badge = '<span style="background:#e0f4fa;color:#0081b3;font-size:10px;padding:1px 4px;border-radius:3px;margin-left:4px">B</span>'
+        elif cid.startswith('C-') or tier == 'id':
+            tier_badge = '<span style="background:#f3ebe7;color:#AF674B;font-size:10px;padding:1px 4px;border-radius:3px;margin-left:4px">C</span>'
         graph_tag = ' 📊' if cr.get('graph_verified') else ''
         type_label = {'deterministic': '⚙ Auto', 'ai': '🤖 AI', 'hybrid': '⚙+🤖'}.get(ct, ct)
         rows.append(
             f'<tr style="font-size:12px">'
-            f'<td style="padding:4px 8px;color:#888">{cid}</td>'
+            f'<td style="padding:4px 8px;color:#888;white-space:nowrap">{cid}{tier_badge}</td>'
             f'<td style="padding:4px 8px"><span style="color:{_severity_color(status)};font-weight:600">'
             f'{_severity_icon(status)} {_escape(status)}</span></td>'
             f'<td style="padding:4px 8px;color:#888">{type_label}{graph_tag}</td>'
-            f'<td style="padding:4px 8px">{evidence[:120]}{"..." if len(evidence) > 120 else ""}</td>'
+            f'<td style="padding:4px 8px">{evidence[:150]}{"..." if len(evidence) > 150 else ""}</td>'
             f'</tr>'
         )
-    # Default collapsed for Met standards, expanded for issues
-    has_issues = any(cr.get('status') in ('Not Met', 'Partially Met') for cr in criteria_results)
+    has_issues = any(cr.get('status') in ('Not Met', 'Partially Met', 'not_met', 'not met', 'No') for cr in criteria_results)
     open_attr = ' open' if has_issues else ''
+    summary_color = '#1e7e34' if met_count == total else ('#b5540a' if met_count > total / 2 else '#c62828')
     return (
         f'<details style="margin-top:8px;border-top:1px solid #eee;padding-top:6px"{open_attr}>'
-        f'<summary style="cursor:pointer;font-size:12px;color:#888">Per-criterion details ({len(criteria_results)} criteria)</summary>'
+        f'<summary style="cursor:pointer;font-size:12px;color:#888">'
+        f'Criteria: <span style="color:{summary_color};font-weight:600">{met_count}/{total} met</span></summary>'
         f'<table style="width:100%;margin-top:6px;border-collapse:collapse">'
         f'<thead><tr style="font-size:11px;color:#aaa"><th style="text-align:left;padding:2px 8px">ID</th>'
         f'<th style="text-align:left;padding:2px 8px">Status</th>'
@@ -565,9 +606,9 @@ def generate_demo_data() -> dict:
                 "subtitle": "25 standards evaluated against measurable criteria",
                 "summary": {"Met": 18, "Partially Met": 5, "Not Met": 2},
                 "items": [
-                    {"id": "01", "name": "Course-Level Alignment", "category": "Course Structure and Organization", "status": "Met", "evidence": "All 5 CLOs use measurable action verbs (analyze, evaluate, apply, compare, design) and align with BIO program objectives.", "recommendation": None, "confidence": "High", "coverage": "Course-wide", "scope": "Course-wide", "evidence_source": "Canvas", "canvas_link": "https://canvas.asu.edu/courses/218764/pages/syllabus"},
-                    {"id": "02", "name": "Module-Level Alignment", "category": "Course Structure and Organization", "status": "Met", "evidence": "Each module contains 3-5 objectives mapped to CLOs via the alignment matrix on overview pages.", "recommendation": None, "confidence": "High", "coverage": "13/13 modules", "scope": "Module-level", "evidence_source": "Canvas", "canvas_link": "https://canvas.asu.edu/courses/218764/pages/m1-overview"},
-                    {"id": "03", "name": "Alignment Made Clear", "category": "Course Structure and Organization", "status": "Partially Met", "evidence": "Overview pages list objectives but Modules 4-5 don't explicitly connect assessments to specific CLOs.", "recommendation": "Add CLO tags to assessment descriptions in Modules 4 and 5.", "confidence": "Medium", "coverage": "11/13 modules", "scope": "Module-level", "evidence_source": "Canvas"},
+                    {"id": "01", "name": "Course-Level Alignment", "category": "Course Structure and Organization", "status": "Met", "evidence": "All 5 CLOs use measurable action verbs (analyze, evaluate, apply, compare, design) and align with BIO program objectives.", "recommendation": None, "confidence": "High", "coverage": "Course-wide", "scope": "Course-wide", "evidence_source": "Canvas", "canvas_link": "https://canvas.asu.edu/courses/218764/pages/syllabus", "reviewer_tier": "id"},
+                    {"id": "02", "name": "Module-Level Alignment", "category": "Course Structure and Organization", "status": "Met", "evidence": "Each module contains 3-5 objectives mapped to CLOs via the alignment matrix on overview pages.", "recommendation": None, "confidence": "High", "coverage": "13/13 modules", "scope": "Module-level", "evidence_source": "Canvas", "canvas_link": "https://canvas.asu.edu/courses/218764/pages/m1-overview", "reviewer_tier": "id"},
+                    {"id": "03", "name": "Alignment Made Clear", "category": "Course Structure and Organization", "status": "Partially Met", "evidence": "Overview pages list objectives but Modules 4-5 don't explicitly connect assessments to specific CLOs.", "recommendation": "Add CLO tags to assessment descriptions in Modules 4 and 5.", "confidence": "Medium", "coverage": "11/13 modules", "scope": "Module-level", "evidence_source": "Canvas", "reviewer_tier": "id_assistant"},
                     {"id": "04", "name": "Consistent Layout", "category": "Course Structure and Organization", "status": "Met", "evidence": "All 13 modules follow the 7-page structure: Overview → Prepare → Lesson → Practice → Knowledge Check → Artifact → Conclusion.", "recommendation": None, "confidence": "High", "coverage": "13/13 modules", "scope": "Module-level", "evidence_source": "Canvas"},
                     {"id": "05", "name": "Engaging Introductions", "category": "Course Structure and Organization", "status": "Met", "evidence": "Module overviews include real-world scenarios, learning roadmaps, and professional connection callouts.", "recommendation": None, "confidence": "High", "coverage": "13/13 modules", "scope": "Module-level", "evidence_source": "Canvas"},
                     {"id": "06", "name": "Balanced Workload", "category": "Course Structure and Organization", "status": "Met", "evidence": "Module workload ranges from 8.5-11.2 hours across all 13 modules, within the 7.5-week session guidelines.", "recommendation": None, "confidence": "High", "coverage": "13/13 modules", "scope": "Course-wide", "evidence_source": "Canvas"},
@@ -623,8 +664,8 @@ def generate_demo_data() -> dict:
                 "subtitle": "Automated accessibility checks across all pages",
                 "summary": {"Critical": 2, "Warning": 5, "Info": 3},
                 "items": [
-                    {"severity": "Critical", "page": "m8-lesson-introduction", "issue": "Image missing alt text", "element": "<img src='anatomy-diagram-8.png'>", "fix": "Add descriptive alt text: 'Diagram of the musculoskeletal system showing major muscle groups and bone attachment points'"},
-                    {"severity": "Critical", "page": "m2-lesson-introduction", "issue": "Image missing alt text", "element": "<img src='cardiac-cycle.png'>", "fix": "Add descriptive alt text describing the cardiac cycle diagram phases"},
+                    {"severity": "Critical", "page": "m8-lesson-introduction", "issue": "Image missing alt text", "element": "<img src='anatomy-diagram-8.png'>", "fix": "Add descriptive alt text: 'Diagram of the musculoskeletal system showing major muscle groups and bone attachment points'", "canvas_link": "https://canvas.asu.edu/courses/218764/pages/m8-lesson-introduction"},
+                    {"severity": "Critical", "page": "m2-lesson-introduction", "issue": "Image missing alt text", "element": "<img src='cardiac-cycle.png'>", "fix": "Add descriptive alt text describing the cardiac cycle diagram phases", "canvas_link": "https://canvas.asu.edu/courses/218764/pages/m2-lesson-introduction"},
                     {"severity": "Warning", "page": "m6-guided-practice", "issue": "Generic link text", "element": "<a href='...'>click here</a>", "fix": "Replace with descriptive text: 'Open the endocrine system simulation'"},
                     {"severity": "Warning", "page": "m3-resources", "issue": "Generic link text", "element": "<a href='...'>read more</a>", "fix": "Replace with: 'Read the full research article on neural pathways'"},
                     {"severity": "Warning", "page": "m9-lesson-introduction", "issue": "Low contrast inline color", "element": "<span style='color:#999'>", "fix": "Change to #595959 or darker for 4.5:1 contrast ratio"},
@@ -1096,6 +1137,18 @@ def generate_report(data: dict) -> str:
         else:
             review_items.append(item)
 
+    # ── Compute tier counts for filter bar ──
+    tier_counts = {'design': 0, 'readiness': 0, 'a11y': 0}
+    for item in ds.get('items', []):
+        sid = str(item.get('id', ''))
+        is_a11y = sid in ('22', '23') or str(item.get('criterion_id', '')).startswith(('22.', '23.'))
+        if is_a11y:
+            tier_counts['a11y'] += 1
+        elif item.get('reviewer_tier') == 'id_assistant':
+            tier_counts['readiness'] += 1
+        else:
+            tier_counts['design'] += 1
+
     # ── Design Standards Section ──
     ds_items_html = []
     for item in ds.get('items', []):
@@ -1118,19 +1171,41 @@ def generate_report(data: dict) -> str:
         # Coverage badge
         coverage = item.get('coverage', '')
         coverage_html = f'<span style="color:#6a7883;font-size:11px;margin-left:8px">{_escape(coverage)}</span>' if coverage else ''
+        # Determine tier category (used for both badge and filter)
+        reviewer_tier = item.get('reviewer_tier', '')
+        is_a11y = str(item.get('id', '')) in ('22', '23') or str(item.get('criterion_id', '')).startswith(('22.', '23.'))
+        tier_filter = 'a11y' if is_a11y else ('readiness' if reviewer_tier == 'id_assistant' else 'design')
+        # Reviewer tier badge — matches filter category
+        tier_badges = {
+            'design': '<span class="finding-badge" style="background:#f3ebe7;color:#AF674B;font-size:11px;margin-left:6px">Design</span>',
+            'readiness': '<span class="finding-badge" style="background:#e0f4fa;color:#0081b3;font-size:11px;margin-left:6px">Readiness</span>',
+            'a11y': '<span class="finding-badge" style="background:#e8eaf6;color:#3949ab;font-size:11px;margin-left:6px">A11y</span>',
+        }
+        tier_html = tier_badges.get(tier_filter, '')
+        # Category badge (CRC vs Design Standard)
+        cat_type = item.get('category_type', '')
+        if not cat_type:
+            cat_type = 'crc' if str(item.get('id', '')).startswith('crc') else ''
+        cat_badge_html = '<span class="finding-badge" style="background:#f0f0f0;color:#6a7883;font-size:11px;margin-left:6px">CRC</span>' if cat_type == 'crc' else ''
+        # Canvas link
+        canvas_link = item.get('canvas_link', '')
+        canvas_link_html = ''
+        if canvas_link:
+            canvas_link_html = f'<div style="margin-top:6px"><a href="{_escape(canvas_link)}" target="_blank" rel="noopener" style="color:#0081b3;font-size:12px;text-decoration:none">View in Canvas ↗</a></div>'
         ds_items_html.append(f'''
-        <div class="finding-card" data-status="{status.lower().replace(' ', '-')}">
+        <div class="finding-card" data-status="{status.lower().replace(' ', '-')}" data-tier="{tier_filter}">
           <div class="finding-header">
             <div class="finding-id-status">
               <span class="finding-id">{_escape(item.get("id", ""))}</span>
               <span class="finding-badge" style="background:{_severity_bg(status)};color:{_severity_color(status)}">{_severity_icon(status)} {_escape(status)}</span>
-              {conf_html}{graph_badge}{coverage_html}
+              {conf_html}{tier_html}{cat_badge_html}{graph_badge}{coverage_html}
             </div>
             <div class="finding-name">{_escape(item.get("name", ""))}</div>
             <div class="finding-category">{_escape(item.get("category", ""))}</div>
           </div>
           <div class="finding-body">
             <div class="finding-evidence"><strong>Evidence:</strong> {_escape(item.get("evidence", ""))}</div>
+            {canvas_link_html}
             {rec_html}
             {_render_criteria_results(item.get("criteria_results", []))}
           </div>
@@ -1140,11 +1215,16 @@ def generate_report(data: dict) -> str:
     qa_items_html = []
     for item in qa.get('items', []):
         status = item.get('status', 'Unknown')
+        qa_tier = item.get('reviewer_tier', 'id_assistant')
+        tier_label = 'Readiness' if qa_tier == 'id_assistant' else 'Design'
+        tier_color = '#0081b3' if qa_tier == 'id_assistant' else '#AF674B'
+        tier_bg = '#e0f4fa' if qa_tier == 'id_assistant' else '#f3ebe7'
         qa_items_html.append(f'''
         <tr>
           <td><span class="finding-badge" style="background:{_severity_bg(status)};color:{_severity_color(status)}">{_severity_icon(status)} {_escape(status)}</span></td>
           <td><strong>{_escape(item.get("id", ""))}</strong></td>
           <td>{_escape(item.get("name", ""))}</td>
+          <td><span style="background:{tier_bg};color:{tier_color};font-size:11px;padding:2px 6px;border-radius:4px">{tier_label}</span></td>
           <td>{_escape(item.get("detail", ""))}</td>
         </tr>''')
 
@@ -1152,10 +1232,13 @@ def generate_report(data: dict) -> str:
     a11y_items_html = []
     for item in a11y.get('items', []):
         sev = item.get('severity', 'Info')
+        a11y_link = item.get('canvas_link', '')
+        page_name = _escape(item.get("page", ""))
+        page_html = f'<a href="{_escape(a11y_link)}" target="_blank" rel="noopener" style="color:#0081b3;text-decoration:none"><code>{page_name}</code> ↗</a>' if a11y_link else f'<code>{page_name}</code>'
         a11y_items_html.append(f'''
         <tr>
           <td><span class="finding-badge" style="background:{_severity_bg(sev)};color:{_severity_color(sev)}">{_severity_icon(sev)} {_escape(sev)}</span></td>
-          <td><code>{_escape(item.get("page", ""))}</code></td>
+          <td>{page_html}</td>
           <td>{_escape(item.get("issue", ""))}</td>
           <td><code style="font-size:11px">{_escape(item.get("element", ""))}</code></td>
           <td>{_escape(item.get("fix", ""))}</td>
@@ -1380,6 +1463,16 @@ def generate_report(data: dict) -> str:
     }}
     .filter-btn:hover {{ background: #f0f4ff; }}
     .filter-btn.active {{ background: var(--canvas-link); color: white; border-color: var(--canvas-link); }}
+    .tier-btn {{
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: 600;
+      transition: opacity 0.2s;
+    }}
+    .tier-btn:not(.active) {{ opacity: 0.4; }}
 
     /* ── Finding Card ── */
     .finding-card {{
@@ -1600,6 +1693,12 @@ def generate_report(data: dict) -> str:
         <button class="filter-btn" onclick="filterFindings(this, 'standards', 'not-met')">Not Met ({ds_summary.get('Not Met', 0)})</button>
         {f'<button class="filter-btn" onclick="filterFindings(this, \'standards\', \'not-auditable\')">Not Auditable ({ds_summary.get("Not Auditable", 0)})</button>' if ds_summary.get('Not Auditable', 0) > 0 else ''}
       </div>
+      <div class="filter-bar" style="margin-top:4px">
+        <span style="font-size:11px;color:#888;margin-right:8px">Category:</span>
+        <button class="tier-btn active" onclick="toggleTier(this, 'standards', 'design')" style="background:#f3ebe7;color:#AF674B;border:1px solid #AF674B33">Design ({tier_counts['design']})</button>
+        <button class="tier-btn active" onclick="toggleTier(this, 'standards', 'readiness')" style="background:#e0f4fa;color:#0081b3;border:1px solid #0081b333">Readiness ({tier_counts['readiness']})</button>
+        <button class="tier-btn active" onclick="toggleTier(this, 'standards', 'a11y')" style="background:#e8eaf6;color:#3949ab;border:1px solid #3949ab33">A11y ({tier_counts['a11y']})</button>
+      </div>
       {review_estimate_html}
       <div class="section-body" id="standards-body">
         {''.join(ds_items_html)}
@@ -1618,7 +1717,7 @@ def generate_report(data: dict) -> str:
       <div class="section-body">
         <table class="report-table">
           <thead>
-            <tr><th>Status</th><th>ID</th><th>Category</th><th>Detail</th></tr>
+            <tr><th>Status</th><th>ID</th><th>Category</th><th>Tier</th><th>Detail</th></tr>
           </thead>
           <tbody>
             {''.join(qa_items_html)}
@@ -1694,19 +1793,47 @@ def generate_report(data: dict) -> str:
 
   <script>
     function filterFindings(btn, section, status) {{
-      // Update active button
+      // Update active button in status bar
       btn.closest('.filter-bar').querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      applyFilters(section);
+    }}
 
-      // Filter cards
+    function toggleTier(btn, section, tier) {{
+      // Toggle this tier button on/off
+      btn.classList.toggle('active');
+      if (!btn.classList.contains('active')) {{
+        btn.style.opacity = '0.4';
+      }} else {{
+        btn.style.opacity = '1';
+      }}
+      applyFilters(section);
+    }}
+
+    function applyFilters(section) {{
       const body = document.getElementById(section + '-body');
       if (!body) return;
-      body.querySelectorAll('.finding-card').forEach(card => {{
-        if (status === 'all') {{
-          card.style.display = '';
-        }} else {{
-          card.style.display = card.dataset.status === status ? '' : 'none';
+
+      // Get active status filter
+      const statusBar = body.closest('.report-section').querySelector('.filter-bar');
+      const activeStatus = statusBar ? statusBar.querySelector('.filter-btn.active') : null;
+      const status = activeStatus ? activeStatus.textContent.split(' (')[0].toLowerCase().replace(' ', '-') : 'all';
+
+      // Get active tier filters
+      const tierBtns = body.closest('.report-section').querySelectorAll('.tier-btn');
+      const activeTiers = new Set();
+      tierBtns.forEach(b => {{
+        if (b.classList.contains('active')) {{
+          // Extract tier from onclick attribute
+          const match = b.getAttribute('onclick').match(/toggleTier\\(this,\\s*'[^']+',\\s*'([^']+)'\\)/);
+          if (match) activeTiers.add(match[1]);
         }}
+      }});
+
+      body.querySelectorAll('.finding-card').forEach(card => {{
+        const statusMatch = status === 'all' || card.dataset.status === status;
+        const tierMatch = activeTiers.size === 0 || activeTiers.has(card.dataset.tier || '');
+        card.style.display = (statusMatch && tierMatch) ? '' : 'none';
       }});
     }}
   </script>
@@ -1899,6 +2026,17 @@ def generate_xlsx_report(data: dict, output_path: str) -> dict:
             cell_j.font = Font(color="0563C1", underline="single")
             cell_j.hyperlink = canvas_link
 
+        # Column K: Reviewer Tier
+        r_tier = item.get("reviewer_tier", "id")
+        tier_label = "IDA" if r_tier == "id_assistant" else "ID"
+        cell_k = ws.cell(row=target_row, column=11)
+        cell_k.value = tier_label
+        cell_k.alignment = Alignment(horizontal="center")
+        if r_tier == "id_assistant":
+            cell_k.font = Font(color="0081B3", bold=True)
+        else:
+            cell_k.font = Font(color="AF674B", bold=True)
+
         stats["filled"] += 1
 
     # ── Create Dashboard Sheet ──
@@ -2022,8 +2160,19 @@ def _create_dashboard_sheet(wb, data, standards_stats):
     ds["D4"] = f"(Standards {ds_score}% × 40%  +  QA {qa_score}% × 30%  +  A11y {a11y_score}% × 15%  +  Readiness {readiness_score}% × 15%)"
     ds["D4"].font = Font(name="Arial", size=9, italic=True, color="666666")
 
+    # ── Reviewer Tier Breakdown ──
+    ds_items = sections.get("design_standards", {}).get("items", [])
+    ida_count = sum(1 for it in ds_items if it.get("reviewer_tier") == "id_assistant")
+    id_count = len(ds_items) - ida_count
+    ds["A5"] = "Reviewer Tiers:"
+    ds["A5"].font = label_font
+    ds["B5"] = f"IDA-reviewable: {ida_count}"
+    ds["B5"].font = Font(name="Arial", size=11, color="0081B3", bold=True)
+    ds["C5"] = f"ID-reviewable: {id_count}"
+    ds["C5"].font = Font(name="Arial", size=11, color="AF674B", bold=True)
+
     # ── Design Standards Summary ──
-    row = 6
+    row = 7
     ds.cell(row=row, column=1, value="DESIGN STANDARDS (25)").font = section_font
     row += 1
     gray = "6A7883"

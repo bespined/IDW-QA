@@ -1,24 +1,15 @@
 # ============================================================
 # ASU Course Design Standards - QA Initiate Template
 # ============================================================
-# Source: [Final Template] QA Initiate.xlsx
-# Extracted: 2026-02-27
-# Updated: 2026-03-28 — Added reviewer_tier, category per criterion; added CRC items
+# Source: [QA + AI] Experience Stage_Review Item Lists.xlsx
+# Updated: 2026-03-31 — Full 147 criteria from QA+AI sheet with B-/C- IDs
 # ============================================================
-# criterion_id: Explicit, stable ID (never derived from list order).
-#   Format: {standard_id}.{criterion_number} (e.g., "01.1")
-#   Reordering criteria must NOT change IDs. Missing/duplicate IDs
-#   must fail validation at build time.
+# criterion_id format: B-XX.Y (Col B, id_assistant) or C-XX.Y (Col C, id)
+#   B = deterministic/existence checks — ID Assistants can verdict
+#   C = qualitative/judgment checks — only IDs verdict
 # check_type: "deterministic" | "ai" | "hybrid"
-#   deterministic = rule-based, automated via deterministic_checks.py
-#   ai = requires AI judgment with enrichment card context
-#   hybrid = deterministic signal + AI quality judgment
 # reviewer_tier: "id_assistant" | "id"
-#   id_assistant = Col B checks (deterministic/existence, IDAs can verdict)
-#   id = Col C checks (qualitative/judgment, only IDs verdict)
 # category: "design_standard" | "crc"
-#   design_standard = one of the 25 ASU design standards
-#   crc = Course Readiness Check (operational, not in standards)
 # ============================================================
 
 standards:
@@ -28,23 +19,33 @@ standards:
   description: Course-level objectives are measurable and aligned with program objectives, industry relevance, and/or practical applications.
   essential: true
   criteria:
-  - criterion_id: '01.1'
-    text: Each course-level objective is written with a measurable action verb. Objectives avoid verbs that cannot be defined well enough for effective measurement.
+  - criterion_id: B-01.1
+    text: 'Experience / Syllabus: Are the course outcomes, course goals, or course objectives present?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '01.2'
-    text: Each course-level objective aligns with program and/or industry standards, including institutionally mandated objectives.
+  - criterion_id: B-01.2
+    text: 'Experience / Syllabus: Are the learning outcomes or learning objectives present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-01.3
+    text: Is each course-level objective and/or course outcome written with a measurable action verb?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-01.1
+    text: Does each course-level objective and/or course outcome avoid verbs that cannot be defined well enough for effective measurement?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '01.3'
-    text: Each course-level objective indicates tasks or knowledge relating to the course focus so learners are truly able to demonstrate mastery of course content.
+  - criterion_id: C-01.2
+    text: Does each course-level objective indicate tasks or knowledge relating to the course focus so learners are truly able to demonstrate mastery of course content?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '01.4'
-    text: Course-level objectives collectively demonstrate how the course supports professional, academic, and personal growth.
+  - criterion_id: C-01.3
+    text: Course-level objectives and/or course outcomes collectively demonstrate how the course supports professional, academic, and/or personal growth.
     check_type: ai
     reviewer_tier: id
     category: design_standard
@@ -54,19 +55,24 @@ standards:
   description: Module-level objectives are measurable and aligned with course-level outcomes.
   essential: true
   criteria:
-  - criterion_id: '02.1'
-    text: Each module-level objective is written with a measurable action verb. Objectives avoid verbs that cannot be defined well enough for effective measurement.
+  - criterion_id: B-02.1
+    text: In each module, are module-level learning outcomes or learning objectives present?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '02.2'
-    text: Each module-level objective aligns with at least one course-level objective.
+  - criterion_id: B-02.2
+    text: Is each module-level objective written with a measurable action verb?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '02.3'
-    text: The alignment between module-level objectives and course-level objectives demonstrates a logical progression of knowledge and skill development.
-    check_type: hybrid
+  - criterion_id: C-02.1
+    text: Does each module-level learning objective avoid verbs that cannot be defined well enough for effective measurement?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-02.2
+    text: Does each module-level learning objective align with at least one course-level objective and/or outcome?
+    check_type: ai
     reviewer_tier: id
     category: design_standard
 - id: '03'
@@ -75,9 +81,14 @@ standards:
   description: The connection between course- and module-level objectives, learning materials, activities, and assessments is made clear to learners.
   essential: false
   criteria:
-  - criterion_id: '03.1'
-    text: The course contains documentation visible to learners that demonstrates how each learning material, activity, and assessment helps learners achieve course learning objectives.
-    check_type: hybrid
+  - criterion_id: C-03.1
+    text: Are there explanations (visible to learners) of how each learning material prepares learners for their assessments?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-03.2
+    text: Are there explanations (visible to learners) of how each learning activity prepares learners for their assessments?
+    check_type: ai
     reviewer_tier: id
     category: design_standard
 - id: '04'
@@ -86,40 +97,241 @@ standards:
   description: The course employs standard template elements. The course uses the ASU Online Canvas template unless the unit requires a department or program template.
   essential: false
   criteria:
-  - criterion_id: '04.1'
-    text: Course includes a "Getting Started" area.
+  - criterion_id: B-04.1
+    text: 'Experience / ASUO Template or Other Template: Does a "Welcome and Start Here" module, "Getting Started" module, "Welcome" module, or equivalent module exist?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '04.2'
-    text: Course includes a syllabus with necessary policies and course information.
+  - criterion_id: B-04.2
+    text: 'Experience / Syllabus: Does the syllabus page have content and/or is the syllabus document present?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '04.3'
-    text: Course includes an introduction page for course facilitators, which also includes contact information.
+  - criterion_id: B-04.3
+    text: 'Experience / Syllabus: Is a course description present?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '04.4'
-    text: Course includes a course introduction activity or discussion for learners.
+  - criterion_id: B-04.4
+    text: 'Experience / Syllabus: Is the number of credit hours present?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '04.5'
-    text: Course includes module overview pages for each module.
+  - criterion_id: B-04.5
+    text: 'Experience / Syllabus: Is contact information for the instructor (and other course team members, if applicable) present?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '04.6'
-    text: Recurring types of pages and recurring elements on pages are formatted and arranged consistently.
+  - criterion_id: B-04.6
+    text: 'Experience / Syllabus: Is a description of how to communicate with the instructor (and other course team members, if applicable) present, such as a community forum, chat, email, etc?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.7
+    text: 'Experience / Syllabus: Are the course outcomes, course goals, or course objectives present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.8
+    text: 'Experience / Syllabus: Are the learning outcomes or learning objectives present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.9
+    text: 'Experience / Syllabus: If applicable, is the General Studies Gold Statement present? (This is only for select courses.)'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.10
+    text: 'Experience / Syllabus: Are the technology requirements present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.11
+    text: 'Experience / Syllabus: Is a course access statement present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.12
+    text: 'Experience / Syllabus: Is a description for "submitting coursework," "submitting assignments," or equivalent present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.13
+    text: 'Experience / Syllabus: Is a policy for "late work," "missed work," or equivalent present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.14
+    text: 'Experience / Syllabus: Is an "overall course grade breakdown," "grade distribution," or equivalent present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.15
+    text: 'Experience / Syllabus: Is a "grade scale" or "grading scheme" for overall letter grades present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.16
+    text: 'Experience / Syllabus: Is an academic integrity policy or statement present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.17
+    text: 'Experience / Syllabus: Is a Generative AI policy or statement present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.18
+    text: 'Experience / Syllabus: Is office hour information for the instructor (and other course team members, if applicable) present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.19
+    text: 'Experience / Syllabus: Is a syllabus disclaimer present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.20
+    text: 'Experience / Syllabus: Is the syllabus free of outdated information (e.g., Adobe Flash or RPNow statements)?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.21
+    text: 'Experience / ASUO Template or Other Template: Does a "Links & Tools" module or equivalent exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.22
+    text: 'Experience / ASUO Template or Other Template: Does a "Welcome and Start Here" module, "Getting Started" module, "Welcome" module, or equivalent module exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.23
+    text: 'Experience / ASUO Template or Other Template: Has the instructor provided a welcome communication (e.g., video or text) that is located in the "Getting Started," "Welcome," or equivalent module?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.24
+    text: 'Experience / ASUO Template or Other Template: Does a "Course Navigation" video or "Course Tour" video exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.25
+    text: 'Experience / ASUO Template or Other Template: Does a general community forum for students to ask questions exist (e.g., General Course Questions, Ask Your Professor, Hallway Conversations, Community
+      Forum, etc.)?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.26
+    text: 'Experience/ ASUO Template or Other Template: Is there a course introduction activity or discussion for learners?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.27
+    text: 'Experience / ASUO Template or Other Template: Does a "Course Schedule and Important Dates" page or equivalent exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.28
+    text: 'Experience / ASUO Template or Other Template: Do Module Overview Pages (or equivalent) for each module exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.29
+    text: 'Experience / ASUO Template or Other Template: Does a Course Evaluation Reminder exist toward the end of the course?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-04.1
+    text: Are recurring types of pages and recurring elements on pages are formatted and arranged consistently?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '04.7'
-    text: Aspects of the institutional template have been personalized to the instructor, course subject and/or department or programmatic template to enhance the learner experience.
-    check_type: ai
-    reviewer_tier: id
+  - criterion_id: B-04.30
+    text: 'Experience: Has the ASU Online Canvas Template (or program/department/unit template) been applied?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.31
+    text: 'Navigation Menu: Does the Syllabus link exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.32
+    text: 'Navigation Menu: Does the Modules link exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.33
+    text: 'Navigation Menu: Does the Resources link exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.34
+    text: 'Navigation Menu: Does the Accessibility link exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.35
+    text: 'Navigation Menu: Does the ASU Course Policies link exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.36
+    text: 'Navigation Menu: Does the Time in AZ link exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.37
+    text: 'Experience / Branding: Does the ASU course banner exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.38
+    text: 'Experience / Branding: Does the course image exist?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.39
+    text: 'Experience: Does the Home page land on a "Welcome," "Getting Started," or equivalent page?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.40
+    text: 'Experience: Do course items or pages of the same type have consistent naming conventions?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.41
+    text: 'Experience: Does this course appear to be a source course?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.42
+    text: 'Experience: Are assessments and coursework organized into appropriate "Assignment Groups" in the "Assignments" area?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.43
+    text: 'Experience: Do "Assignment Groups" in the "Assignments" area follow the naming conventions established in the syllabus?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.44
+    text: 'Experience: Is the "Assignments" area free of empty "Assignment Groups"?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.45
+    text: 'Experience: Do assessments of the same type or category provide a similar experience (e.g., graded quizzes have similar # questions and similar time limits)?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-04.46
+    text: 'Experience: Is the course complete (no missing weeks of content, pages learners should have access to are published, etc.)?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
     category: design_standard
 - id: '05'
   name: Engaging Course and Module Introductions
@@ -127,17 +339,17 @@ standards:
   description: The introduction to the course and each module sets a welcoming tone, captures attention, highlights its value, and is designed to build an online learning community.
   essential: false
   criteria:
-  - criterion_id: '05.1'
+  - criterion_id: C-05.1
     text: The tone of all introductory material is written intentionally, advocates for learner success, and connects to practical or professional applications and learner goals.
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '05.2'
+  - criterion_id: C-05.2
     text: The course introduction clearly articulates the value proposition of the course and how it connects to learners' academic and professional goals.
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '05.3'
+  - criterion_id: C-05.3
     text: Each module introduction clearly articulates the value proposition of that module and provides context for how each unit builds upon previous knowledge and contributes to course outcomes.
     check_type: ai
     reviewer_tier: id
@@ -148,33 +360,53 @@ standards:
   description: The workload and pacing of the course/modules are intentionally aligned with credit-hour expectations and communicated to learners.
   essential: true
   criteria:
-  - criterion_id: '06.1'
-    text: Course includes details on workload, pacing, and relevant policies that address information like deadlines, flexibility for special circumstances, and the ability to work ahead when applicable.
+  - criterion_id: B-06.1
+    text: Are course workload details provided?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '06.2'
-    text: Course schedules clearly indicate estimated time commitments for course activities and are aligned with credit hour requirements.
+  - criterion_id: B-06.2
+    text: Are estimated time commitments for course activities clearly communicated?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '06.3'
-    text: Course includes a uniform module structure with predictable pacing and straightforward navigation.
+  - criterion_id: C-06.1
+    text: Do course schedules clearly indicate estimated time commitments for course activities?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-06.2
+    text: Are estimated time commitments aligned with syllabus credit hour requirements?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-06.3
+    text: Does the course have a uniform module structure with straightforward navigation?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-06.4
+    text: Is the pacing in the course predictable?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-06.5
+    text: Are major assessments distributed throughout the term to avoid workload clusters?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-06.3
+    text: Are high-stakes and/or important assessments introduced at the beginning of the course?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '06.4'
-    text: Major assessments are distributed throughout the term to avoid workload clusters.
+  - criterion_id: B-06.4
+    text: 'Experience: Do the due dates and availability windows appear to be accurate for the current session?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '06.5'
-    text: High-stakes applied assessments are introduced at the beginning of the course to allow sufficient time for learners to review, work on, and seek clarification for those assessments.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '06.6'
-    text: Due dates, deadlines, and/or assessment availability settings in the course are aligned with the pacing and course schedule information.
+  - criterion_id: B-06.5
+    text: 'Experience: Does the date information in the course match the date information in the syllabus?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -184,15 +416,20 @@ standards:
   description: When appropriate, the course includes setup instructions and notes for future instructors.
   essential: false
   criteria:
-  - criterion_id: '07.1'
-    text: Guide includes notes on course setup, technologies, instructional strategies, common learner questions, and assessment expectations to maintain course quality over time.
+  - criterion_id: B-07.1
+    text: Does an "Instructor Guide" or equivalent exist?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '07.2'
-    text: Guide documents the use of any specialized tools and partnerships crucial to course delivery, as well as their accompanying resources.
-    check_type: deterministic
-    reviewer_tier: id_assistant
+  - criterion_id: C-07.1
+    text: Does an "Instructor Guide" or equivalent exist that includes notes on course setup, technologies, instructional strategies, common learner questions, and assessment expectations?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-07.2
+    text: If applicable, does the "Instructor Guide" (or equivalent) document the use of any specialized tools and/or partnerships that are crucial to course delivery, as well as their accompanying resources?
+    check_type: ai
+    reviewer_tier: id
     category: design_standard
 - id: 08
   name: Assessments Align with Objectives
@@ -200,24 +437,13 @@ standards:
   description: Assessments measure the aligned course and module objectives.
   essential: true
   criteria:
-  - criterion_id: '08.1'
-    text: Each assessment explicitly aligns with course-level objectives and module-level objectives.
+  - criterion_id: B-08.1
+    text: Do assessment directions/descriptions/instructions explicitly state which objectives are being evaluated?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '08.2'
-    text: Assessment instructions visible to learners explicitly state which objectives are being evaluated.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '08.3'
-    text: Evaluation criteria (e.g., rubrics) reinforce objectives being measured.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '08.4'
-    text: Alignment has been verified by the subject matter expert (SME). If the SME is not available, alignment is verified by consulting the mapping of course- and module-level objectives (refer to Standard
-      3 in this sheet).
+  - criterion_id: C-08.1
+    text: Does the evaluation criteria (e.g., rubrics) reinforce objectives being measured?
     check_type: ai
     reviewer_tier: id
     category: design_standard
@@ -227,24 +453,44 @@ standards:
   description: Detailed rubrics (when appropriate) and assignment instructions are embedded in the LMS, with an estimated feedback timeline included in the course.
   essential: false
   criteria:
-  - criterion_id: '09.1'
-    text: Each assessment has instructions that are clear and include enough detail so learners know what is expected of them and how to earn points. Any permitted or restricted resources are clearly indicated,
-      if applicable.
-    check_type: ai
-    reviewer_tier: id
-    category: design_standard
-  - criterion_id: '09.2'
-    text: Each assessment has transparent evaluation criteria that are clearly explained to learners through the instructions and/or the rubric (if a rubric is used).
-    check_type: ai
-    reviewer_tier: id
-    category: design_standard
-  - criterion_id: '09.3'
-    text: A method for learners to ask grading questions is provided (e.g., email or office hours).
+  - criterion_id: B-09.1
+    text: 'Experience: Do assessment directions/descriptions/instructions clearly explain what is expected of learners in order to complete the assessment?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '09.4'
-    text: Estimated timeline for assessment feedback is provided in the course.
+  - criterion_id: B-09.2
+    text: Do assessment directions/descriptions/instructions and/or rubrics explain how learners earn points on that assessment and/or provide criteria for success?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-09.3
+    text: Do the assessment directions/descriptions/instructions specify a method for learners to ask grading questions (e.g., email or office hours)?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-09.4
+    text: 'Experience / Syllabus: Is a description of the estimated turnaround time for grading to be completed present?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-09.5
+    text: 'Experience: If applicable, do rubrics agree with what is described in the assessment directions/descriptions/instructions?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-09.6
+    text: 'Experience: Does the course grade breakdown information demonstrated in assessment settings match what is described in the syllabus?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-09.7
+    text: 'Experience: Do assessment settings match the assessment directions/descriptions/instructions provided (e.g., earnable points, time allowed, # of attempts, permitted resources, submission methods)?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-09.8
+    text: If applicable, for quizzes, is the "shuffle answers" setting only used when the question answer options are all order-independent (i.e., answer options are not "T/F" or "Y/N", and answer options
+      do not include order-dependent phrasing, e.g., "All of the above," "A and B only," etc.)?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -254,20 +500,25 @@ standards:
   description: The course includes diverse assessment formats.
   essential: false
   criteria:
-  - criterion_id: '10.1'
-    text: Course includes at least two different types of assessments.
+  - criterion_id: B-10.1
+    text: Does the course includes at least two different types of assessments (e.g., quizzes, projects, discussions, etc.)?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '10.2'
-    text: Course provides multiple ways for learners to demonstrate mastery of objectives.
+  - criterion_id: C-10.1
+    text: Does the course provide multiple ways for learners to demonstrate mastery of objectives?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '10.3'
-    text: Assessment types in the course are aligned with Universal Design for Learning principles.
+  - criterion_id: C-10.2
+    text: Are assessment types in the course aligned with Universal Design for Learning principles?
     check_type: ai
     reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-10.2
+    text: 'Experience: Does the course include ungraded practice assessments?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
     category: design_standard
 - id: '11'
   name: Cognitive Skills Development
@@ -275,25 +526,15 @@ standards:
   description: Assessments are structured to guide learners from foundational knowledge to more complex, higher-order learning levels throughout the course.
   essential: false
   criteria:
-  - criterion_id: '11.1'
-    text: Bloom's Taxonomy levels are evident in the module objectives through the verbs used.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '11.2'
-    text: Bloom's Taxonomy levels in module objectives are appropriate to the course level.
+  - criterion_id: C-11.1
+    text: Are the Bloom's Taxonomy levels in module objective verbs appropriate for the course level?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '11.3'
-    text: Bloom's Taxonomy levels show progression through the course and build higher-order learning levels over time.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '11.4'
-    text: Assessments have a mix of lower- and higher-order learning levels.
-    check_type: deterministic
-    reviewer_tier: id_assistant
+  - criterion_id: C-11.2
+    text: Do assessments include a mix of lower- and higher-order Bloom's Taxonomy learning levels?
+    check_type: ai
+    reviewer_tier: id
     category: design_standard
 - id: '12'
   name: Materials Align with Objectives
@@ -301,21 +542,10 @@ standards:
   description: Course materials support learners in achieving the aligned course and module objectives.
   essential: true
   criteria:
-  - criterion_id: '12.1'
-    text: Each material supports the achievement of at least one learning objective.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '12.2'
-    text: Learning material alignment has been verified by a subject matter expert (SME). If a SME is not available, alignment is verified by consulting the mapping of course- and module-level objectives
-      (refer to Standard 3 in this sheet).
+  - criterion_id: C-12.1
+    text: Does each material support the achievement of at least one learning objective?
     check_type: ai
     reviewer_tier: id
-    category: design_standard
-  - criterion_id: '12.3'
-    text: Materials align with Universal Design for Learning principles by providing multiple means of engagement (e.g., readings, videos, case studies, simulations).
-    check_type: deterministic
-    reviewer_tier: id_assistant
     category: design_standard
 - id: '13'
   name: High-Quality Content
@@ -323,13 +553,83 @@ standards:
   description: Instructional materials apply discipline-specific and industry-accepted best practices for the course's content.
   essential: false
   criteria:
-  - criterion_id: '13.1'
-    text: All written, visual, and multimedia content are of best quality available and align with professional standards for the discipline and/or institution.
+  - criterion_id: C-13.1
+    text: Are all written, visual, and multimedia content of best quality available and align with professional standards for the discipline and/or institution?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '13.2'
-    text: Each outside material is cited and has necessary publisher permissions (if applicable).
+  - criterion_id: B-13.1
+    text: If applicable, are all media elements appropriately cited?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-13.2
+    text: Does each outside material have proper citation and necessary publisher permissions (if applicable)?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-13.2
+    text: 'Functionality: Do all videos in the course appear and play in Student view?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.3
+    text: 'Functionality: Do all URLs/links work?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.4
+    text: 'Functionality: Do all documents linked or embedded on pages appear in Student view?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.5
+    text: 'Functionality: Do all media elements (e.g., images) display correctly in Student view?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.6
+    text: 'Functionality: Are all media elements (e.g., images) sized appropriately (e.g., not extremely small or excessively large) in Student view?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.7
+    text: 'Experience: Do all videos have 720p resolution or higher?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.8
+    text: 'Experience: Are course documents provided to learners directly in the course (e.g., no Google Drive links)?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.9
+    text: 'Experience: Do all outgoing links open in a new window?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.10
+    text: 'Experience: Is text free of typos?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.11
+    text: 'Experience: Is text grammatically accurate?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.12
+    text: 'Experience: Is text free of placeholders?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.13
+    text: 'Experience: Is text formatted consistently?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-13.14
+    text: 'Experience: Does text avoid being too dense (e.g., paragraphs aren''t too long, ordered and unordered lists used appropriately, etc.)?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -339,18 +639,18 @@ standards:
   description: Materials use practical examples and case studies to address professional and academic challenges.
   essential: false
   criteria:
-  - criterion_id: '14.1'
+  - criterion_id: C-14.1
     text: Materials include real-world examples that are practical and address professional and academic areas of focus. They may highlight current events and their impact on industry and academic spaces,
       if applicable.
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '14.2'
+  - criterion_id: C-14.2
     text: Materials incorporate scenario-based learning. Learning materials, activities, and/or assessments may be based on or informed by real-world data.
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '14.3'
+  - criterion_id: C-14.3
     text: Materials promote information and research literacy and include varied experiences that encourage ethical decision-making.
     check_type: ai
     reviewer_tier: id
@@ -361,13 +661,8 @@ standards:
   description: Materials include diverse perspectives, encourage global understanding, and connect to learners' lives.
   essential: false
   criteria:
-  - criterion_id: '15.1'
-    text: Global representation is evident in examples and materials. Materials include global perspectives and represent various cultures and lived experiences.
-    check_type: ai
-    reviewer_tier: id
-    category: design_standard
-  - criterion_id: '15.2'
-    text: Context is addressed and explained as necessary, including but not limited to historical bias, cultural references, idioms, etc.
+  - criterion_id: C-15.1
+    text: Is context addressed and explained as necessary, including but not limited to historical bias, cultural references, idioms, etc?
     check_type: ai
     reviewer_tier: id
     category: design_standard
@@ -377,13 +672,13 @@ standards:
   description: Materials are provided in varying formats (e.g., text, audio, video) to support global learners.
   essential: false
   criteria:
-  - criterion_id: '16.1'
-    text: Learning materials are provided in multiple formats (e.g., text audio, video, etc.) to align with the best practices of Universal Design for Learning.
-    check_type: hybrid
+  - criterion_id: C-16.1
+    text: Are learning materials presented in multiple formats (e.g., text, audio, video, etc.) to align with best practices of Universal Design for Learning?
+    check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '16.2'
-    text: 'At least two different types of formats are present in the course: Text materials, video materials, audio materials, interactive materials, or other formats.'
+  - criterion_id: B-16.1
+    text: Are there at least two different types of course materials formats (e.g., text materials, video materials, audio materials, interactive materials, or other formats)?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -393,23 +688,28 @@ standards:
   description: The course includes a prominently featured, actively monitored space where learners can ask questions that support the learning community.
   essential: false
   criteria:
-  - criterion_id: '17.1'
-    text: There is a course-wide space for classroom questions (e.g., community forum, discussion board, interactive FAQ page).
+  - criterion_id: B-17.1
+    text: Does a clear moderation policy for the communication space exist?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '17.2'
-    text: A clear moderation policy for the community space is visible to learners, and the expected response turnaround time is specified.
+  - criterion_id: B-17.2
+    text: Is the expected response turnaround time for the communication space specified?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '17.3'
-    text: Instructions note that personal inquiries should be directed to private communication channels.
+  - criterion_id: B-17.3
+    text: Do the instructions for the communication space note that personal inquiries should be directed to private communication channels?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '17.4'
-    text: Community space is prominently featured and encourages collaborative learning between peers and the course facilitator(s).
+  - criterion_id: B-17.4
+    text: Is the general community forum for students to ask questions (e.g., General Course Questions, Ask Your Professor, Hallway Conversations, Community Forum, etc.) prominent and easy to find?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-17.1
+    text: Is collaborative learning between peers and the course facilitator(s) encouraged in the messaging around the general community forum or equivalent for students?
     check_type: ai
     reviewer_tier: id
     category: design_standard
@@ -419,30 +719,35 @@ standards:
   description: Instructor-created media are present throughout the course to foster connection and increase engagement.
   essential: false
   criteria:
-  - criterion_id: '18.1'
-    text: Course contains clear examples of instructor-created media, particularly videos and lectures. Other examples may include announcements or media in module overviews and other relevant spaces.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '18.2'
-    text: All featured faculty (course developers, facilitators, guest lecturers) are introduced early in the course. An explanation is provided if the featured faculty is different from the course facilitator(s).
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '18.3'
-    text: Media is used in a predictable and consistent pattern.
+  - criterion_id: C-18.1
+    text: Are all featured faculty (course developers, facilitators, guest lecturers) introduced early in the course?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '18.4'
-    text: Videos are organized by topic and long videos are broken into shorter segments.
+  - criterion_id: C-18.2
+    text: Is an explanation provided if the featured faculty is different from the course facilitator(s)?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '18.5'
-    text: Slides and other relevant learning materials in media, including annotations, are provided in the course for learners.
+  - criterion_id: C-18.3
+    text: Is media is used in a predictable and consistent pattern (e.g., videos are organized by topic)?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-18.1
+    text: 'Experience: On average, are all videos in the course 10 minutes long (or less)?'
     check_type: deterministic
     reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-18.2
+    text: 'Experience: If applicable, are all lecture slide decks downloadable?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-18.4
+    text: If applicable, have slides and other relevant learning materials in media, including annotations, been provided in the course for learners?
+    check_type: ai
+    reviewer_tier: id
     category: design_standard
 - id: '19'
   name: Active Learning
@@ -450,18 +755,28 @@ standards:
   description: Activities encourage critical thinking, interaction, and the development and application of professional skills.
   essential: false
   criteria:
-  - criterion_id: '19.1'
-    text: Activities require students to apply concepts, analyze problems, and engage in critical thinking.
+  - criterion_id: C-19.1
+    text: Do activities require students to apply concepts?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '19.2'
-    text: Activities promote meaningful interactions tied to learning objectives.
+  - criterion_id: C-19.2
+    text: Do activities require students to analyze problems?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '19.3'
-    text: Activities demonstrate practical applications that facilitate engagement.
+  - criterion_id: C-19.3
+    text: Do activities require students to engage in critical thinking?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-19.4
+    text: Do activities promote meaningful interactions tied to learning objectives?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: C-19.5
+    text: Do activities demonstrate practical applications that facilitate engagement?
     check_type: ai
     reviewer_tier: id
     category: design_standard
@@ -471,13 +786,38 @@ standards:
   description: All tools align with course objectives, enhance engagement, and include learner-facing technical guides or support.
   essential: false
   criteria:
-  - criterion_id: '20.1'
-    text: Selected tools are used intentionally to align with learning objectives and enhance engagement and interaction.
+  - criterion_id: C-20.1
+    text: Are selected tools used intentionally to align with learning objectives?
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '20.2'
-    text: Technical support and guides are provided to learners for troubleshooting and to reduce barriers to access.
+  - criterion_id: C-20.2
+    text: Are selected tools used intentionally to enhance engagement and interaction?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-20.1
+    text: Are technical support and guides provided to learners for troubleshooting relevant to the tools used in the course?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-20.3
+    text: Do technical support and guides provided to learners for troubleshooting reduce barriers to access?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-20.2
+    text: 'Experience: If applicable, does proctoring information exist in the syllabus?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-20.3
+    text: 'Experience: If applicable, does the proctoring information in the course match what is stated in the syllabus?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-20.4
+    text: 'Experience: If applicable, are proctoring settings and availability windows enabled for proctored assessments (e.g., exams)?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -487,18 +827,8 @@ standards:
   description: The course prominently displays contact information for IT support, accessibility services, and academic resources, as well as language that encourages learners to use them.
   essential: false
   criteria:
-  - criterion_id: '21.1'
-    text: IT support, accessibility services, and relevant academic resource information is provided in centralized locations (syllabus and course menu).
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '21.2'
-    text: Support resources are highlighted early in the course.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '21.3'
-    text: Language in the course encourages and normalizes learner engagement with support resources.
+  - criterion_id: C-21.1
+    text: Does language in the course encourage and normalize learner engagement with support resources?
     check_type: ai
     reviewer_tier: id
     category: design_standard
@@ -508,14 +838,65 @@ standards:
   description: All course content meets WCAG 2.1 AA standards as supported by FRAME.
   essential: true
   criteria:
-  - criterion_id: '22.1'
-    text: Course pages and elements (including files) pass accessibility testing (i.e., with Canvas accessibility checker).
+  - criterion_id: B-22.1
+    text: Do all Canvas pages and page elements meet WCAG 2.1 AA standards and align with POUR (Perceivable, Operable, Understandable, Robust) principles, including proper heading structure, semantic HTML,
+      sufficient color contrast, accessible tables, and keyboard navigability?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
-  - criterion_id: '22.2'
-    text: Course meets FRAME expectations (all documents are accessible, all images have alt text, media is supported by descriptive text, important visual material has verbal descriptions, all videos have
-      captions and downloadable transcripts, etc.).
+  - criterion_id: B-22.2
+    text: Do all documents (including presentations and handouts) published in the course meet WCAG 2.1 AA standards, ensuring content aligns with POUR principles (e.g., tagged documents, readable text,
+      logical reading order, and accessible slide layouts)?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.3
+    text: Do all images have appropriate alternative (alt) text that conveys the intent and instructional purpose of the image in relation to the surrounding content?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: C-22.1
+    text: Do all complex or information-rich images have detailed descriptions that fully communicate critical content in alignment with the Percievable principle (from POUR)?
+    check_type: ai
+    reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-22.4
+    text: Are all images that do not convey instructional meaning marked as decorative?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.5
+    text: Do all hyperlinks use descriptive, meaningful text that clearly communicates the destination or purpose of the link (e.g., "Download the Course Syllabus (PDF)", rather than "Click Here" or "Link")?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.6
+    text: Does the course offer audio descriptions for all videos with important visual information or provide detailed verbal descriptions of any images or graphics displayed in the video?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.7
+    text: Do all videos (recorded or live) include accurate, synchronized captions?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.8
+    text: Does all audio-only content include downloadable transcripts?
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.9
+    text: 'Accessibility: What is the Ally Score for the course?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.10
+    text: 'Accessibility: What are the SCOUT results for the course?'
+    check_type: deterministic
+    reviewer_tier: id_assistant
+    category: design_standard
+  - criterion_id: B-22.11
+    text: 'Accessibility: What is the readability score of the course?'
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -525,12 +906,12 @@ standards:
   description: All third-party tools used in the course meet WCAG 2.1 AA standards.
   essential: true
   criteria:
-  - criterion_id: '23.1'
+  - criterion_id: C-23.1
     text: Selected tool(s) are licensed by ASU.
     check_type: ai
     reviewer_tier: id
     category: design_standard
-  - criterion_id: '23.2'
+  - criterion_id: C-23.2
     text: Tools were vetted for accessibility compliance, with alternatives provided when necessary.
     check_type: ai
     reviewer_tier: id
@@ -541,18 +922,8 @@ standards:
   description: Navigation and materials are designed for mobile and offline access when possible, clearly indicating which materials are fully accessible on mobile.
   essential: false
   criteria:
-  - criterion_id: '24.1'
-    text: Course tools have been tested for mobile compatibility.
-    check_type: ai
-    reviewer_tier: id
-    category: design_standard
-  - criterion_id: '24.2'
-    text: Course materials have been tested for mobile compatibility.
-    check_type: ai
-    reviewer_tier: id
-    category: design_standard
-  - criterion_id: '24.3'
-    text: Course signals which elements of the course can be accessed by a mobile device and which require a laptop or desktop.
+  - criterion_id: B-24.1
+    text: Are statements regarding which elements of the course can be accessed by a mobile device and which require a laptop or desktop present?
     check_type: deterministic
     reviewer_tier: id_assistant
     category: design_standard
@@ -562,20 +933,15 @@ standards:
   description: The course prioritizes low-cost or open educational materials to reduce financial barriers and increase accessibility to high-quality learning materials.
   essential: false
   criteria:
-  - criterion_id: '25.1'
-    text: There is evidence that Open Educational Resources or low-cost materials were prioritized.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '25.2'
-    text: If there are items that require student cost, these are justified in the syllabus.
-    check_type: deterministic
-    reviewer_tier: id_assistant
-    category: design_standard
-  - criterion_id: '25.3'
-    text: QA Initiate has not concluded.
+  - criterion_id: C-25.1
+    text: Is there evidence that Open Educational Resources or low-cost materials were prioritized?
     check_type: ai
     reviewer_tier: id
+    category: design_standard
+  - criterion_id: B-25.1
+    text: If applicable, are any student costs justified in the syllabus?
+    check_type: deterministic
+    reviewer_tier: id_assistant
     category: design_standard
 - id: crc
   name: Course Readiness Checks
@@ -583,93 +949,93 @@ standards:
   description: Operational and template checks from the Course Readiness Checklist not covered by the 25 design standards.
   essential: false
   criteria:
-  - criterion_id: crc.01
+  - criterion_id: B-CRC.1
     text: Navigation menu includes Time in AZ link.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.02
+  - criterion_id: B-CRC.2
     text: A course tour or course navigation video exists.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.03
+  - criterion_id: B-CRC.3
     text: Old RPNow or outdated proctoring information has been removed.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.04
+  - criterion_id: B-CRC.4
     text: Course is complete with no missing weeks of content.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.05
+  - criterion_id: B-CRC.5
     text: Overall course design appears sound and does not require immediate ID review.
     check_type: ai
-    reviewer_tier: id
+    reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.06
+  - criterion_id: B-CRC.6
     text: Ally accessibility score has been checked.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.07
+  - criterion_id: B-CRC.7
     text: Course has variety of assessment types to support academic integrity.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.08
+  - criterion_id: B-CRC.8
     text: Textbook or required materials information is present in the syllabus or course intro.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.09
+  - criterion_id: B-CRC.9
     text: If a textbook is used, a digital option is provided or mentioned.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.10
+  - criterion_id: B-CRC.10
     text: Syllabus includes a grading policy or procedure.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.11
+  - criterion_id: B-CRC.11
     text: Syllabus includes a late work or missed work policy.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.12
+  - criterion_id: B-CRC.12
     text: Virtual office hours information is listed in the syllabus or instructor intro area.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.13
+  - criterion_id: B-CRC.13
     text: Course type has been identified (standard, capstone, cohort, etc.).
     check_type: ai
-    reviewer_tier: id
+    reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.14
+  - criterion_id: B-CRC.14
     text: Course has been checked to determine if it is a source course or blueprint.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.15
+  - criterion_id: B-CRC.15
     text: All videos in the course appear and play correctly in Student View.
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.16
+  - criterion_id: B-CRC.16
     text: Course material is appropriate and free of content that may be problematic for an international audience.
     check_type: ai
-    reviewer_tier: id
+    reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.17
+  - criterion_id: B-CRC.17
     text: Course text is free of placeholder content (e.g., Lorem ipsum, TBD, [insert here]).
     check_type: deterministic
     reviewer_tier: id_assistant
     category: crc
-  - criterion_id: crc.18
+  - criterion_id: B-CRC.18
     text: 'Overall assessment: course appears ready for students.'
     check_type: ai
-    reviewer_tier: id
+    reviewer_tier: id_assistant
     category: crc

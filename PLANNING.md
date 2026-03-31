@@ -852,16 +852,236 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 6. `/update-idw` + `/admin`
 7. `rlhf_analysis.py`
 
-### Phase 5 — Airtable Integration (was Phase 4)
+**Status**: Complete (built in session, pending commit + push).
 
-| Task | Details |
-|---|---|
-| Design Airtable base structure | one row per finding, columns matching Supabase fields. IDA corrections are authoritative for Col B — override AI finding in Airtable row. |
-| Build Supabase → Airtable sync function | Edge Function or pg_net, batch Airtable API |
-| Admin-triggered sync | Admin clicks "Sync to Airtable" button on session or admin page. NOT auto-triggered on complete — gives IDAs time to undo/edit. |
-| Nightly catch-up job | cron, sync sessions where airtable_synced_at IS NULL (backup for missed manual syncs) |
-| Test sync with real audit data | end-to-end validation |
-| Airtable row content | AI finding + final verdict (IDA's correction if Incorrect, or AI finding if Correct) + session metadata |
+### Phase 4.5 — Report Updates + Fix Queue UX
+
+**Status**: Complete.
+
+**What was built:**
+
+1. **FindingCard "Needs remediation" checkbox** — always visible regardless of verdict. Toggles `remediation_requested` on `audit_findings` via server-side API route (`/api/findings/remediation`) using service key to bypass RLS. Verdict and remediation are independent decisions.
+
+2. **HTML report — Phase 2 fields added:**
+   - Reviewer tier badge on each finding card: Design (brown), Readiness (blue), A11y (purple)
+   - "View in Canvas" clickable link when `canvas_link` is present
+   - Category filter bar: toggle Design/Readiness/A11y independently, combines with status filters (Met/Partial/Not Met)
+   - QA Categories table: added Tier column
+   - Accessibility table: page names link to Canvas when `canvas_link` present
+
+3. **XLSX report — Phase 2 fields added:**
+   - Column K: Reviewer Tier ("IDA" or "ID") with color coding
+   - Dashboard sheet: reviewer tier breakdown row (IDA-reviewable vs ID-reviewable counts)
+
+4. **Report download from Vercel** — session page header shows "Report" download button when `report_html_url` exists on the session. Opens HTML report from Supabase storage.
+
+5. **RLS migration** (`migrations/005_allow_anon_remediation_toggle.sql`) — allows anon key to read/update `audit_findings` for the remediation checkbox. Superseded by API route approach but kept for reference.
+
+### Phase 5 — Airtable Integration + Workflow Updates
+
+#### Updated Workflow (March 2026)
+
+##### Roles (finalized)
+
+| Role in system | Who | Reviews | Remediates? | Canvas access? |
+|---|---|---|---|---|
+| `id` | IDs AND IDAs (ID Associates) | Col B + Col C | Yes | Yes |
+| `id_assistant` | Student workers / Working learners | Col B only | No | No (web app only) |
+| `admin` | QA team (3 people) | Owns analytics + outreach | No finding-level review | Yes |
+
+**Naming clarification:** IDA = "ID Associate" = full `id` role. ID Assistant = student worker = `id_assistant` role. These are NOT the same.
+
+##### EDL New Course Development Workflow
+
+```
+1. ID/IDA runs /audit on the course
+2. ID/IDA reviews ALL findings (Col B + C) in review app
+   ├── Verdicts: correct / incorrect / N/A
+   ├── Flags "needs remediation" on confirmed issues
+   └── Remediates with faculty using plugin skills
+3. ID/IDA marks session complete
+   ├── Col C findings: auto-set to qa_approved (no review gate)
+   └── Col B findings: move to pending_qa_review for ID Assistant validation
+4. ID Assistant validates Col B findings
+   ├── Round 1 (pre-remediation): Correct/Incorrect on AI finding
+   ├── Round 2+ (post-remediation): Agree/Disagree on whether fix worked
+   ├── All agree → qa_approved
+   └── Any disagree → revisions_required → back to ID/IDA
+       └── Auto-sets remediation_requested=true → finding re-enters fix queue
+5. All qa_approved findings → single Airtable sync
+```
+
+##### Recurring Course Audit Workflow
+
+```
+1. QA team (admin) runs /audit
+2. ID Assistant reviews Col B findings only in review app
+   ├── Verdicts: correct / incorrect / N/A
+   └── NO remediation, NO faculty contact
+3. ID Assistant marks session complete
+4. Admin reviews ID Assistant verdicts (spot-check only, not required for every finding)
+5. Admin sends faculty outreach based on flagged items
+6. Findings sync to Airtable
+```
+
+##### Finding Card Lifecycle
+
+```
+── After AI audit (no human has touched it) ──
+Standard 23 — Image Accessibility
+AI Verdict: Not Met — 15 images missing alt text
+[Correct] [Incorrect] [N/A]     ☐ Needs remediation
+
+── After ID reviews ──
+Standard 23 — Image Accessibility
+AI Verdict: Not Met — 15 images missing alt text
+ID Decision: Correct (Jane Doe, Mar 15)          [Undo]
+                                                  ☑ Needs remediation
+
+── After ID remediates ──
+Standard 23 — Image Accessibility
+AI Verdict: Not Met — 15 images missing alt text
+ID Decision: Correct (Jane Doe, Mar 15)
+  → Remediated via /bulk-edit (Jane Doe, Mar 15)
+                                                  ☑ Needs remediation
+
+── ID Assistant validates (Col B only) ──
+Standard 23 — Image Accessibility
+AI Verdict: Not Met — 15 images missing alt text
+ID Decision: Correct (Jane Doe, Mar 15)
+  → Remediated via /bulk-edit (Jane Doe, Mar 15)
+ID Assistant: Validated (Alice Chen, Mar 18)      ✓ Approved
+
+── ID Assistant disagrees (Round 2) ──
+Standard 23 — Image Accessibility
+AI Verdict: Not Met — 15 images missing alt text
+ID Decision: Correct (Jane Doe, Mar 15)
+  → Remediated via /bulk-edit (Jane Doe, Mar 15)
+ID Assistant: Disagree — "5 images still missing alt text" (Alice Chen, Mar 18)
+  → Remediated via /bulk-edit (Jane Doe, Mar 19)
+ID Assistant: Validated (Alice Chen, Mar 20)      ✓ Approved
+```
+
+##### New Table: remediation_events
+
+Tracks what was fixed, when, how, and by whom. Separate from `audit_findings` (what AI found) and `finding_feedback` (human verdicts).
+
+```sql
+CREATE TABLE IF NOT EXISTS remediation_events (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  finding_id UUID REFERENCES audit_findings(id) NOT NULL,
+  remediated_by UUID REFERENCES testers(id),
+  skill_used TEXT,              -- e.g., 'bulk-edit', 'quiz', 'interactive-content', 'manual'
+  description TEXT,             -- e.g., 'Added alt text to 15 images'
+  created_at TIMESTAMPTZ DEFAULT now()
+);
+```
+
+##### ID Assistant Verdict Vocabulary
+
+| Context | Buttons shown | Meaning |
+|---|---|---|
+| Auditing (reviewing AI finding) | Correct / Incorrect / N/A | "I agree/disagree the AI finding is accurate" |
+| Validating (checking ID's work post-remediation) | Agree / Disagree | "I confirm/deny the fix resolved the issue" |
+
+Both create `finding_feedback` rows. The UI shows the right buttons based on whether the finding has prior remediation events.
+
+##### Disagree → Re-enter Fix Queue
+
+When ID Assistant disagrees on a remediated finding:
+1. `finding_feedback` row created with `decision: 'disagree'` + reason
+2. `audit_findings.remediation_requested` auto-set to `true`
+3. Session status → `revisions_required`
+4. Finding re-appears in `/course-review` Step 0 fix queue
+5. ID/IDA re-remediates → new `remediation_events` row
+6. ID Assistant re-validates
+
+#### Airtable Integration
+
+##### Architecture: Unified Data, Separate Concerns
+
+```
+Canvas → Plugin → Supabase (source of truth) → Vercel (workflow) → Supabase (verdicts)
+                                                                          ↓
+                                                               Airtable (data store + faculty view)
+```
+
+**Supabase + Vercel** = backend + frontend (where work happens)
+**Airtable** = data store for faculty/stakeholder consumption (read-only output)
+
+Airtable is NOT a separate system with its own structure. It mirrors Supabase data in a format faculty and academic units can filter and view. The sync is a one-way push from Supabase → Airtable.
+
+##### Data Unification Plan
+
+**Problem:** The audit currently produces one finding per standard (25 rows). The [QA+AI] sheet defines 147 criteria (106 Col B + 41 Col C). Airtable, Supabase, and the Vercel app all need per-criterion granularity to be useful.
+
+**Solution:** Unify around per-criterion findings everywhere:
+
+1. **`config/standards.yaml`** — Add all 147 criteria from [QA+AI] sheet with `B-XX.Y` and `C-XX.Y` IDs, mapped to their column (Col B = `reviewer_tier: id_assistant`, Col C = `reviewer_tier: id`)
+2. **Audit skill** — Produce one `audit_findings` row per criterion (147 findings per full audit instead of 25)
+3. **Supabase `audit_findings`** — Already supports per-criterion via `criterion_id` field. No schema change needed.
+4. **Vercel app** — Already groups findings by `standard_id`. More findings per standard = more detail, same UX.
+5. **Airtable sync** — Maps `criterion_id` directly to column name (`B-04.1` → `B-04.1 Layout: Getting Started*`). Standard-level rating derived from criteria (all Yes = Met, any No = Not Met). Notes auto-generated from failing criteria.
+
+**Result:** One source of truth (Supabase), one structure (per-criterion findings), three consumers (Vercel for workflow, Airtable for faculty, HTML report for download). No translation layer needed — just a pivot from rows to columns for Airtable.
+
+##### Implementation Order
+
+1. **Update `config/standards.yaml`** — Add all 147 criteria from [QA+AI] sheet with `B-XX.Y` / `C-XX.Y` IDs
+2. **Update audit skill** — Evaluate per criterion, produce one `audit_findings` row per criterion with `criterion_id`
+3. **Update `audit_report.py` (HTML report)** — Standard cards show expandable criteria list (`_render_criteria_results()` already exists, needs real data). Each criterion shows Yes/No + evidence for failures.
+4. **Update Vercel session page** — Group FindingCards under standard headers. One card per criterion. Verdict buttons only on failing criteria. ID Assistants see only B-* criteria.
+5. **Update `airtable_sync.py`** — Map `criterion_id` → Airtable column name (direct lookup). Standard rating derived from criteria (all Yes = Met, any No = Not Met/Partially Met). Notes auto-generated from failing criteria only.
+6. **Test end-to-end** — Audit → Supabase (147 per-criterion rows) → Vercel (grouped view) → HTML report (criteria tables) → Airtable (all columns populated)
+7. **Admin sync button** — Already built in Vercel session page (manual trigger)
+8. **Faculty outreach** — Template-based email drafts from Airtable data. Phase 6 if complex.
+
+##### Consumer Changes Summary
+
+| Consumer | Before (per-standard) | After (per-criterion) |
+|---|---|---|
+| **Supabase** | ~25 findings per audit | ~147 findings per audit. No schema change — `criterion_id` field already exists |
+| **HTML report** | One card per standard, one evidence block | One card per standard with expandable criteria list. Each criterion: Yes/No + evidence on failure |
+| **Vercel session** | One FindingCard per standard | FindingCards grouped under standard headers. One card per criterion. Verdict buttons only on failing items. ID Assistants see B-* only |
+| **Airtable** | Standard-level rating + notes (criteria columns empty) | All 147 B/C columns populated + standard rating + notes |
+| **RLHF feedback** | Verdicts on standard-level findings | Verdicts on individual criteria (more precise training signal) |
+
+##### Airtable Base Structure (QA Test)
+
+- **Base:** appHzYJqoyopf4jN8 (QA Test)
+- **Table:** Course Audits (tblI55WEIy16aftkS) — 207 fields
+- **Format:** One row per course. Columns:
+  - Metadata: Course Name, Code, Term, Canvas URL, Audit Date, Auditor, Overall Score, Session Status
+  - Per standard (25): `XX. Standard Name — Rating` (Met/Partially Met/Not Met/Not Auditable) + `XX. Standard Name — Notes` (high-level summary for faculty)
+  - Col B criteria (106): `B-XX.Y Description` (Yes/No/N/A) — ID Assistant reviewable
+  - Col C criteria (41): `C-XX.Y Description` (Yes/No/N/A) — ID reviewable
+- **Views:** (create manually in Airtable — API doesn't support view creation)
+  - ID/IDA view: all columns
+  - ID Assistant view: metadata + B-* columns only (Col C hidden)
+  - Admin/Summary view: metadata + ratings + notes only (criteria hidden)
+
+##### Phase 5 Progress (as of 2026-03-31)
+
+**Completed:**
+- `airtable_sync.py` — per-criterion sync, maps all 147 B-/C- columns directly from criterion_id. Tested with CRJ 201 (147/147 criteria populated).
+- `remediation_events` table — migration 006 created. API routes: GET + POST at `/api/remediation-events`.
+- Session completion API — `/api/session-complete` handles Col C auto-approve + Col B → pending_qa_review.
+- Sync button — admin-only button on Vercel session page header.
+- Auditor name — now pulls from tester identity (IDW_TESTER_ID → Supabase testers table).
+- `standards.yaml` — updated with all 173 criteria (124 B + 49 C) from [QA+AI] sheet.
+- Audit skill — updated for per-criterion evaluation, produces `criteria_results` per standard.
+- HTML report — per-criterion expandable tables with B/C badges, met counts, evidence.
+- `audit_report.py` — pushes per-criterion findings to Supabase (one row per criterion).
+
+**In Progress:**
+- FindingCards grouped view — session page needs to group 100+ findings under standard headers with expandable criteria. Verdict buttons only on failing items.
+
+**Remaining:**
+- Vercel session page FindingCard grouping (standard → criteria dropdown)
+- ID Assistant Agree/Disagree vocabulary for post-remediation validation
+- Remediation event recording from Claude Code skills
+- Faculty outreach templates (Phase 6 candidate)
+- Airtable views (manual setup — give instructions to QA team)
 
 ---
 
@@ -880,6 +1100,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - 85% agreement rate across all findings by end of pilot
 - Staging workflow stable and reliable
 - Airtable sync functioning
+- ID Assistant validation loop working end-to-end
 - IDA review workflow validated (assign → verdict → override → sync)
 
 ---

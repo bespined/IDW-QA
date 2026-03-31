@@ -2,7 +2,7 @@
 
 ## Overview
 
-IDW QA is a Claude Code plugin providing 16 focused skills for auditing, reviewing, and remediating WCAG-compliant Canvas LMS courses following ASU instructional design standards. It includes a guided concierge, course navigation, 3-mode quality auditing with semantic alt text validation, design review, staging/preview/push workflow, content remediation (quizzes, assignments, discussions, rubrics, interactives, syllabus), course configuration, and RLHF feedback integration via Supabase.
+IDW QA is a Claude Code plugin providing 21 focused skills for auditing, reviewing, and remediating WCAG-compliant Canvas LMS courses following ASU instructional design standards. It includes a guided concierge, course navigation, 3-mode quality auditing with semantic alt text validation, design review, staging/preview/push workflow, content remediation (quizzes, assignments, discussions, rubrics, interactives, syllabus), course configuration, RLHF feedback integration via Supabase, role-gated admin/IDA workflows, and error reporting.
 
 This is the QA-focused subset of ID Workbench, purpose-built for pilot testing with instructional designers who audit and remediate existing courses.
 
@@ -94,6 +94,23 @@ The review app collects:
 
 This feedback refines the audit skill prompts over time. The dashboard at `/dashboard` shows agreement rates by standard and reviewer activity.
 
+## Page Content Edits — Staging Always Required
+
+**ANY change to a Canvas page's HTML body — no matter how small — must go through staging before pushing.** This includes formatting fixes, structural corrections, copy edits, accessibility remediations, and template alignment. There are no exceptions.
+
+The required flow for all page body changes:
+1. **Apply fix** → write corrected HTML to `staging/{slug}.html`
+2. **Screenshot** the staged page and show it to the user in conversation
+3. **Wait for explicit approval** ("looks good", "push it", "approved") — never push on assumed approval
+4. **Push** only after the user confirms
+
+This applies equally to:
+- Bulk remediations (e.g., fixing heading hierarchy across all modules)
+- Single-page fixes (e.g., correcting alt text on one image)
+- Any reformatting, restructuring, or content remediation
+
+**Never push page HTML directly to Canvas in a single step**, even when the fix is obvious or the user asked for the fix. Stage → show → wait → push.
+
 ## Staging Workflow
 
 Content-remediating skills (quiz, assignment-generator, discussion-generator, interactive-content, update-module, bulk-edit) stage pages locally instead of pushing directly to Canvas:
@@ -123,11 +140,13 @@ This gives users a review loop before anything touches Canvas. Skills support `-
 
 ## Quick Edits (No Skill Required)
 
-For simple one-off changes, Claude should handle them directly via the Canvas API without invoking a full skill workflow. Examples:
+For simple one-off changes to **metadata only** (not page HTML body), Claude should handle them directly via the Canvas API without invoking a full skill workflow. Examples:
 
 - "Rename Module 3 to 'Membrane Biology'" → `PUT /courses/:id/modules/:id` with `module[name]`
 - "Change the Module 2 quiz to 3 attempts" → `PUT /courses/:id/quizzes/:id` with `quiz[allowed_attempts]`
 - "Update the due date on the Module 5 assignment to March 20" → `PUT /courses/:id/assignments/:id`
+
+**Quick edits apply to metadata only — never to page HTML body.** If the change touches a page's body content in any way, it must go through staging.
 
 **Safety gate**: Before making any quick edit, run `python scripts/canvas_api.py --check-write` or check `CANVAS_READ_ONLY` in `.env`. If read-only mode is enabled, inform the user.
 
@@ -177,6 +196,11 @@ IDs **do not build courses from scratch** — they receive a pre-built ASU Canva
 | **Remediation** | `syllabus-generator` | `/syllabus-generator` | Fix or generate syllabus content (CRC compliance) |
 | **Remediation** | `media-upload` | `/media-upload` | Upload media files to Canvas and embed in pages |
 | **Knowledge** | `knowledge` | `/knowledge` | Local course content cache for search and Q&A |
+| **IDA** | `assignments` | `/assignments` | View assigned courses and review status (IDA role) |
+| **Admin** | `assign` | `/assign` | Assign an IDA to a course for review (Admin role) |
+| **All** | `report-error` | `/report-error` | Report bugs, wrong findings, crashes (any role) |
+| **All** | `update-idw` | `/update-idw` | Pull latest plugin code, show changelog (any role) |
+| **Admin** | `admin` | `/admin` | Error queue, RLHF stats, tester management (Admin role) |
 
 ## Python Scripts
 
@@ -203,6 +227,10 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `unified_preview.py` | Render all staged pages in one scrollable document |
 | `idw_logger.py` | Shared structured logging |
 | `idw_metrics.py` | Lightweight metrics/telemetry tracking |
+| `role_gate.py` | Role gating helper — verify tester role before executing protected skills |
+| `fetch_fix_queue.py` | Query Supabase for findings where remediation_requested=true |
+| `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, reviewer, criterion, trends |
+| `airtable_sync.py` | Sync approved findings to Airtable SCOUT ULTRA format (one row per course, 25 standards) |
 
 ## MCP Connectors
 

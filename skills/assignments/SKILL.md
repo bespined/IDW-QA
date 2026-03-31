@@ -1,0 +1,138 @@
+---
+name: assignments
+description: "View your assigned courses and their review status. IDA role required."
+---
+
+# My Assignments
+
+> **Run**: `/assignments`
+
+## Metric Tracking
+When this skill is invoked, immediately run this command before doing anything else:
+```bash
+python3 scripts/idw_metrics.py --track skill_invoked --context '{"skill": "assignments"}'
+```
+
+## Purpose
+
+Shows the current user (IDA) their assigned courses, review progress, and pending work. This is the IDA's home base for knowing what to work on next.
+
+## Role Gate
+
+This skill requires the `id_assistant` role. Before doing anything else, run:
+
+```bash
+python3 scripts/role_gate.py --check id_assistant
+```
+
+- If exit code is 0: proceed
+- If exit code is 1: show the error message from the JSON output and stop. Do not continue.
+
+## Workflow
+
+### 1. Authenticate & Fetch Assignments
+
+After passing the role gate, extract the tester ID from the `--check` output, then query Supabase for this user's assignments:
+
+```bash
+python3 -c "
+import json, os, sys
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config, _supabase_get
+
+url, key = _get_supabase_config()
+tester_id = os.getenv('IDW_TESTER_ID', '').strip()
+
+# Get assignments with session counts
+assignments = _supabase_get(url, key, 'tester_course_assignments', {
+    'tester_id': f'eq.{tester_id}',
+    'order': 'assigned_at.desc'
+})
+print(json.dumps(assignments or [], indent=2, default=str))
+"
+```
+
+### 2. For Each Assignment, Get Session Stats
+
+For each assigned course, query `audit_sessions` and `audit_findings` to show:
+- Number of audit sessions for this course
+- Total findings awaiting review (findings with no feedback yet)
+- Findings by verdict status
+
+```bash
+python3 -c "
+import json, os, sys
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config, _supabase_get
+
+url, key = _get_supabase_config()
+course_id = '<COURSE_ID>'  # Replace with actual
+
+sessions = _supabase_get(url, key, 'audit_sessions', {
+    'course_id': f'eq.{course_id}',
+    'order': 'run_date.desc',
+    'limit': '5'
+})
+print(json.dumps(sessions or [], indent=2, default=str))
+"
+```
+
+### 3. Display Format
+
+Present assignments as a clear summary table:
+
+```
+## Your Assignments
+
+| # | Course | Status | Sessions | Pending Review | Assigned |
+|---|--------|--------|----------|----------------|----------|
+| 1 | BIO 101 (canvas.asu.edu) | In Progress | 2 sessions | 14 findings | Mar 15, 2026 |
+| 2 | ENG 200 (canvas.asu.edu) | Assigned | 0 sessions | — | Mar 20, 2026 |
+| 3 | CHM 113 (canvas.asu.edu) | Completed | 1 session | 0 findings | Mar 10, 2026 |
+```
+
+Then offer actions:
+- "Switch to [course name]" — updates `.env` with that course's ID and domain
+- "Start reviewing [course name]" — switches course and launches `/audit` or shows the fix queue
+- "Mark [course name] as complete" — updates the assignment status
+
+### 4. Status Updates
+
+When the user wants to update an assignment status:
+
+```bash
+python3 -c "
+import json, os, sys, requests
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config
+
+url, key = _get_supabase_config()
+assignment_id = '<ASSIGNMENT_ID>'
+new_status = '<STATUS>'  # 'in_progress' or 'completed'
+
+resp = requests.patch(
+    f'{url}/rest/v1/tester_course_assignments?id=eq.{assignment_id}',
+    headers={
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+    },
+    json={'status': new_status},
+    timeout=15,
+)
+print(json.dumps(resp.json(), indent=2, default=str))
+"
+```
+
+### 5. No Assignments
+
+If the user has no assignments, say:
+
+> You don't have any course assignments yet. An admin needs to assign you to a course using `/assign`.
+
+## Error Handling
+
+- If `IDW_TESTER_ID` is not set: "Add your tester ID to `.env` — ask your admin for it."
+- If Supabase is unreachable: "Can't reach the review database. Check your internet connection and `.env.local` credentials."
+- If the user has the wrong role: show the role gate error message.

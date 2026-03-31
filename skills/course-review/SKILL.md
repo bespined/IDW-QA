@@ -146,6 +146,29 @@ The review evaluates the course across 8 dimensions, each scored 1-4:
 
 ## How to Conduct a Review
 
+### Step 0: Check the Fix Queue (RLHF Integration)
+
+Before starting a full review, check if there are pending remediation items from previous audits:
+
+```bash
+python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback --summary
+```
+
+If the queue has items, present them to the user:
+
+> **There are N findings flagged for remediation** from previous audits.
+> Would you like to:
+> 1. **Address the fix queue first** — work through flagged items before the full review
+> 2. **Run the full review** — review the whole course (fix queue items will be included)
+> 3. **View the queue** — see the detailed list of flagged items
+
+If the user chooses to address the fix queue:
+```bash
+python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback
+```
+
+Present each finding with its reviewer feedback (if any), and offer to fix it using the appropriate remediation skill (quiz, assignment-generator, bulk-edit, etc.). After each fix, the finding's `remediation_requested` status should be cleared when the fix is pushed to Canvas.
+
 ### Step 1: Gather Course Data
 
 1. Read `course-config.json` for the blueprint (objectives, assessments, grading)
