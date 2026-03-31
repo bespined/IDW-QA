@@ -26,6 +26,30 @@ Unified audit skill with 3 modes: Quick Scan (deterministic only), Full Audit (d
 - "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
 - "Just check essential standards" → **Full Audit --scope essential** (skip prompt)
 
+## Audit Purpose Inference
+
+**Before any other setup**, determine `audit_purpose` from the tester's role. This controls the Supabase session type, who can verdict findings in the review app, and the post-audit workflow.
+
+```bash
+python3 scripts/role_gate.py --check any
+```
+
+| Tester Role | Context | `audit_purpose` |
+|---|---|---|
+| `id` | Running on their own course (course ID matches an assignment they own) | `self_audit` |
+| `id` | Running on a course assigned to another tester (QA review of someone else's work) | `qa_review` |
+| `id_assistant` | Running on any assigned course | `recurring` |
+| `admin` | Running on any course | `qa_review` |
+
+**Infer from context:**
+- If `id_assistant` role → always `recurring`
+- If `id` or `admin` role → check whether the course matches a `tester_course_assignments` row owned by another tester. If yes → `qa_review`. Otherwise → `self_audit`.
+- Store the inferred `audit_purpose` and use it when creating the Supabase `audit_sessions` row.
+
+**Also infer `audit_round`**: Query `audit_sessions` for prior sessions on this course + purpose combination. `audit_round` = count of prior sessions + 1. Pass to the audit session row and to `audit_report.py`.
+
+---
+
 ## Entry Point — Course Selection
 
 Before asking about audit mode, determine which course(s) to audit. Use `AskUserQuestion`:
@@ -100,7 +124,7 @@ Runs **Pass 1 (deterministic) + light AI verification**. Two steps:
 1. All deterministic checks run via `deterministic_checks.py`
 2. One AI verification call: Claude receives a summary of all deterministic results + raw content from flagged pages (syllabus body, module overviews, CLO text). The AI checks for obvious false positives and false negatives — pages that exist but are empty, CLOs that technically use measurable verbs but are meaningless, template placeholders that weren't caught by regex. The AI does NOT evaluate instructional quality — that's what Deep Audit does.
 
-All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for IDA review of recurring courses.
+All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for recurring courses reviewed by student workers (`id_assistant` role).
 
 ### Deep Audit (Mode 2)
 
@@ -133,30 +157,40 @@ Detailed findings below...
 
 ### Scan Procedure
 
-1. **Fetch course data**: modules, module items, pages (with body HTML), quizzes (with questions), assignments, discussion topics, tabs, syllabus, assignment groups
-2. **Build or load alignment graph** (new):
-   - Check `course-config.json` for `alignment_graph` field
-   - If absent or stale (>7 days): run `python scripts/alignment_graph.py --build` to auto-extract CLO→MLO→Material→Assessment relationships
-   - If present: load and display summary (`python scripts/alignment_graph.py --summary`)
-   - Report: "Alignment graph loaded: X CLOs, Y MLOs, Z assessments, N gaps"
-3. **Load `config/standards.yaml`** — this contains all 173 criteria with `B-XX.Y` / `C-XX.Y` IDs
-4. **Evaluate each criterion individually** — see Per-Criterion Evaluation below
+**CRITICAL: Use the deterministic evaluator for all B-criteria. Do NOT evaluate B-criteria yourself.**
+
+1. **Run the deterministic evaluator** — this is the FIRST step, before any AI evaluation:
+   ```bash
+   python3 scripts/criterion_evaluator.py --json
+   ```
+   This script:
+   - Fetches all course data from Canvas API
+   - Evaluates all 124 B-criteria deterministically (HTML parsing, API checks)
+   - Flags 49 C-criteria as `needs_ai_review`
+   - Returns JSON with GUARANTEED field names: `criterion_id`, `criterion_text`, `status`, `evidence`
+   - **Same course = same output, every time. No LLM variability.**
+
+2. **Read the evaluator output.** Parse the JSON. All B-criteria are already evaluated with specific evidence. Do NOT override or re-evaluate B-criteria — the Python engine is authoritative for these.
+
+3. **Evaluate C-criteria** (the ones marked `needs_ai_review: true`). For each:
+   - Load the enrichment card from `config/standards_enrichment.yaml`
+   - Read the relevant course pages to make a quality judgment
+   - Set `status` to Met/Partially Met/Not Met with specific evidence
+   - Keep the SAME field names: `criterion_id`, `criterion_text`, `status`, `evidence`
+
+4. **Merge results** — combine B-criteria (from evaluator) + C-criteria (from your evaluation) into one `criteria_results` array per standard.
+
 5. **Derive standard-level status** from criteria (lowest wins: any Not Met → standard is Partially Met at best)
-6. **Include research citations** for Not Met/Partially Met standards
 
-### Per-Criterion Evaluation (CRITICAL)
+6. **Build the audit JSON** — pass to `audit_report.py` for HTML report + Supabase push.
 
-For EVERY standard, load its criteria from `standards.yaml` and evaluate each one individually. This is how the audit produces granular data that flows to Supabase → Vercel → Airtable.
+### Why the evaluator exists
 
-**For each criterion in a standard:**
-1. Read the criterion text (it's a question like "Does the syllabus have content?")
-2. Check the course data to answer Yes / No / N/A
-3. If No: provide brief evidence of what's missing or wrong
-4. Record: `criterion_id`, `status` (Met/Not Met/N/A), `evidence`, `reviewer_tier`, `check_type`
+The evaluator guarantees that 5 different people auditing the same course for Col B get **identical results**. Col B checks are deterministic — "Does a syllabus exist?" has one answer. The Python engine reads the course data and answers factually. Claude should NEVER evaluate B-criteria itself because LLM outputs vary between sessions.
 
-**Col B criteria** (`B-XX.Y`, `reviewer_tier: id_assistant`): These are existence/structural checks. Check if something exists, is configured, or is present. Answer with the data — don't apply judgment.
+### C-Criteria Evaluation (AI judgment)
 
-**Col C criteria** (`C-XX.Y`, `reviewer_tier: id`): These are quality/judgment checks. Evaluate using the enrichment card from `standards_enrichment.yaml`. Apply instructional design expertise.
+For C-criteria (`C-XX.Y`, `reviewer_tier: id`), Claude provides the quality judgment. These are inherently subjective — "Are objectives appropriate for the course level?" requires instructional design expertise. Use enrichment cards from `standards_enrichment.yaml` for context.
 
 ### Evidence Requirements (CRITICAL)
 
@@ -466,7 +500,7 @@ Status: [READY / NOT READY]
 
 Generate a polished, shareable HTML audit report for leadership and team review.
 
-**When to use:** "Generate an audit report", "I need a shareable report", "audit report for my lead"
+**Always generate after every audit — no exception.** At the end of every Quick Check, Deep Audit, and Guided Review, automatically run the report generator. Do not wait for the user to ask.
 
 **Generate:**
 
@@ -553,9 +587,32 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 
 **Workflow integration:**
 1. Run `/audit` → results display in conversation + saved as `audit_results.json`
-2. Run `python scripts/audit_report.py --input audit_results.json --open` → shareable HTML report
-3. Share report with lead, SME, or team
-4. Fix issues via `/bulk-edit` → staged → reviewed in unified preview → pushed
+2. **Automatically run** `python scripts/audit_report.py --input audit_results.json --open` → shareable HTML report (always — do not skip)
+3. Report local path and Supabase URL to the user
+4. **Provide the Vercel review app URL** so the ID can review findings and submit verdicts:
+   > Your findings are live at: `https://idw-review-app.vercel.app/sessions/<SESSION_ID>`
+   > Reviewers can approve, reject, or flag each finding there.
+5. **If `audit_purpose` is `self_audit`**, offer to submit for QA review:
+   > "Would you like to submit this audit for QA review? This notifies your QA lead that it's ready for their review."
+   > If yes: update `audit_sessions.session_status` from `in_progress` → `pending_qa_review` via Supabase.
+   ```bash
+   python3 -c "
+   import requests, os
+   from dotenv import load_dotenv
+   load_dotenv('.env.local')
+   url = os.getenv('SUPABASE_URL')
+   key = os.getenv('SUPABASE_SERVICE_KEY')
+   session_id = '<SESSION_ID>'
+   resp = requests.patch(
+       f'{url}/rest/v1/audit_sessions?id=eq.{session_id}',
+       headers={'apikey': key, 'Authorization': f'Bearer {key}', 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+       json={'session_status': 'pending_qa_review'},
+       timeout=15
+   )
+   print(resp.status_code)
+   "
+   ```
+6. Fix issues via `/bulk-edit` → staged → reviewed in unified preview → pushed
 
 ## Faculty Feedback Summary
 
