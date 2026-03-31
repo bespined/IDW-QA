@@ -187,7 +187,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             # Phase 2 fields
             "audit_purpose": data.get("audit_purpose", "self_audit"),
             "audit_round": data.get("audit_round", 1),
-            "status": data.get("audit_status", "complete"),
+            "status": data.get("audit_status", "in_progress"),
             "plugin_version": data.get("plugin_version", "0.3.0"),
         }
         inserted = _supabase_post(sb_url, sb_key, "audit_sessions", [session_row])
