@@ -1,112 +1,132 @@
 %%{init: {'theme': 'dark', 'themeVariables': {'fontSize': '14px'}}}%%
 
 %% IDW QA Full System Diagram
-%% Last updated: 2026-03-28
+%% Last updated: 2026-03-31
 
 flowchart TD
 
-    %% WORKFLOW A: NEW COURSE DEVELOPMENT
+    %% PHASE 1: AUDIT
 
-    subgraph WF_A["WORKFLOW A: New Course Development"]
+    subgraph AUDIT["PHASE 1: AUDIT (Claude Code — ID/IDA)"]
         direction TB
 
-        A1(["ID starts building course"]) --> A2
-
-        subgraph A_SELF["ID Self-Audit Loop"]
-            A2["ID runs self-audit via Claude Code<br/>audit_purpose = self_audit<br/>All 25 standards checked"] --> A3
-            A3["Findings to Supabase<br/>reviewer_tier assigned per finding<br/>evidence captured: content_excerpt + canvas_link"] --> A4
-            A4["ID reviews own findings<br/>in Vercel app"] --> A5{"Issues<br/>to fix?"}
-            A5 -->|Yes| A6["ID remediates via Claude Code<br/>Stage, Preview, Push"]
-            A6 --> A2
-        end
-
-        A5 -->|Satisfied| A7["ID clicks Submit for QA Review<br/>status = pending_qa_review"]
+        A1(["ID opens Claude Code → /audit"]) --> A2
+        A2{"Which course?<br/>Current / Pick / Batch"} --> A3
+        A3{"Which mode?<br/>Quick / Deep / Guided"} --> A4
+        A4["Claude fetches all course data<br/>pages, quizzes, assignments, discussions"] --> A5
+        A5["Evaluates 173 criteria from standards.yaml<br/>B-XX.Y (readiness) + C-XX.Y (design)<br/>Per criterion: Met / Not Met / N/A"] --> A6
+        A6["Results pushed to:<br/>• Supabase: ~174 finding rows<br/>• HTML report: local + Supabase storage<br/>• Session status: in_progress"]
     end
 
-    %% WORKFLOW B: QA REVIEW OF ID EXISTING FINDINGS
+    %% PHASE 2: REVIEW
 
-    subgraph WF_B["QA REVIEW: New Course Gate"]
+    subgraph REVIEW["PHASE 2: REVIEW (Vercel App — ID/IDA)"]
         direction TB
 
-        B0["Course appears in<br/>Pending Review queue<br/>on Vercel app"] --> B1
-        B1["QA team assigns IDAs<br/>to review IDs existing findings"] --> B2
+        B1["ID opens session in Vercel"] --> B2
+        B2["Findings grouped by standard<br/>Each expandable: B-criteria + C-criteria<br/>Criterion question (italic) + Evidence (specific)"] --> B3
+        B3["ID reviews each finding"] --> B4
 
-        subgraph B_IDA["IDA Review: Col B findings only"]
-            B2["IDAs open session in Vercel app<br/>See ONLY id_assistant tier findings"] --> B3
-            B3["Evidence shown inline:<br/>content excerpt + Canvas link<br/>IDA clicks Canvas link to verify"] --> B4
-            B4["Verdict each Col B finding:<br/>Agree / Disagree / Not an Issue / N/A<br/>If Disagree: type corrected_finding"]
-        end
+        B4{"Verdict"}
+        B4 -->|Correct + needs fix| B5["☑ Needs remediation<br/>Flagged for fix queue"]
+        B4 -->|Correct, no fix needed| B6["Finding confirmed<br/>No action needed"]
+        B4 -->|Incorrect| B7["AI was wrong<br/>ID provides correction"]
+        B4 -->|N/A| B8["Doesn't apply<br/>to this course"]
 
-        B4 --> B5
-
-        subgraph B_ID["QA Team ID Review: All findings"]
-            B5["QA team IDs open same session<br/>See ALL findings: Col B + Col C"] --> B6
-            B6["Verdict Col C findings<br/>qualitative: Blooms alignment,<br/>UDL, assessment design, etc."] --> B7
-            B7["Review IDA verdicts on Col B<br/>Override if needed with reason"]
-        end
-
-        B7 --> B8{"Revisions<br/>needed?"}
-        B8 -->|Yes| B9["status = revisions_required<br/>audit_round increments<br/>ID sees feedback in Vercel app"]
-        B9 --> A2
-        B8 -->|No| B10["launch_gate_approved = true<br/>Course launches"]
+        B5 --> B9
+        B6 --> B9
+        B7 --> B9
+        B8 --> B9
+        B9["ID marks session Complete"] --> B10
+        B10["Col C findings → auto qa_approved<br/>Col B findings → pending_qa_review"]
     end
 
-    A7 --> B0
+    AUDIT --> REVIEW
 
-    %% WORKFLOW C: RECURRING COURSE AUDIT
+    %% PHASE 3: ID ASSISTANT VALIDATION
 
-    subgraph WF_C["WORKFLOW C: Recurring Course Audit - QA Team Only"]
+    subgraph VALIDATE["PHASE 3: VALIDATION (Vercel App — ID Assistant only)"]
         direction TB
 
-        C1(["QA team triggers audit<br/>via Claude Code using QA token"]) --> C2
-        C2["Findings to Supabase<br/>audit_purpose = recurring<br/>reviewer_tier assigned per finding"] --> C3
-        C3["QA team assigns IDAs<br/>to review session"] --> C4
+        C1["ID Assistant opens session<br/>Sees Col B findings only"] --> C2
+        C2["Reviews each B-criterion<br/>the ID already verdicted"] --> C3
 
-        subgraph C_IDA["IDA Review: Col B findings only"]
-            C4["IDAs review Col B findings<br/>in Vercel app<br/>Verify via Canvas link"] --> C5
-            C5["Agree / Disagree / Not an Issue / N/A<br/>If Disagree: type corrected_finding"]
-        end
-
-        C5 --> C6
-
-        subgraph C_ID["QA Team ID Review: All findings"]
-            C6["QA team IDs verdict<br/>ALL findings Col B + Col C"] --> C7
-            C7["Session complete<br/>All findings verdicted"]
-        end
-
-        C7 --> C8["Airtable sync fires automatically"]
-        C8 --> C9["Remediation is PASSIVE:<br/>Findings visible in Airtable<br/>Faculty or IDs fix if they have time<br/>NOT launch-gated"]
+        C3{"Round 1:<br/>Correct / Incorrect / N/A"}
+        C3 -->|All agree| C4["All Col B: qa_approved<br/>Session complete"]
+        C3 -->|Any disagree| C5["Provides reason<br/>Session: revisions_required<br/>remediation_requested = true"]
     end
 
-    %% DATA FLOW
+    REVIEW --> VALIDATE
 
-    subgraph DATA["DATA FLOW"]
-        direction LR
+    %% PHASE 4: REMEDIATION
 
-        D1["Every verdict click<br/>writes to Supabase immediately"] --> D2
-        D2["Enables resume:<br/>IDA closes tab, comes back tomorrow<br/>picks up where they left off"] --> D3
-        D3["Session complete trigger:<br/>all findings have a verdict<br/>including N/A"] --> D4
-        D4["Batch sync to Airtable<br/>one API call per session"]
-        D3 --> D5["Nightly catch-up job<br/>syncs incomplete sessions"]
-    end
-
-    %% RLHF LOOP
-
-    subgraph RLHF["RLHF FEEDBACK LOOP"]
+    subgraph REMEDIATE["PHASE 4: REMEDIATION (Claude Code — ID only)"]
         direction TB
 
-        R1["Disagreements + corrected_findings<br/>accumulate in finding_feedback<br/>IDA overrides tracked via original_decision"] --> R2
-        R2["Admin reviews patterns<br/>on Vercel admin dashboard"] --> R3
-        R3{"Diagnose<br/>root cause"}
-        R3 -->|Prompt issue| R4a["AI misapplied enrichment context<br/>Fix: update audit skill prompts"]
-        R3 -->|Enrichment gap| R4b["standards_enrichment.yaml is<br/>vague or incomplete<br/>Fix: add examples, criteria, research"]
-        R3 -->|Standard ambiguous| R4c["standards.yaml criterion<br/>is unclear<br/>Fix: rewrite criterion text"]
-        R3 -->|Check bug| R4d["deterministic_checks.py<br/>has a logic error<br/>Fix: update hardcoded check"]
-        R4a --> R5["update-idw distributes<br/>changes via git pull"]
-        R4b --> R5
-        R4c --> R5
-        R4d --> R5
-        R5 --> R6["Next audit run<br/>uses improved prompts"]
+        D1["ID opens Claude Code → /course-review"] --> D2
+        D2["Fix queue loads from Supabase<br/>Shows findings where<br/>remediation_requested = true"] --> D3
+        D3["ID picks an item:<br/>'Fix the alt text issues'"] --> D4
+        D4["Claude does FOCUSED re-scan:<br/>Fetches pages, finds every instance<br/>Lists: 'Found 96 images across 68 pages'"] --> D5
+        D5["Claude generates fixes<br/>Alt text via vision API<br/>Heading fixes, rubric generation"] --> D6
+        D6["Stage → Screenshot → Preview"] --> D7
+
+        D7{"ID approves?"}
+        D7 -->|Yes| D8["Push to Canvas<br/>Record remediation_event<br/>Clear remediation_requested"]
+        D7 -->|Change needed| D6
+    end
+
+    C5 --> REMEDIATE
+    B5 --> REMEDIATE
+
+    %% POST-REMEDIATION VALIDATION
+
+    subgraph POSTVAL["PHASE 4b: POST-REMEDIATION VALIDATION (Vercel — ID Assistant)"]
+        direction TB
+
+        E1["ID Assistant sees remediated finding:<br/>ID Decision: Correct<br/>→ Remediated via /bulk-edit"] --> E2
+
+        E2{"Agree / Disagree"}
+        E2 -->|Agree| E3["Finding: qa_approved"]
+        E2 -->|Disagree| E4["Reason: '5 images still missing'<br/>remediation_requested = true<br/>Back to fix queue"]
+    end
+
+    D8 --> POSTVAL
+    E4 --> D2
+
+    %% PHASE 5: AIRTABLE SYNC
+
+    subgraph SYNC["PHASE 5: SYNC (Manual — Admin)"]
+        direction TB
+
+        F1["All findings qa_approved"] --> F2
+        F2["Admin clicks Sync to Airtable<br/>on Vercel session page"] --> F3
+        F3["airtable_sync.py runs<br/>• One row per course<br/>• 147 B/C columns: Yes/No/N/A<br/>• Standard ratings + Notes<br/>• High-level summary for faculty"]
+    end
+
+    E3 --> F1
+    C4 --> F1
+
+    %% AIRTABLE OUTPUT
+
+    subgraph AIRTABLE["AIRTABLE (Read-only output)"]
+        direction TB
+
+        G1["QA team filters by school/program"] --> G2
+        G2["Faculty outreach from Notes column"] --> G3
+        G3["3x yearly presentations<br/>to academic units"]
+    end
+
+    F3 --> AIRTABLE
+
+    %% RECURRING WORKFLOW
+
+    subgraph RECURRING["RECURRING COURSE AUDIT"]
+        direction TB
+
+        H1(["Admin runs /audit"]) --> H2
+        H2["ID Assistant reviews Col B only<br/>Correct / Incorrect / N/A"] --> H3
+        H3["Admin spot-checks<br/>Sends faculty outreach"] --> H4
+        H4["Sync to Airtable<br/>No remediation — findings only"]
     end
 
     %% SYSTEM COMPONENTS
@@ -114,164 +134,134 @@ flowchart TD
     subgraph STACK["SYSTEM COMPONENTS"]
         direction TB
 
-        subgraph CLAUDE["Claude Code - IDs + QA team"]
-            CC1["audit skill<br/>Pass 1: deterministic_checks.py<br/>Pass 2: LLM + standards_enrichment.yaml"]
-            CC2["course-review skill<br/>Fix queue from Supabase"]
-            CC3["staging skill<br/>Stage, Preview, Push"]
-            CC4["qa-concierge<br/>Guided entry point"]
+        subgraph CC["Claude Code"]
+            CC1["/audit — 173 criteria evaluation<br/>Quick / Deep / Guided / Batch"]
+            CC2["/course-review — fix queue + review<br/>Course list → pick → remediate"]
+            CC3["/bulk-edit, /quiz, /rubric-creator<br/>Focused re-scan + fix + stage + push"]
+            CC4["/admin — error queue, RLHF stats<br/>tester mgmt, Airtable sync"]
+            CC5["/assignments — view assigned courses"]
         end
 
-        subgraph VERCEL["Vercel App - All roles"]
-            V1["IDA View<br/>Col B findings only<br/>Agree / Disagree / Not an Issue / N/A"]
-            V2["ID View<br/>All findings + QA feedback<br/>Submit for QA Review button"]
-            V3["QA Team View<br/>Pending Review queue<br/>Assign IDAs + override verdicts"]
-            V4["Admin View<br/>Error queue + RLHF patterns<br/>IDA quality tracking<br/>Enrichment card effectiveness<br/>Tester + course assignment mgmt"]
+        subgraph VER["Vercel App"]
+            V1["ID View: all findings (B+C)<br/>Grouped by standard, expandable<br/>Correct/Incorrect/N/A + needs remediation"]
+            V2["ID Asst View: Col B only<br/>Round 1: Correct/Incorrect<br/>Round 2+: Agree/Disagree"]
+            V3["Admin View: Sync button<br/>Report download, session mgmt"]
+            V4["Category filter:<br/>Design / Readiness / A11y"]
         end
 
-        subgraph SUPA["Supabase - Source of truth"]
-            S1["audit_sessions<br/>audit_purpose, audit_round, status<br/>launch_gate_approved"]
-            S2["audit_findings<br/>reviewer_tier, content_excerpt<br/>canvas_link, criterion_id"]
-            S3["finding_feedback<br/>agree/disagree/not_an_issue/N/A<br/>corrected_finding, original_decision<br/>override tracking"]
-            S4["testers<br/>name, role, UUID<br/>email + password auth"]
-            S5["tester_course_assignments<br/>IDAs only, not IDs<br/>assigned courses + status"]
-            S6["error_reports<br/>bug/wrong_finding/crash<br/>open/acknowledged/resolved"]
+        subgraph SB["Supabase"]
+            S1["audit_sessions — status, scores, round"]
+            S2["audit_findings — per-criterion<br/>criterion_id (B-XX.Y / C-XX.Y)<br/>ai_reasoning + content_excerpt"]
+            S3["finding_feedback — verdicts + history"]
+            S4["remediation_events — what/when/how/who"]
+            S5["testers + assignments + errors"]
         end
 
-        subgraph AIR["Airtable - Read-only reporting"]
-            AT1["One-way sync from Supabase<br/>One row per finding<br/>QA team + IDs view only"]
+        subgraph AT["Airtable"]
+            AT1["Course Audits table<br/>One row per course<br/>147 B/C columns + ratings + notes"]
+            AT2["Views: ID/IDA | ID Assistant | Admin"]
         end
     end
 
-    %% REVIEWER TIER MAPPING
+    %% RLHF LOOP
 
-    subgraph TIER["REVIEWER TIER: Standards Mapping"]
-        direction LR
-
-        T1["id_assistant - Col B<br/>107 deterministic checks:<br/>CLO/MLO presence, Syllabus fields,<br/>Nav menu, Template structure,<br/>Assessment settings, Links/videos,<br/>WCAG existence checks<br/>Visible to: IDAs + IDs<br/>Verdicted by: IDAs first, IDs override"]
-
-        T2["id - Col C<br/>42 qualitative checks<br/>uses standards_enrichment.yaml:<br/>Blooms alignment, CLO quality,<br/>UDL principles, Assessment design,<br/>Material-objective alignment,<br/>Activity engagement quality<br/>Visible to: IDs only<br/>Verdicted by: QA team IDs"]
-    end
-
-    %% IMPLEMENTATION PHASES
-
-    subgraph PHASES["IMPLEMENTATION PHASES"]
+    subgraph RLHF["RLHF FEEDBACK LOOP"]
         direction TB
 
-        P0["PHASE 0: Bug Fixes<br/>- audit_report.py URL fix<br/>- HTML/XLSX report data mapping<br/>- Staging workflow simplification"]
-
-        P1["PHASE 1: Audit Skill Foundation<br/>- Map 25 standards to reviewer_tier<br/>- Update deterministic_checks.py<br/>- Capture evidence per finding<br/>- Add IDA Mode 5<br/>- Write new fields to Supabase"]
-
-        P2["PHASE 2: Supabase Schema<br/>- New fields on existing tables<br/>- testers table<br/>- tester_course_assignments table<br/>- error_reports table<br/>- RLS policies"]
-
-        P3["PHASE 3: Vercel App<br/>- Supabase Auth email + password<br/>- Role-based views: IDA/ID/QA/Admin<br/>- Finding card with inline evidence<br/>- Submit for QA Review workflow<br/>- Admin dashboard"]
-
-        P4["PHASE 4: Airtable Integration<br/>- Supabase to Airtable batch sync<br/>- Nightly catch-up job<br/>- Read-only Airtable view"]
-
-        P5["PHASE 5: RLHF and Admin Skills<br/>- assignments skill<br/>- assign skill<br/>- report-error skill<br/>- update-idw skill<br/>- RLHF pattern analysis"]
-
-        P0 --> P1 --> P2 --> P3 --> P4 --> P5
+        R1["Disagreements accumulate<br/>in finding_feedback"] --> R2
+        R2["rlhf_analysis.py:<br/>Agreement rate by standard/reviewer"] --> R3
+        R3["Admin diagnoses root cause:<br/>Prompt / Enrichment / Standard / Check"] --> R4
+        R4["Fix pushed via /update-idw<br/>Next audit uses improved prompts"]
     end
 
-    %% ==========================================
     %% STYLES
-    %% ==========================================
 
-    %% Workflow A - Blue (ID / course development)
-    style WF_A fill:#1e3a5f,stroke:#4a90d9,stroke-width:2px,color:#fff
-    style A_SELF fill:#162d4a,stroke:#4a90d9,stroke-width:1px,color:#fff
+    style AUDIT fill:#1e3a5f,stroke:#4a90d9,stroke-width:2px,color:#fff
     style A1 fill:#4a90d9,stroke:#4a90d9,color:#fff
     style A2 fill:#2a6cb5,stroke:#4a90d9,color:#fff
     style A3 fill:#2a6cb5,stroke:#4a90d9,color:#fff
     style A4 fill:#2a6cb5,stroke:#4a90d9,color:#fff
-    style A5 fill:#1e3a5f,stroke:#4a90d9,color:#fff
+    style A5 fill:#2a6cb5,stroke:#4a90d9,color:#fff
     style A6 fill:#2a6cb5,stroke:#4a90d9,color:#fff
-    style A7 fill:#4a90d9,stroke:#fff,stroke-width:2px,color:#fff
 
-    %% Workflow B - Orange (QA review / gate)
-    style WF_B fill:#4a2800,stroke:#e8863a,stroke-width:2px,color:#fff
-    style B_IDA fill:#3a2000,stroke:#c46a2a,stroke-width:1px,color:#fff
-    style B_ID fill:#3a2000,stroke:#c46a2a,stroke-width:1px,color:#fff
-    style B0 fill:#c46a2a,stroke:#e8863a,color:#fff
+    style REVIEW fill:#4a2800,stroke:#e8863a,stroke-width:2px,color:#fff
     style B1 fill:#c46a2a,stroke:#e8863a,color:#fff
     style B2 fill:#a05520,stroke:#e8863a,color:#fff
     style B3 fill:#a05520,stroke:#e8863a,color:#fff
-    style B4 fill:#a05520,stroke:#e8863a,color:#fff
+    style B4 fill:#4a2800,stroke:#e8863a,color:#fff
     style B5 fill:#a05520,stroke:#e8863a,color:#fff
-    style B6 fill:#a05520,stroke:#e8863a,color:#fff
-    style B7 fill:#a05520,stroke:#e8863a,color:#fff
-    style B8 fill:#4a2800,stroke:#e8863a,color:#fff
-    style B9 fill:#8b3a00,stroke:#e8863a,color:#fff
-    style B10 fill:#2d8a4e,stroke:#4ade80,stroke-width:2px,color:#fff
+    style B6 fill:#2d8a4e,stroke:#4ade80,color:#fff
+    style B7 fill:#8b3a00,stroke:#e8863a,color:#fff
+    style B8 fill:#6a7883,stroke:#94a3b8,color:#fff
+    style B9 fill:#a05520,stroke:#e8863a,color:#fff
+    style B10 fill:#c46a2a,stroke:#e8863a,color:#fff
 
-    %% Workflow C - Teal (recurring audits)
-    style WF_C fill:#0d3b3b,stroke:#2dd4bf,stroke-width:2px,color:#fff
-    style C_IDA fill:#0a2e2e,stroke:#20b2aa,stroke-width:1px,color:#fff
-    style C_ID fill:#0a2e2e,stroke:#20b2aa,stroke-width:1px,color:#fff
-    style C1 fill:#20b2aa,stroke:#2dd4bf,color:#fff
+    style VALIDATE fill:#0d3b3b,stroke:#2dd4bf,stroke-width:2px,color:#fff
+    style C1 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
     style C2 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
-    style C3 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
-    style C4 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
-    style C5 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
-    style C6 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
-    style C7 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
-    style C8 fill:#a07820,stroke:#fbbf24,color:#fff
-    style C9 fill:#0a2e2e,stroke:#94a3b8,stroke-width:1px,color:#94a3b8
+    style C3 fill:#0d3b3b,stroke:#2dd4bf,color:#fff
+    style C4 fill:#2d8a4e,stroke:#4ade80,color:#fff
+    style C5 fill:#8b3a00,stroke:#e8863a,color:#fff
 
-    %% Data Flow - Purple
-    style DATA fill:#2d1b4e,stroke:#a78bfa,stroke-width:2px,color:#fff
+    style REMEDIATE fill:#2d1b4e,stroke:#a78bfa,stroke-width:2px,color:#fff
     style D1 fill:#5b3d8f,stroke:#a78bfa,color:#fff
     style D2 fill:#5b3d8f,stroke:#a78bfa,color:#fff
     style D3 fill:#5b3d8f,stroke:#a78bfa,color:#fff
     style D4 fill:#5b3d8f,stroke:#a78bfa,color:#fff
     style D5 fill:#5b3d8f,stroke:#a78bfa,color:#fff
+    style D6 fill:#5b3d8f,stroke:#a78bfa,color:#fff
+    style D7 fill:#2d1b4e,stroke:#a78bfa,color:#fff
+    style D8 fill:#2d8a4e,stroke:#4ade80,color:#fff
 
-    %% RLHF Loop - Pink/Magenta
-    style RLHF fill:#3b1235,stroke:#f472b6,stroke-width:2px,color:#fff
-    style R1 fill:#7a2460,stroke:#f472b6,color:#fff
-    style R2 fill:#7a2460,stroke:#f472b6,color:#fff
-    style R3 fill:#3b1235,stroke:#f472b6,color:#fff
-    style R4a fill:#7a2460,stroke:#f472b6,color:#fff
-    style R4b fill:#7a2460,stroke:#f472b6,color:#fff
-    style R4c fill:#7a2460,stroke:#f472b6,color:#fff
-    style R4d fill:#7a2460,stroke:#f472b6,color:#fff
-    style R5 fill:#7a2460,stroke:#f472b6,color:#fff
-    style R6 fill:#2d8a4e,stroke:#4ade80,color:#fff
+    style POSTVAL fill:#3b1235,stroke:#f472b6,stroke-width:2px,color:#fff
+    style E1 fill:#7a2460,stroke:#f472b6,color:#fff
+    style E2 fill:#3b1235,stroke:#f472b6,color:#fff
+    style E3 fill:#2d8a4e,stroke:#4ade80,color:#fff
+    style E4 fill:#8b3a00,stroke:#e8863a,color:#fff
 
-    %% System Components
+    style SYNC fill:#3b2e1a,stroke:#fbbf24,stroke-width:2px,color:#fff
+    style F1 fill:#a07820,stroke:#fbbf24,color:#fff
+    style F2 fill:#a07820,stroke:#fbbf24,color:#fff
+    style F3 fill:#a07820,stroke:#fbbf24,color:#fff
+
+    style AIRTABLE fill:#3b2e1a,stroke:#fbbf24,stroke-width:2px,color:#fff
+    style G1 fill:#a07820,stroke:#fbbf24,color:#fff
+    style G2 fill:#a07820,stroke:#fbbf24,color:#fff
+    style G3 fill:#a07820,stroke:#fbbf24,color:#fff
+
+    style RECURRING fill:#0d3b3b,stroke:#2dd4bf,stroke-width:2px,color:#fff
+    style H1 fill:#20b2aa,stroke:#2dd4bf,color:#fff
+    style H2 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
+    style H3 fill:#1a8a8a,stroke:#2dd4bf,color:#fff
+    style H4 fill:#a07820,stroke:#fbbf24,color:#fff
+
     style STACK fill:#1a1a2e,stroke:#6366f1,stroke-width:2px,color:#fff
-    style CLAUDE fill:#1e2a4a,stroke:#4a90d9,stroke-width:1px,color:#fff
+    style CC fill:#1e2a4a,stroke:#4a90d9,stroke-width:1px,color:#fff
     style CC1 fill:#2a6cb5,stroke:#4a90d9,color:#fff
     style CC2 fill:#2a6cb5,stroke:#4a90d9,color:#fff
     style CC3 fill:#2a6cb5,stroke:#4a90d9,color:#fff
     style CC4 fill:#2a6cb5,stroke:#4a90d9,color:#fff
+    style CC5 fill:#2a6cb5,stroke:#4a90d9,color:#fff
 
-    style VERCEL fill:#1a1a2e,stroke:#6366f1,stroke-width:1px,color:#fff
+    style VER fill:#1a1a2e,stroke:#6366f1,stroke-width:1px,color:#fff
     style V1 fill:#4f46e5,stroke:#6366f1,color:#fff
     style V2 fill:#4f46e5,stroke:#6366f1,color:#fff
     style V3 fill:#4f46e5,stroke:#6366f1,color:#fff
     style V4 fill:#4f46e5,stroke:#6366f1,color:#fff
 
-    style SUPA fill:#1a2e1a,stroke:#4ade80,stroke-width:1px,color:#fff
+    style SB fill:#1a2e1a,stroke:#4ade80,stroke-width:1px,color:#fff
     style S1 fill:#2d8a4e,stroke:#4ade80,color:#fff
     style S2 fill:#2d8a4e,stroke:#4ade80,color:#fff
     style S3 fill:#2d8a4e,stroke:#4ade80,color:#fff
     style S4 fill:#2d8a4e,stroke:#4ade80,color:#fff
     style S5 fill:#2d8a4e,stroke:#4ade80,color:#fff
-    style S6 fill:#2d8a4e,stroke:#4ade80,color:#fff
 
-    style AIR fill:#3b2e1a,stroke:#fbbf24,stroke-width:1px,color:#fff
+    style AT fill:#3b2e1a,stroke:#fbbf24,stroke-width:1px,color:#fff
     style AT1 fill:#a07820,stroke:#fbbf24,color:#fff
+    style AT2 fill:#a07820,stroke:#fbbf24,color:#fff
 
-    %% Reviewer Tier
-    style TIER fill:#1a1a2e,stroke:#94a3b8,stroke-width:2px,color:#fff
-    style T1 fill:#c46a2a,stroke:#e8863a,color:#fff
-    style T2 fill:#4f46e5,stroke:#6366f1,color:#fff
-
-    %% Implementation Phases
-    style PHASES fill:#1a1a2e,stroke:#94a3b8,stroke-width:2px,color:#fff
-    style P0 fill:#8b3a00,stroke:#e8863a,color:#fff
-    style P1 fill:#7a5020,stroke:#fbbf24,color:#fff
-    style P2 fill:#2d6a4e,stroke:#4ade80,color:#fff
-    style P3 fill:#4f46e5,stroke:#6366f1,color:#fff
-    style P4 fill:#a07820,stroke:#fbbf24,color:#fff
-    style P5 fill:#7a2460,stroke:#f472b6,color:#fff
+    style RLHF fill:#3b1235,stroke:#f472b6,stroke-width:2px,color:#fff
+    style R1 fill:#7a2460,stroke:#f472b6,color:#fff
+    style R2 fill:#7a2460,stroke:#f472b6,color:#fff
+    style R3 fill:#7a2460,stroke:#f472b6,color:#fff
+    style R4 fill:#2d8a4e,stroke:#4ade80,color:#fff
