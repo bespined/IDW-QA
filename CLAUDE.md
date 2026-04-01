@@ -14,7 +14,7 @@ When a user starts a conversation without specifying a skill, invoke `/qa-concie
 2. **Review** — Walk through findings and fix issues
 3. **Search** — Find specific content in the course
 
-IDs interact through natural conversation — the concierge routes to the right skill automatically. The 16 skills are the engine; the concierge is the steering wheel.
+IDs interact through natural conversation — the concierge routes to the right skill automatically. The 21 skills are the engine; the concierge is the steering wheel.
 
 Users can still invoke any skill directly by name (e.g., `/audit`) — the concierge is the default, not a gatekeeper.
 
@@ -280,6 +280,7 @@ The Vercel review app (`idw-review-app`) has server-side API routes using the Su
 | `/api/remediation-events` | GET, POST | Fetch or record remediation events for a finding |
 | `/api/session-complete` | POST | Mark session complete — Col C auto-approves, Col B → pending_qa_review |
 | `/api/sync-airtable` | POST | Trigger Airtable sync for a session (admin only) |
+| `/api/session-assign` | GET, POST | List available ID Assistants (GET) or assign one to a session (POST) |
 
 ## MCP Connectors
 

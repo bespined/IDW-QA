@@ -19,7 +19,7 @@ flowchart TD
         A5 -->|Deep Audit| A6b["Evaluator output + Claude evaluates<br/>49 C-criteria using enrichment cards"]
         A6a --> A7
         A6b --> A7
-        A7["audit_report.py generates:<br/>• HTML report + Supabase storage<br/>• ~155 findings pushed to Supabase<br/>• Session status: in_progress"]
+        A7["audit_report.py generates:<br/>• HTML report with split scores: Readiness / Design / A11y<br/>• ~155 findings pushed to Supabase<br/>• Session status: in_progress"]
     end
 
     %% PHASE 2: REVIEW
@@ -52,8 +52,9 @@ flowchart TD
     subgraph VALIDATE["PHASE 3: VALIDATION (Vercel App — ID Assistant only)"]
         direction TB
 
+        C0["Admin assigns ID Assistant<br/>to session (assigned_to field)<br/>Sticky through all rounds"] --> C1
         C1["ID Assistant opens session<br/>Sees Col B findings only"] --> C2
-        C2["Reviews each B-criterion<br/>the ID already verdicted"] --> C3
+        C2["Reviews each B-criterion<br/>the ID already verdicted<br/>Round 2+: Agree / Disagree on fixes"] --> C3
 
         C3{"Round 1:<br/>Correct / Incorrect / N/A"}
         C3 -->|All agree| C4["All Col B: qa_approved<br/>Session complete"]
@@ -149,8 +150,8 @@ flowchart TD
         subgraph VER["Vercel App"]
             V1["ID View: all findings (B+C)<br/>Grouped by standard, expandable<br/>Correct/Incorrect/N/A + needs remediation"]
             V2["ID Asst View: Col B only<br/>Round 1: Correct/Incorrect<br/>Round 2+: Agree/Disagree"]
-            V3["Admin View: Sync button<br/>Report download, session mgmt"]
-            V4["Category filter:<br/>Design / Readiness / A11y"]
+            V3["Admin View: Needs Attention / All Sessions<br/>Assign ID Asst, Sync to Airtable, Report download"]
+            V4["Split scores: Readiness % / Design % / A11y %<br/>Category filter: Design / Readiness / A11y"]
         end
 
         subgraph SB["Supabase"]
