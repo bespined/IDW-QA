@@ -179,11 +179,11 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             "course_code": course.get("course_code", course.get("name", "")),
             "term": course.get("term", ""),
             "auditor_id": auditor,
-            "overall_score": overall,
-            "standards_score": ds_score,
-            "a11y_score": a11y_score,
-            "qa_score": qa_score,
-            "readiness_score": r_score,
+            "overall_score": data.get("overall_score", overall),
+            "standards_score": data.get("readiness_score", ds_score),  # readiness = standards for display
+            "a11y_score": data.get("a11y_score", a11y_score),
+            "qa_score": data.get("design_score") or qa_score,  # design score if available
+            "readiness_score": data.get("readiness_score", r_score),
             # Phase 2 fields
             "audit_purpose": data.get("audit_purpose", "self_audit"),
             "audit_round": data.get("audit_round", 1),
@@ -1099,7 +1099,14 @@ def generate_report(data: dict) -> str:
     else:
         readiness_status = 'Not Evaluated'
 
-    overall_score = round((ds_score * 0.4 + qa_score * 0.3 + (100 if a11y_critical == 0 else max(0, 100 - a11y_critical * 25)) * 0.15 + (readiness_pass / readiness_total * 100 if readiness_total else 0) * 0.15))
+    # Use split scores from evaluator if available, else compute legacy
+    readiness_score = data.get('readiness_score')
+    design_score_val = data.get('design_score')
+    a11y_score_val = data.get('a11y_score')
+    if readiness_score is not None:
+        overall_score = data.get('overall_score', readiness_score)
+    else:
+        overall_score = round((ds_score * 0.4 + qa_score * 0.3 + (100 if a11y_critical == 0 else max(0, 100 - a11y_critical * 25)) * 0.15 + (readiness_pass / readiness_total * 100 if readiness_total else 0) * 0.15))
 
     # Detect empty audit — all section totals are zero
     a11y_total = sum(a11y_summary.values())
@@ -1665,6 +1672,22 @@ def generate_report(data: dict) -> str:
   <div class="container">
 
     {empty_warning_html}
+
+    <!-- Score Breakdown -->
+    <div style="display:flex;gap:16px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+      <div style="text-align:center;padding:12px 24px;background:white;border-radius:8px;border:1px solid #eee">
+        <div style="font-size:28px;font-weight:700;color:{'#1e7e34' if (readiness_score or 0) >= 80 else '#b5540a' if (readiness_score or 0) >= 50 else '#c62828'}">{readiness_score if readiness_score is not None else '—'}%</div>
+        <div style="font-size:12px;color:#888;font-weight:500">READINESS (Col B)</div>
+      </div>
+      <div style="text-align:center;padding:12px 24px;background:white;border-radius:8px;border:1px solid #eee">
+        <div style="font-size:28px;font-weight:700;color:{'#1e7e34' if (design_score_val or 0) >= 80 else '#b5540a' if (design_score_val or 0) >= 50 else '#6a7883' if design_score_val is None else '#c62828'}">{f'{design_score_val}%' if design_score_val is not None else 'N/A'}</div>
+        <div style="font-size:12px;color:#888;font-weight:500">DESIGN (Col C)</div>
+      </div>
+      <div style="text-align:center;padding:12px 24px;background:white;border-radius:8px;border:1px solid {'#c62828' if (a11y_score_val or 0) < 50 else '#eee'}">
+        <div style="font-size:28px;font-weight:700;color:{'#1e7e34' if (a11y_score_val or 0) >= 80 else '#b5540a' if (a11y_score_val or 0) >= 50 else '#c62828'}">{a11y_score_val if a11y_score_val is not None else '—'}%</div>
+        <div style="font-size:12px;color:#888;font-weight:500">A11Y (ASU Mandated)</div>
+      </div>
+    </div>
 
     <!-- Summary Cards -->
     <div class="summary-grid">

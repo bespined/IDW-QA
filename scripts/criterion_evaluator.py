@@ -736,13 +736,30 @@ def build_full_audit_json(cd, results, mode="full_audit"):
     r_pass = sum(1 for c in readiness_cats if c["status"] == "Pass")
     r_total = len(readiness_cats)
 
-    # Compute scores
-    ds_total_scored = met_count + partial_count + not_met_count
-    ds_score = round(met_count / ds_total_scored * 100) if ds_total_scored > 0 else 0
+    # ── Compute split scores ──
+    # Readiness = % of Col B criteria met (excluding N/A)
+    b_results_all = [r for r in results if r["criterion_id"].startswith("B-") and r["status"] != "N/A"]
+    b_met_all = sum(1 for r in b_results_all if r["status"] == "Met")
+    readiness_score = round(b_met_all / len(b_results_all) * 100) if b_results_all else 0
+
+    # Design = % of Col C criteria met (excluding N/A and needs_ai_review)
+    c_results_all = [r for r in results if r["criterion_id"].startswith("C-") and r["status"] not in ("N/A", "needs_ai_review")]
+    c_met_all = sum(1 for r in c_results_all if r["status"] == "Met")
+    design_score = round(c_met_all / len(c_results_all) * 100) if c_results_all else None  # None = not evaluated
+
+    # A11y = % of Standards 22-23 B-criteria met (always shown since ASU-mandated)
+    a11y_results = [r for r in results if r["standard_id"] in ("22", "23") and r["criterion_id"].startswith("B-") and r["status"] != "N/A"]
+    a11y_met = sum(1 for r in a11y_results if r["status"] == "Met")
+    a11y_score = round(a11y_met / len(a11y_results) * 100) if a11y_results else 0
+
+    # Overall = 50/50 readiness+design when both present, readiness-only for quick check
+    if design_score is not None:
+        overall = round((readiness_score + design_score) / 2)
+    else:
+        overall = readiness_score
+
+    # Legacy scores for backward compat with report sections
     qa_score = round(qa_pass / len(qa_items) * 100) if qa_items else 0
-    a11y_score = max(0, 100 - a11y_critical * 25)
-    r_score = round(r_pass / r_total * 100) if r_total > 0 else 0
-    overall = round(ds_score * 0.4 + qa_score * 0.3 + a11y_score * 0.15 + r_score * 0.15)
 
     course_obj = cd["course"]
     return {
@@ -759,6 +776,11 @@ def build_full_audit_json(cd, results, mode="full_audit"):
         "audit_mode": mode.replace("_", " "),
         "audit_purpose": audit_purpose,
         "overall_score": overall,
+        "readiness_score": readiness_score,
+        "design_score": design_score,  # None if not evaluated (Quick Check)
+        "a11y_score": a11y_score,
+        "standards_score": readiness_score,  # backward compat with audit_report.py
+        "qa_score": qa_score,
         "sections": {
             "design_standards": {
                 "title": "ASU Course Design Standards",
