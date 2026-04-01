@@ -1156,14 +1156,20 @@ This is the biggest remaining quality issue — without specific evidence, the r
 - Value stored in `finding_feedback.corrected_finding` or new `manual_value` field
 - `airtable_sync.py` picks up manual values and writes to corresponding Airtable column
 
+**Completed (cont.):**
+- Migration 007: `assigned_to` on audit_sessions — done, SQL run
+- Vercel admin assign UI — dropdown per session on home page
+- Vercel admin views — Needs Attention (default) + All Sessions toggle
+- Vercel ID Asst dashboard — filters by `assigned_to = me`
+- ID Assistant Agree/Disagree — post-remediation buttons: "Agree — Fix Verified" / "Disagree — Not Fixed"
+- Manual-entry text fields — amber input box for Ally/SCOUT/readability scores, saves to finding_feedback
+- Deterministic evaluator — criterion_evaluator.py produces complete audit JSON, guaranteed consistency
+- Split scores — Readiness / Design / A11y shown separately in HTML report + Vercel session header
+
 **Still remaining:**
-- Migration for `assigned_to` on audit_sessions
-- Vercel admin assign UI
-- Vercel ID Asst dashboard (my assignments only)
-- ID Assistant Agree/Disagree vocabulary for post-remediation validation
-- Manual-entry text fields on FindingCard for Ally/SCOUT/readability scores
-- Remediation event recording from Claude Code skills
-- Airtable views (manual — instructions provided to QA team)
+- Remediation event recording from Claude Code skills (bulk-edit, quiz, etc. write back to remediation_events)
+- Airtable views (manual setup — instructions provided to QA team)
+- Vercel deployment fix (main domain not pointing to latest)
 
 ---
 
