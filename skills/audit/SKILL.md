@@ -157,38 +157,57 @@ Detailed findings below...
 
 ### Scan Procedure
 
-**CRITICAL: Use the deterministic evaluator for all B-criteria. Do NOT evaluate B-criteria yourself.**
+**CRITICAL: The Python evaluator produces the audit JSON. Claude does NOT build JSON from scratch.**
 
-1. **Run the deterministic evaluator** — this is the FIRST step, before any AI evaluation:
+#### Quick Check (Col B only — no AI evaluation)
+
+One command. No Claude evaluation needed at all:
+
+```bash
+python3 scripts/criterion_evaluator.py --quick-check > audit_results.json
+python3 scripts/audit_report.py --input audit_results.json --open
+```
+
+That's it. The evaluator fetches course data, evaluates all 124 B-criteria deterministically, builds the complete audit JSON, and `audit_report.py` generates the HTML report + pushes to Supabase. **Claude's only job is to run these two commands and display the results.**
+
+After the report generates, show the user:
+1. The summary (Met/Partial/Not Met counts + overall score)
+2. The link to the HTML report
+3. The Supabase session ID
+4. Offer: "Want me to open the report?" or "Ready to review findings?"
+
+#### Deep Audit (Col B deterministic + Col C AI evaluation)
+
+```bash
+python3 scripts/criterion_evaluator.py --full-audit > audit_results.json
+```
+
+This produces the complete JSON with B-criteria evaluated and C-criteria marked `needs_ai_review`. Then:
+
+1. **Read `audit_results.json`** — all B-criteria are done. Do NOT re-evaluate them.
+2. **For each C-criterion with `"needs_ai_review": true`:**
+   - Load the enrichment card from `config/standards_enrichment.yaml` for that standard
+   - Read the relevant course pages (the evaluator already fetched them — page slugs are in the B-criteria evidence)
+   - Evaluate: Met / Partially Met / Not Met with specific evidence
+   - Update the criterion's `status` and `evidence` fields in the JSON
+   - Set `needs_ai_review` to `false`
+3. **Save the updated JSON** to `audit_results.json`
+4. **Generate the report:**
    ```bash
-   python3 scripts/criterion_evaluator.py --json
+   python3 scripts/audit_report.py --input audit_results.json --open
    ```
-   This script:
-   - Fetches all course data from Canvas API
-   - Evaluates all 124 B-criteria deterministically (HTML parsing, API checks)
-   - Flags 49 C-criteria as `needs_ai_review`
-   - Returns JSON with GUARANTEED field names: `criterion_id`, `criterion_text`, `status`, `evidence`
-   - **Same course = same output, every time. No LLM variability.**
 
-2. **Read the evaluator output.** Parse the JSON. All B-criteria are already evaluated with specific evidence. Do NOT override or re-evaluate B-criteria — the Python engine is authoritative for these.
+**IMPORTANT: Do NOT rebuild the JSON from scratch. Read the evaluator's output, update only the C-criteria, and pass through.** The B-criteria results, QA categories, accessibility findings, and readiness checks are all produced by the Python engine with guaranteed field names.
 
-3. **Evaluate C-criteria** (the ones marked `needs_ai_review: true`). For each:
-   - Load the enrichment card from `config/standards_enrichment.yaml`
-   - Read the relevant course pages to make a quality judgment
-   - Set `status` to Met/Partially Met/Not Met with specific evidence
-   - Keep the SAME field names: `criterion_id`, `criterion_text`, `status`, `evidence`
+#### Guided Review (same as Deep Audit, but interactive)
 
-4. **Merge results** — combine B-criteria (from evaluator) + C-criteria (from your evaluation) into one `criteria_results` array per standard.
-
-5. **Derive standard-level status** from criteria (lowest wins: any Not Met → standard is Partially Met at best)
-
-6. **Build the audit JSON** — pass to `audit_report.py` for HTML report + Supabase push.
+Same as Deep Audit but pause after each standard group to show findings and offer fixes.
 
 ### Why the evaluator exists
 
-The evaluator guarantees that 5 different people auditing the same course for Col B get **identical results**. Col B checks are deterministic — "Does a syllabus exist?" has one answer. The Python engine reads the course data and answers factually. Claude should NEVER evaluate B-criteria itself because LLM outputs vary between sessions.
+The evaluator guarantees that 5 different people auditing the same course for Col B get **identical results**. Col B checks are deterministic — "Does a syllabus exist?" has one answer. The Python engine reads the course data and answers factually. Claude NEVER evaluates B-criteria itself because LLM outputs vary between sessions.
 
-### C-Criteria Evaluation (AI judgment)
+### C-Criteria Evaluation (AI judgment — Deep Audit only)
 
 For C-criteria (`C-XX.Y`, `reviewer_tier: id`), Claude provides the quality judgment. These are inherently subjective — "Are objectives appropriate for the course level?" requires instructional design expertise. Use enrichment cards from `standards_enrichment.yaml` for context.
 

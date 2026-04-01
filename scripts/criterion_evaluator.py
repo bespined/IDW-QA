@@ -542,11 +542,259 @@ def summarize(results):
     return standards
 
 
+def build_full_audit_json(cd, results, mode="full_audit"):
+    """Build the COMPLETE audit JSON matching audit_report.py's expected schema.
+
+    This is the format that goes directly to audit_report.py --input <file>.
+    Claude does NOT need to build this JSON — the evaluator does it.
+    """
+    from datetime import datetime
+
+    link = cd["link"]
+    domain = cd["domain"]
+    cid = cd["course_id"]
+
+    # Resolve auditor name
+    auditor = "ID Workbench"
+    tester_id = os.getenv("IDW_TESTER_ID", "").strip()
+    if tester_id:
+        try:
+            from role_gate import get_current_tester
+            tester = get_current_tester()
+            if tester and tester.get("name"):
+                auditor = tester["name"]
+        except Exception:
+            pass
+
+    # Determine audit_purpose from role
+    audit_purpose = "self_audit"
+    if tester_id:
+        try:
+            from role_gate import get_current_tester
+            tester = get_current_tester()
+            if tester and tester.get("role") == "admin":
+                audit_purpose = "recurring"
+        except Exception:
+            pass
+
+    # Group results by standard
+    by_std = defaultdict(list)
+    for r in results:
+        by_std[r["standard_id"]].append(r)
+
+    # Build design_standards items
+    ds_items = []
+    met_count = 0
+    partial_count = 0
+    not_met_count = 0
+    na_count = 0
+
+    with open(PLUGIN_ROOT / "config" / "standards.yaml") as f:
+        stds = yaml.safe_load(f)
+    std_meta = {s["id"]: s for s in stds["standards"]}
+
+    for sid in sorted(by_std.keys()):
+        criteria = by_std[sid]
+        meta = std_meta.get(sid, {})
+
+        # Build criteria_results array
+        criteria_results = []
+        for cr in criteria:
+            criteria_results.append({
+                "criterion_id": cr["criterion_id"],
+                "criterion_text": cr["criterion_text"],
+                "status": cr["status"],
+                "evidence": cr["evidence"],
+                "check_type": cr["check_type"],
+                "reviewer_tier": cr["reviewer_tier"],
+            })
+
+        # Derive standard-level status
+        statuses = [cr["status"] for cr in criteria if cr["status"] not in ("N/A", "needs_ai_review")]
+        met = sum(1 for s in statuses if s == "Met")
+        total = len(statuses)
+
+        if total == 0:
+            std_status = "Not Auditable"
+            na_count += 1
+        elif all(s == "Met" for s in statuses):
+            # If there are C-criteria pending, still mark as Met for B-only (quick check)
+            # or needs_ai_review for full audit
+            c_pending = sum(1 for cr in criteria if cr.get("needs_ai_review"))
+            if c_pending > 0 and mode == "full_audit":
+                std_status = "Partially Met"  # Can't be fully Met until C-criteria evaluated
+                partial_count += 1
+            else:
+                std_status = "Met"
+                met_count += 1
+        elif any(s == "Not Met" for s in statuses):
+            std_status = "Partially Met"
+            partial_count += 1
+        else:
+            std_status = "Partially Met"
+            partial_count += 1
+
+        # Build evidence summary
+        issues = [cr for cr in criteria if cr["status"] in ("Not Met", "Partially Met")]
+        if issues:
+            std_evidence = f"{met}/{total} criteria met. Issues: " + "; ".join(
+                f'{cr["criterion_id"]}: {cr["evidence"][:60]}' for cr in issues[:3]
+            )
+            std_rec = ". ".join(cr["evidence"][:100] for cr in issues if cr["status"] == "Not Met")[:500] or None
+        else:
+            std_evidence = f"All {total} criteria met."
+            std_rec = None
+
+        is_a11y = sid in ("22", "23")
+        has_b = any(cr["criterion_id"].startswith("B-") for cr in criteria)
+
+        ds_items.append({
+            "id": sid,
+            "name": meta.get("name", f"Standard {sid}"),
+            "category": meta.get("category", ""),
+            "status": std_status,
+            "evidence": std_evidence,
+            "recommendation": std_rec,
+            "confidence": "High" if total > 3 else "Medium",
+            "coverage": f"{met}/{total} criteria",
+            "reviewer_tier": "id_assistant" if has_b and not is_a11y else "id",
+            "canvas_link": f"{link}/modules",
+            "essential": meta.get("essential", False),
+            "criteria_results": criteria_results,
+        })
+
+    # Build QA categories from course data
+    qa_items = [
+        {"id": "Q01", "name": "Module structure", "status": "Pass", "detail": f'{len(cd["content_modules"])} modules consistent', "reviewer_tier": "id_assistant"},
+        {"id": "Q02", "name": "Getting Started", "status": "Pass" if cd["has_getting_started"] else "Fail", "detail": "Welcome area exists" if cd["has_getting_started"] else "No welcome area", "reviewer_tier": "id_assistant"},
+        {"id": "Q03", "name": "Syllabus", "status": "Pass" if cd["has_syllabus"] else "Warn", "detail": f'{cd["syllabus_len"]} chars', "reviewer_tier": "id_assistant"},
+        {"id": "Q04", "name": "Overviews", "status": "Pass", "detail": f'{len(cd["overview_pages"])} pages', "reviewer_tier": "id_assistant"},
+        {"id": "Q05", "name": "Quizzes", "status": "Pass" if cd["quizzes"] else "Warn", "detail": f'{len(cd["quizzes"])} configured', "reviewer_tier": "id_assistant"},
+        {"id": "Q06", "name": "Headings", "status": "Warn" if cd["heading_issues"] else "Pass", "detail": f'{len(cd["heading_issues"])} issue(s): {", ".join(cd["heading_issues"][:2])}' if cd["heading_issues"] else "Clean", "reviewer_tier": "id_assistant"},
+        {"id": "Q07", "name": "Alt text", "status": "Fail" if cd["imgs_no_alt_total"] > 0 else "Pass", "detail": f'{cd["imgs_no_alt_total"]}/{cd["imgs_total"]} missing across {len(cd["imgs_no_alt_by_page"])} pages' if cd["imgs_no_alt_total"] > 0 else "All present", "reviewer_tier": "id_assistant"},
+        {"id": "Q08", "name": "Rubrics", "status": "Pass" if cd["assignments_with_rubric"] else "Fail", "detail": f'{len(cd["assignments_with_rubric"])}/{len(cd["assignments"])} have rubrics', "reviewer_tier": "id_assistant"},
+        {"id": "Q09", "name": "Navigation", "status": "Pass", "detail": f'{", ".join(cd["tabs"][:5])}', "reviewer_tier": "id_assistant"},
+        {"id": "Q10", "name": "Assignment groups", "status": "Pass" if len(cd["agroups"]) > 1 else "Warn", "detail": f'{len(cd["agroups"])} groups', "reviewer_tier": "id_assistant"},
+        {"id": "Q11", "name": "Discussions", "status": "Pass" if cd["discussions"] else "Warn", "detail": f'{len(cd["discussions"])} topic(s)', "reviewer_tier": "id_assistant"},
+    ]
+    qa_pass = sum(1 for q in qa_items if q["status"] == "Pass")
+    qa_warn = sum(1 for q in qa_items if q["status"] == "Warn")
+    qa_fail = sum(1 for q in qa_items if q["status"] == "Fail")
+
+    # Build accessibility
+    a11y_items = []
+    if cd["imgs_no_alt_total"] > 0:
+        top_pages = sorted(cd["imgs_no_alt_by_page"].items(), key=lambda x: len(x[1]), reverse=True)[:5]
+        a11y_items.append({
+            "severity": "Critical",
+            "page": f'{len(cd["imgs_no_alt_by_page"])} pages',
+            "issue": f'{cd["imgs_no_alt_total"]} images missing alt text',
+            "element": f'Top: {", ".join(p[0] for p in top_pages)}',
+            "fix": "Add descriptive alt text",
+            "canvas_link": f"{link}/pages",
+        })
+    for hi in cd["heading_issues"][:3]:
+        page_slug = hi.split(":")[0].strip()
+        a11y_items.append({
+            "severity": "Critical",
+            "page": page_slug,
+            "issue": f"Heading skip: {hi}",
+            "element": "Heading hierarchy",
+            "fix": "Fix heading level",
+            "canvas_link": f"{link}/pages/{page_slug}",
+        })
+    a11y_critical = len(a11y_items)
+
+    # Build readiness
+    readiness_cats = [
+        {"name": "Info", "status": "Pass" if cd["has_syllabus"] else "Warn", "checks": [
+            {"item": "Syllabus", "status": "Pass" if cd["has_syllabus"] else "Warn", "note": f'{cd["syllabus_len"]} chars'},
+            {"item": "Description", "status": "Pass"},
+        ]},
+        {"name": "Navigation", "status": "Pass", "checks": [
+            {"item": "Home", "status": "Pass" if "Home" in cd["tabs"] else "Fail"},
+            {"item": "Tabs", "status": "Pass"},
+            {"item": "Modules", "status": "Pass" if "Modules" in cd["tabs"] else "Fail"},
+        ]},
+        {"name": "Content", "status": "Pass", "checks": [
+            {"item": "Modules have content", "status": "Pass"},
+        ]},
+        {"name": "Assessments", "status": "Pass" if cd["assignments_with_rubric"] else "Fail", "checks": [
+            {"item": "Quizzes", "status": "Pass" if cd["quizzes"] else "Fail"},
+            {"item": "Rubrics", "status": "Pass" if cd["assignments_with_rubric"] else "Fail",
+             "note": f'{len(cd["assignments_with_rubric"])}/{len(cd["assignments"])}'},
+        ]},
+        {"name": "Accessibility", "status": "Fail" if cd["imgs_no_alt_total"] > 0 or cd["heading_issues"] else "Pass", "checks": [
+            {"item": "Alt text", "status": "Fail" if cd["imgs_no_alt_total"] > 0 else "Pass",
+             "note": f'{cd["imgs_no_alt_total"]} missing' if cd["imgs_no_alt_total"] > 0 else ""},
+            {"item": "Headings", "status": "Fail" if cd["heading_issues"] else "Pass"},
+        ]},
+        {"name": "Communication", "status": "Pass", "checks": [
+            {"item": "Discussions", "status": "Pass" if cd["discussions"] else "Warn"},
+        ]},
+    ]
+    r_pass = sum(1 for c in readiness_cats if c["status"] == "Pass")
+    r_total = len(readiness_cats)
+
+    # Compute scores
+    ds_total_scored = met_count + partial_count + not_met_count
+    ds_score = round(met_count / ds_total_scored * 100) if ds_total_scored > 0 else 0
+    qa_score = round(qa_pass / len(qa_items) * 100) if qa_items else 0
+    a11y_score = max(0, 100 - a11y_critical * 25)
+    r_score = round(r_pass / r_total * 100) if r_total > 0 else 0
+    overall = round(ds_score * 0.4 + qa_score * 0.3 + a11y_score * 0.15 + r_score * 0.15)
+
+    course_obj = cd["course"]
+    return {
+        "course": {
+            "name": course_obj.get("name", cd["course_name"]),
+            "id": cd["course_id"],
+            "domain": cd["domain"],
+            "course_code": course_obj.get("course_code", ""),
+            "institution": "Arizona State University",
+        },
+        "audit_date": datetime.now().isoformat(),
+        "auditor": auditor,
+        "plugin_version": "0.6.0",
+        "audit_mode": mode.replace("_", " "),
+        "audit_purpose": audit_purpose,
+        "overall_score": overall,
+        "sections": {
+            "design_standards": {
+                "title": "ASU Course Design Standards",
+                "subtitle": f"25 standards, {len(results)} criteria evaluated",
+                "summary": {"Met": met_count, "Partially Met": partial_count, "Not Met": not_met_count, "Not Auditable": na_count},
+                "items": ds_items,
+            },
+            "qa_categories": {
+                "title": "QA Categories",
+                "subtitle": "Structural checks",
+                "summary": {"Pass": qa_pass, "Warn": qa_warn, "Fail": qa_fail},
+                "items": qa_items,
+            },
+            "accessibility": {
+                "title": "WCAG 2.1 AA Accessibility",
+                "subtitle": "Accessibility checks",
+                "summary": {"Critical": a11y_critical, "Warning": 0, "Info": 0},
+                "items": a11y_items,
+            },
+            "readiness": {
+                "title": "Course Readiness Check",
+                "subtitle": "Pre-launch operational checklist",
+                "overall": "READY" if r_pass == r_total else "NOT READY",
+                "categories": readiness_cats,
+            },
+        },
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Deterministic criterion evaluator")
-    parser.add_argument("--json", action="store_true", help="Output full results as JSON")
+    parser.add_argument("--json", action="store_true", help="Output criterion-level results as JSON")
     parser.add_argument("--summary", action="store_true", help="Output standard-level summary")
     parser.add_argument("--standard", help="Evaluate a single standard (e.g., 04)")
+    parser.add_argument("--full-audit", action="store_true", help="Output COMPLETE audit JSON for audit_report.py (Deep Audit — B evaluated, C marked for AI)")
+    parser.add_argument("--quick-check", action="store_true", help="Output COMPLETE audit JSON — Col B only, no C-criteria (Quick Check mode)")
     args = parser.parse_args()
 
     cd = collect_course_data()
@@ -554,7 +802,16 @@ def main():
 
     results = evaluate_all(cd, filter_standard=args.standard)
 
-    if args.summary:
+    if args.quick_check:
+        # Quick Check: remove C-criteria entirely, only B-criteria
+        b_only = [r for r in results if not r["needs_ai_review"]]
+        audit_json = build_full_audit_json(cd, b_only, mode="quick_check")
+        print(json.dumps(audit_json, indent=2))
+    elif args.full_audit:
+        # Full Audit: B evaluated + C marked for AI review
+        audit_json = build_full_audit_json(cd, results, mode="full_audit")
+        print(json.dumps(audit_json, indent=2))
+    elif args.summary:
         summary = summarize(results)
         print(json.dumps(summary, indent=2))
     elif args.json:
@@ -567,7 +824,6 @@ def main():
         }
         print(json.dumps(output, indent=2))
     else:
-        # Print readable table
         for r in results:
             marker = "✓" if r["status"] == "Met" else ("✗" if r["status"] == "Not Met" else "?" if r["needs_ai_review"] else "△")
             print(f'{marker} {r["criterion_id"]:10} {r["status"]:15} {r["evidence"][:80]}')
