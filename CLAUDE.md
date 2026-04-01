@@ -116,27 +116,39 @@ This applies equally to:
 Content-remediating skills (quiz, assignment-generator, discussion-generator, interactive-content, update-module, bulk-edit) stage pages locally instead of pushing directly to Canvas:
 
 1. **Generate/Fix** — skill produces updated HTML content
-2. **Stage** — HTML is written to `staging/{slug}.html` wrapped in Canvas-like CSS shell for preview
-3. **Preview** — use Claude Preview to screenshot the staged page in conversation
-4. **Iterate** — user requests changes, page is re-staged and re-previewed
+2. **Stage** — write HTML via `staging_manager.py --stage --slug <slug> --html-file <file>`
+3. **Unified Preview** — run `python3 scripts/unified_preview.py`, then `preview_start("staging-preview")`, open `http://localhost:8111/_unified_preview.html` and screenshot in conversation. For single pages, `http://localhost:8111/{slug}.html` is acceptable.
+4. **Iterate** — user requests changes, page is re-staged, unified preview regenerated, and re-previewed
 5. **Push** — when approved, `/staging` shows a diff, creates a backup, and pushes to Canvas
 
 This gives users a review loop before anything touches Canvas. Skills support `--direct` to bypass staging.
 
+## Script-Enforced Workflows (Mandatory)
+
+**All Canvas writes and Supabase operations MUST go through the enforcement scripts below.** Do not use inline `python3 -c` commands or direct API calls for these operations. The scripts enforce backup, verification, audit trails, and state machine rules that prompt instructions cannot guarantee.
+
+| Operation | Script | Replaces |
+|---|---|---|
+| Push page/assignment/quiz content | `python3 scripts/push_to_canvas.py` | Inline `canvas_api.update_page()` + manual backup + clear |
+| Verify any Canvas write | `python3 scripts/post_write_verify.py` | Manual GET + confirm |
+| Create/submit audit sessions | `python3 scripts/audit_session_manager.py` | Inline Supabase POST + purpose inference |
+| Record remediation events | `python3 scripts/remediation_tracker.py` | Inline Supabase POST + flag clearing |
+| Admin tester management | `python3 scripts/admin_actions.py` | Inline Supabase PATCH + no audit trail |
+| Assignment status transitions | `python3 scripts/assignment_status.py` | Inline Supabase PATCH + no ownership check |
+
+**The only exception** is quick metadata edits (rename, due date, points) that don't touch HTML body content — those can use the Canvas API directly via `canvas_api.py` functions.
+
 ## Post-Push Verification (Required)
 
-**After ANY operation that creates or modifies content in Canvas**, always:
+**After ANY operation that creates or modifies content in Canvas**, always run:
 
-1. **Provide a direct Canvas link** to the item. Format:
-   - Pages: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/pages/{slug}`
-   - Quizzes: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/quizzes/{id}`
-   - Assignments: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
-   - Discussions: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/discussion_topics/{id}`
-   - Modules: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/modules`
+```bash
+python3 scripts/post_write_verify.py --type <page|assignment|quiz|discussion> --slug <slug> or --id <id>
+```
 
-2. **Auto-verify the result** by fetching the created/updated object back from the Canvas API and displaying a confirmation summary.
+This fetches the object back from Canvas and confirms: exists, content length > 0, published status, point values, rubric attached. Display the output to the user.
 
-3. **Offer a live screenshot**: "Want me to screenshot how this looks in Canvas?" If the user says yes, navigate to the Canvas URL and take a screenshot using the browser tools.
+Then **offer a live screenshot**: "Want me to screenshot how this looks in Canvas?" If yes, navigate to the Canvas URL and capture it.
 
 ## Quick Edits (No Skill Required)
 
@@ -196,8 +208,8 @@ IDs **do not build courses from scratch** — they receive a pre-built ASU Canva
 | **Remediation** | `syllabus-generator` | `/syllabus-generator` | Fix or generate syllabus content (CRC compliance) |
 | **Remediation** | `media-upload` | `/media-upload` | Upload media files to Canvas and embed in pages |
 | **Knowledge** | `knowledge` | `/knowledge` | Local course content cache for search and Q&A |
-| **IDA** | `assignments` | `/assignments` | View assigned courses and review status (IDA role) |
-| **Admin** | `assign` | `/assign` | Assign an IDA to a course for review (Admin role) |
+| **ID Asst** | `assignments` | `/assignments` | View assigned courses and review status (ID Assistant role) |
+| **Admin** | `assign` | `/assign` | Assign an ID Assistant to a course for review (Admin role) |
 | **All** | `report-error` | `/report-error` | Report bugs, wrong findings, crashes (any role) |
 | **All** | `update-idw` | `/update-idw` | Pull latest plugin code, show changelog (any role) |
 | **Admin** | `admin` | `/admin` | Error queue, RLHF stats, tester management (Admin role) |
@@ -231,11 +243,18 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `fetch_fix_queue.py` | Query Supabase for findings where remediation_requested=true |
 | `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, reviewer, criterion, trends |
 | `airtable_sync.py` | Sync approved findings to Airtable SCOUT ULTRA format (one row per course, 25 standards) |
-| `deterministic_checks.py` | Deterministic criterion checks — structural/existence checks for Col B criteria |
+| `criterion_evaluator.py` | Deterministic criterion evaluator — evaluates all B-criteria, produces complete audit JSON. `--quick-check` for Col B only, `--full-audit` for B+C with AI flags |
+| `deterministic_checks.py` | Legacy deterministic checks (superseded by criterion_evaluator.py for full audits) |
 | `build_checkpoint.py` | Save/restore audit progress checkpoints for long-running audits |
 | `metrics_sync.py` | Sync usage metrics to Supabase for admin dashboard |
 | `staging_server.py` | Local HTTP server for staging page previews (port 8111) |
 | `template_manager.py` | Manage Canvas page templates for course building |
+| `push_to_canvas.py` | **Atomic push wrapper** — backup → push → clear → verify → remediation trail (MANDATORY for all content writes) |
+| `post_write_verify.py` | **Post-push verification** — fetches Canvas object back, confirms existence + properties (MANDATORY after every write) |
+| `audit_session_manager.py` | **Audit session lifecycle** — deterministic purpose inference, round counting, session status transitions |
+| `remediation_tracker.py` | **Centralized remediation events** — records events + clears flags atomically (replaces all inline Supabase POSTs) |
+| `admin_actions.py` | **Audited admin operations** — tester registration, deactivation, role changes with audit log |
+| `assignment_status.py` | **Assignment status transitions** — ownership check + valid state machine enforcement |
 
 ## Migrations
 

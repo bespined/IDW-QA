@@ -13,9 +13,13 @@ flowchart TD
         A1(["ID opens Claude Code → /audit"]) --> A2
         A2{"Which course?<br/>Current / Pick / Batch"} --> A3
         A3{"Which mode?<br/>Quick / Deep / Guided"} --> A4
-        A4["Claude fetches all course data<br/>pages, quizzes, assignments, discussions"] --> A5
-        A5["Evaluates 173 criteria from standards.yaml<br/>B-XX.Y (readiness) + C-XX.Y (design)<br/>Per criterion: Met / Not Met / N/A"] --> A6
-        A6["Results pushed to:<br/>• Supabase: ~174 finding rows<br/>• HTML report: local + Supabase storage<br/>• Session status: in_progress"]
+        A4["criterion_evaluator.py runs<br/>Fetches all course data + evaluates 124 B-criteria<br/>deterministically (same course = same results)"] --> A5
+        A5{"Quick Check<br/>or Deep Audit?"}
+        A5 -->|Quick Check| A6a["Col B only — evaluator output is final<br/>No AI evaluation needed"]
+        A5 -->|Deep Audit| A6b["Evaluator output + Claude evaluates<br/>49 C-criteria using enrichment cards"]
+        A6a --> A7
+        A6b --> A7
+        A7["audit_report.py generates:<br/>• HTML report + Supabase storage<br/>• ~155 findings pushed to Supabase<br/>• Session status: in_progress"]
     end
 
     %% PHASE 2: REVIEW
@@ -100,7 +104,7 @@ flowchart TD
 
         F1["All findings qa_approved"] --> F2
         F2["Admin clicks Sync to Airtable<br/>on Vercel session page"] --> F3
-        F3["airtable_sync.py runs<br/>• One row per course<br/>• 147 B/C columns: Yes/No/N/A<br/>• Standard ratings + Notes<br/>• High-level summary for faculty"]
+        F3["airtable_sync.py runs<br/>• One row per course<br/>• 173 criteria columns (124B + 49C): Yes/No/N/A<br/>• Standard ratings + Notes<br/>• High-level summary for faculty"]
     end
 
     E3 --> F1
@@ -135,7 +139,7 @@ flowchart TD
         direction TB
 
         subgraph CC["Claude Code"]
-            CC1["/audit — 173 criteria evaluation<br/>Quick / Deep / Guided / Batch"]
+            CC1["/audit — criterion_evaluator.py (deterministic)<br/>+ Claude for C-criteria (Deep Audit only)<br/>Quick Check / Deep Audit / Guided / Batch"]
             CC2["/course-review — fix queue + review<br/>Course list → pick → remediate"]
             CC3["/bulk-edit, /quiz, /rubric-creator<br/>Focused re-scan + fix + stage + push"]
             CC4["/admin — error queue, RLHF stats<br/>tester mgmt, Airtable sync"]
@@ -158,7 +162,7 @@ flowchart TD
         end
 
         subgraph AT["Airtable"]
-            AT1["Course Audits table<br/>One row per course<br/>147 B/C columns + ratings + notes"]
+            AT1["Course Audits table<br/>One row per course<br/>173 criteria columns (124B + 49C) + ratings + notes"]
             AT2["Views: ID/IDA | ID Assistant | Admin"]
         end
     end

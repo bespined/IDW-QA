@@ -16,15 +16,15 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 ## Purpose
 
-Unified audit skill with 3 modes: Quick Scan (deterministic only), Full Audit (deterministic + AI), and Guided Review (interactive with live fixes). All modes use a single check registry with scope filters.
+Unified audit skill with 3 modes: Quick Check (deterministic only), Deep Audit (deterministic + AI), and Guided Review (interactive with live fixes). All modes use a single check registry with scope filters.
 
 ## When to Use
 
 - "Audit my course" / "Check my course" / "Quick scan" → **Ask which mode** (see Entry Point below)
-- "Quick scan" / "Fast audit" / "Deterministic check" → **Quick Scan** (skip prompt)
-- "Full audit" / "Complete audit" / "Comprehensive audit" → **Full Audit** (skip prompt)
+- "Quick scan" / "Fast audit" / "Deterministic check" → **Quick Check** (skip prompt)
+- "Full audit" / "Complete audit" / "Comprehensive audit" → **Deep Audit** (skip prompt)
 - "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
-- "Just check essential standards" → **Full Audit --scope essential** (skip prompt)
+- "Just check essential standards" → **Deep Audit --scope essential** (skip prompt)
 
 ## Audit Purpose Inference
 
@@ -96,7 +96,7 @@ Only skip this prompt when the user's message clearly specifies a mode.
 
 | Scope | What's included | Triggered by |
 |---|---|---|
-| `all` (default) | All 25 standards + CRC items (98 criteria) | Default — no user prompt |
+| `all` (default) | All 25 standards + CRC items (173 criteria: 124B + 49C) | Default — no user prompt |
 | `essential` | 7 essential standards: 01, 02, 06, 08, 12, 22, 23 | User says "essential" or "essential standards only" |
 | `crc` | 18 CRC operational items | User says "CRC" or "operational checklist" or "readiness check" |
 
@@ -104,13 +104,13 @@ To filter: load `config/standards.yaml`, include only criteria where the parent 
 
 ### Staging Requirement
 
-**All page content changes MUST go through staging.** If the audit finds issues and the user asks to fix them, stage the fix first — never push HTML directly to Canvas. The flow is always: stage → preview → user approves → push. This applies to Quick Scan, Full Audit, and Guided Review equally. See CLAUDE.md for the full staging workflow.
+**All page content changes MUST go through staging.** If the audit finds issues and the user asks to fix them, stage the fix first — never push HTML directly to Canvas. The flow is always: stage → preview → user approves → push. This applies to Quick Check, Deep Audit, and Guided Review equally. See CLAUDE.md for the full staging workflow.
 
 ---
 
 ## Two-Pass Architecture (used by all modes)
 
-All modes use the same check registry from `config/standards.yaml`. Quick Scan runs Pass 1 only. Full Audit and Guided Review run both passes.
+All modes use the same check registry from `config/standards.yaml`. Quick Check runs Pass 1 only. Deep Audit and Guided Review run both passes.
 
 ### Reviewer Tier Tagging
 
