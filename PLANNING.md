@@ -1202,6 +1202,13 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 3. bulk-edit uses inline HTTP POST instead of centralized script — standardize.
 4. audit_report.py clears remediation_requested flag but doesn't record an event — add event recording.
 
+*Error message UX (pre-pilot):*
+- All user-facing error messages should be clear and actionable
+- Include: what happened, what the user can do, and what to report to admin
+- Replace generic "network error" with specific messages including HTTP status codes
+- Add a "Report this error" link that pre-fills `/report-error` with context
+- Sync errors should explain whether the data was partially written or not
+
 ---
 
 ## 13. Pilot Scope
