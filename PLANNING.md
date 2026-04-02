@@ -1130,6 +1130,36 @@ This is the biggest remaining quality issue — without specific evidence, the r
 - `admin` role runs audit → `audit_purpose = recurring`. Always.
 - No extra question needed. Role = purpose.
 
+*Iterative self-audits during course build (CLARIFIED 2026-04-02):*
+IDs will run multiple self-audits during a course build for iterative improvement — not for formal QA. This creates many sessions on their dashboard. Without UX handling, the dashboard becomes a wall of sessions that all look the same.
+
+**Session grouping model:**
+- Sessions are grouped by `course_id` + `audit_purpose` on the dashboard
+- Within a group, sessions are ordered by `audit_round` (1, 2, 3...)
+- Dashboard shows ONE card per course, with the latest session expanded and prior rounds collapsed:
+  ```
+  ┌─ BIO 101 (Self-Audit) ──────────────────────┐
+  │ Latest: Round 3 — Score 78 — 4 findings      │
+  │ ▸ Round 2 — Score 65 — 12 findings (Mar 28)  │
+  │ ▸ Round 1 — Score 41 — 23 findings (Mar 25)  │
+  │ [Run Another Audit] [Submit for QA Review]    │
+  └───────────────────────────────────────────────┘
+  ```
+- "Submit for QA Review" only appears on the latest round
+- Prior rounds are view-only (historical — shows improvement over time)
+- Progress visualization: score trend (41 → 65 → 78) shows the ID is improving the course
+
+**What changes:**
+- Vercel app: sessions home page groups by course instead of flat list
+- Vercel app: add score trend mini-chart per course group
+- `audit_session_manager.py` already increments `audit_round` — no backend change needed
+- Audit skill: after completing, show "Score improved from X to Y since last audit" if prior rounds exist
+
+**Why this matters for pilot:**
+- 40-50 courses × 3-5 rounds each = 150-250 sessions
+- Without grouping, the dashboard is unusable
+- With grouping, each course shows as ONE card with progress history
+
 *Vercel admin view:*
 - Filter: [All] [New Course Dev] [Recurring]
 - Badge on each session: 🔵 New Course Dev / 🟢 Recurring
@@ -1203,6 +1233,26 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 3. bulk-edit uses inline HTTP POST instead of centralized script — standardize.
 4. audit_report.py clears remediation_requested flag but doesn't record an event — add event recording.
 
+*Enforcement script wiring (pre-pilot):*
+The 6 enforcement scripts (push_to_canvas, post_write_verify, audit_session_manager, remediation_tracker, admin_actions, assignment_status) are built and tested but NOT yet called by the skills that need them. Skills still reference inline API calls. Must update:
+1. `staging/SKILL.md` — replace `canvas_api.update_page()` with `push_to_canvas.py --type page`
+2. All 6 remediation skills — add `remediation_tracker.py --record` call after each fix push
+3. All content skills — add `post_write_verify.py` call after every Canvas write
+4. `audit/SKILL.md` — wire `audit_session_manager.py --create` for session creation
+5. `admin/SKILL.md` — wire `admin_actions.py` for tester registration/deactivation
+6. `assignments/SKILL.md` — wire `assignment_status.py` for status transitions
+Without this wiring, the scripts exist but aren't enforced — Claude will still use inline code.
+
+*Session grouping in Vercel app (pre-pilot):*
+IDs will run multiple self-audits during course builds. Without grouping, the dashboard becomes a flat wall of 150-250 sessions. Must implement before pilot:
+1. Vercel sessions home page: group sessions by `course_id` + `audit_purpose` instead of flat list
+2. Within each group: show latest round expanded, prior rounds collapsed with score + date
+3. Score trend visualization: mini-chart or inline numbers showing improvement (41 → 65 → 78)
+4. "Submit for QA Review" button only appears on the latest round
+5. Prior rounds are view-only (historical context)
+6. Audit skill: after completing, show score delta vs. prior round ("Score improved from 65 to 78, 8 fewer findings")
+See Section 17 "Iterative self-audits during course build" for full design.
+
 *Error message UX (pre-pilot):*
 - All user-facing error messages should be clear and actionable
 - Include: what happened, what the user can do, and what to report to admin
@@ -1244,6 +1294,46 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 - Airtable sync functioning
 - ID Assistant validation loop working end-to-end
 - IDA review workflow validated (assign → verdict → override → sync)
+
+### Pre-launch operational checklist (non-code)
+
+**User provisioning (before day 1):**
+- [ ] Compile full list of pilot users: name, email, role (id / id_assistant / admin)
+- [ ] Batch-register all testers in Supabase `testers` table via `/admin` → `admin_actions.py --register`
+- [ ] Register same users in Supabase Auth (email+password) for Vercel review app login
+- [ ] Confirm all IDs can generate Canvas personal access tokens (admin permission required)
+- [ ] Confirm all pilot users have Claude Code access (Anthropic license/org)
+- [ ] Pre-assign IDAs to courses via `/assign` so they see assignments on day 1
+
+**Credential distribution:**
+- [ ] Prepare `.env` template with `CANVAS_TOKEN`, `CANVAS_DOMAIN`, `CANVAS_COURSE_ID` placeholders
+- [ ] Prepare `.env.local` with shared Supabase credentials (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`)
+- [ ] Decide distribution method: Slack DM, shared secure doc, or 1-on-1 setup session
+- [ ] Each user gets their unique `SCOUT_TESTER_ID` (or `IDW_TESTER_ID` until rename)
+
+**Communication:**
+- [ ] Pilot kickoff message: what the system does, how to install, what to expect
+- [ ] Quick-start guide: "Your first 10 minutes" (setup → first audit → review findings)
+- [ ] Feedback channel: dedicated Slack channel or thread for bug reports + questions
+- [ ] Escalation path: who to contact when something breaks (you? QA lead?)
+- [ ] Tell users about `/report-error` for in-tool bug reporting
+
+**Operational rhythm:**
+- [ ] Weekly: review RLHF agreement rates via `/admin` → RLHF Stats
+- [ ] Weekly: check error queue via `/admin` → Error Queue
+- [ ] Bi-weekly: update enrichment cards for standards with <70% agreement
+- [ ] Ad-hoc: re-assign courses as IDAs complete their queues
+
+**Rollback readiness:**
+- [ ] Test `/staging rollback` on sandbox — confirm backup restore works end-to-end
+- [ ] Document rollback steps for IDs: "If you pushed something wrong, run `/staging` → Rollback"
+- [ ] Confirm backups directory is NOT in `.gitignore` (or if it is, that backups persist locally)
+
+**Vercel app readiness:**
+- [ ] Verify review app is deployed and accessible at production URL
+- [ ] Verify login works for all registered users (Supabase Auth + testers table match)
+- [ ] Verify RLS policies: IDA sees only assigned sessions, ID sees own sessions, admin sees all
+- [ ] Test "Mark Complete" → sync → Airtable row appears correctly
 
 ---
 
