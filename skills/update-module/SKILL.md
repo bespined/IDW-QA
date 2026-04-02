@@ -115,7 +115,9 @@ Ask: "What would you like to change?" and handle the following operations:
 - Fetch current page HTML from Canvas
 - Show a summary of current content
 - Ask what to change (add section, replace content, update resource links, etc.)
-- Apply changes and push updated HTML to Canvas via `PUT /api/v1/courses/{id}/pages/{slug}`
+- **Stage the updated HTML** to `staging/{slug}.html` — do not push directly
+- Show a preview screenshot of the staged page and wait for explicit approval
+- Push only after the user approves
 
 ### Replace an Assessment
 
@@ -229,6 +231,15 @@ The skill produces:
 3. Alignment verification (objectives still covered)
 4. Reminder to update `course-config.json` if structural changes were made
 
-## Preview
+## Post-Push Verification (Required)
 
-After applying updates to Canvas, offer: "Want me to preview the changes on Canvas? I can screenshot the updated page." If the user accepts, run the `/canvas-preview` workflow using the URL of the page or item that was modified.
+After applying any update to Canvas, always:
+
+1. **Provide a direct Canvas link** to the modified item:
+   - Pages: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/pages/{slug}`
+   - Quizzes: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/quizzes/{id}`
+   - Assignments: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
+   - Discussions: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/discussion_topics/{id}`
+   - Modules: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/modules`
+2. **Auto-verify** by re-fetching the updated object from the Canvas API and confirming the change is reflected.
+3. **Take a screenshot**: Navigate to the Canvas URL and capture the updated item — do not make this optional. Show it to the user.

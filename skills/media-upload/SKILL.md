@@ -97,7 +97,16 @@ If the user wants the file embedded in a page:
 
 Use the staging workflow: fetch current page HTML, insert the embed at the specified location, stage for preview, then push via `/canvas-push`.
 
-### Step 5 — Report
+### Step 5 — Verify and Report
+
+After uploading (and embedding, if requested), always:
+
+1. **Confirm the upload** via `GET /api/v1/courses/:id/files/:id` — verify file name, size, and folder.
+2. **If embedded in a page**: re-fetch the page body and confirm the embed tag is present in the HTML.
+3. **Provide a direct Canvas link**:
+   - File: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/files/{file_id}`
+   - Page (if embedded): `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/pages/{slug}`
+4. **Take a screenshot**: Navigate to the page or file in Canvas and capture a screenshot confirming the media renders — do not skip this. Show it to the user.
 
 Display:
 ```
@@ -105,6 +114,7 @@ Uploaded: image.png (245 KB)
   → Canvas file ID: 12345
   → Folder: Module 3/Images
   → Embedded in: m3-overview (after "Key Concepts" heading)
+  → Canvas link: https://canvas.asu.edu/courses/237946/pages/m3-overview
 ```
 
 ## Batch Upload

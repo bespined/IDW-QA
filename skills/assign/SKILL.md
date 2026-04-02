@@ -15,7 +15,9 @@ python3 scripts/idw_metrics.py --track skill_invoked --context '{"skill": "assig
 
 ## Purpose
 
-Allows admins to assign IDAs (instructional design assistants) to courses for RLHF review. Creates a row in `tester_course_assignments` linking a tester to a course.
+Allows admins to assign student workers (role: `id_assistant`) to courses for RLHF verdict work — reviewing Col B findings and submitting verdicts in the Vercel review app. Creates a row in `tester_course_assignments` linking a tester to a course.
+
+> **Role terminology**: In this plugin, `id_assistant` = student worker / instructional design assistant. The `id` role = QA-team instructional designer (ID Associate or full ID). The `id_assistant` role handles deterministic (Col B) findings only; the `id` role handles both Col B and Col C (qualitative) findings.
 
 ## Role Gate
 

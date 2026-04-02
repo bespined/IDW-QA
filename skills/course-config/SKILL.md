@@ -293,6 +293,23 @@ For "add Perusall to every module":
 
 ---
 
+## Post-Push Verification (Required)
+
+After any configuration change, always:
+
+1. **Re-fetch and confirm** the change is reflected:
+   - Publish/unpublish: re-fetch the item and check `published` / `workflow_state`
+   - Due dates: re-fetch the assignment/quiz and confirm `due_at`
+   - Assignment groups: re-fetch groups and confirm weights
+   - Nav tabs: re-fetch `/tabs` and confirm visibility
+   - Late policy: re-fetch `/late_policy` and confirm values
+2. **Provide a direct Canvas link** to the affected item(s):
+   - Assignments: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
+   - Quizzes: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/quizzes/{id}`
+   - Modules: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/modules`
+   - Course settings: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/settings`
+3. **For bulk operations** (e.g., "publish all modules"): provide a summary count — "Published 6 modules, 14 pages, 5 quizzes" — with a link to the modules page.
+
 ## Workflow Summary
 
 For any operation:
@@ -301,7 +318,7 @@ For any operation:
 3. Preview proposed changes
 4. Confirm
 5. Apply
-6. Verify by re-fetching
+6. Verify by re-fetching + provide Canvas link (see Post-Push Verification above)
 
 ## Error Handling
 

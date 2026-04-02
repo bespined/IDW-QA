@@ -236,7 +236,14 @@ Use the grading breakdown table and grade scale.
 ### Step 4: Add Policies
 Include all policies from the Course Policies section, customized for the institution.
 
-### Step 5: Format for Canvas
+### Step 5: Stage for Preview
+**Before pushing to Canvas, all syllabus HTML must go through staging:**
+1. Write the generated HTML to `staging/syllabus.html`
+2. Use Claude Preview to screenshot the staged page and show it to the user
+3. Wait for explicit approval ("looks good", "push it") — never push without confirmation
+4. Push only after the user approves
+
+### Step 6: Format for Canvas
 Output as ASU-branded HTML using:
 - Maroon (#8C1D40) headers and accents
 - Gold (#FFC627) for highlights
@@ -439,6 +446,14 @@ When any assessment specification changes (new discussion added, point value adj
 | Read-only mode | "Read-only mode is active. I've generated the syllabus locally but can't push to Canvas until writes are enabled." | Guide .env change |
 
 ---
+
+## Post-Push Verification (Required)
+
+After pushing the syllabus to Canvas, always:
+
+1. **Fetch and confirm** via `GET /api/v1/courses/:id?include[]=syllabus_body` and verify the body is non-empty.
+2. **Provide the direct Canvas link**: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/syllabus`
+3. **Offer a screenshot**: "Want me to screenshot the syllabus as it appears in Canvas?" If yes, navigate and capture it.
 
 ## Output
 The skill produces:

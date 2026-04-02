@@ -15,7 +15,9 @@ python3 scripts/idw_metrics.py --track skill_invoked --context '{"skill": "assig
 
 ## Purpose
 
-Shows the current user (IDA) their assigned courses, review progress, and pending work. This is the IDA's home base for knowing what to work on next.
+Shows the current user their assigned courses, review progress, and pending work. This is the home base for knowing what to work on next.
+
+> **Role terminology**: This skill is gated to `id_assistant` (student workers). In the broader system, `id_assistant` = instructional design student assistant; `id` = QA-team ID or ID Associate (full role). Student workers run recurring audits and verdict Col B findings only.
 
 ## Role Gate
 
@@ -54,10 +56,22 @@ print(json.dumps(assignments or [], indent=2, default=str))
 
 ### 2. For Each Assignment, Get Session Stats
 
+**Session type note**: `id_assistant` users run `recurring` audits only — they do NOT see `self_audit` sessions (those belong to the course owner). Filter sessions by `audit_purpose` when querying:
+
+```python
+sessions = _supabase_get(url, key, 'audit_sessions', {
+    'course_id': f'eq.{course_id}',
+    'audit_purpose': 'in.(recurring,qa_review)',  # id_assistant never sees self_audit sessions
+    'order': 'run_date.desc',
+    'limit': '5'
+})
+```
+
 For each assigned course, query `audit_sessions` and `audit_findings` to show:
-- Number of audit sessions for this course
+- Number of audit sessions for this course (recurring + qa_review only)
 - Total findings awaiting review (findings with no feedback yet)
 - Findings by verdict status
+- Count of findings with `remediation_requested = true` (fix queue depth)
 
 ```bash
 python3 -c "
@@ -94,6 +108,7 @@ Present assignments as a clear summary table:
 Then offer actions:
 - "Switch to [course name]" — updates `.env` with that course's ID and domain
 - "Start reviewing [course name]" — switches course and launches `/audit` or shows the fix queue
+- "Work fix queue for [course name]" — switches course and runs `fetch_fix_queue.py` to pull remediation items
 - "Mark [course name] as complete" — updates the assignment status
 
 ### 4. Status Updates

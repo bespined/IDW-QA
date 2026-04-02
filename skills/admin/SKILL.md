@@ -138,6 +138,43 @@ python3 scripts/rlhf_analysis.py --trends
 python3 scripts/rlhf_analysis.py --low-agreement --threshold 70
 ```
 
+### IDA Quality Tracking
+
+Track per-IDA override rates to identify where student workers need coaching or where the audit prompt is misleading them:
+
+```bash
+python3 scripts/rlhf_analysis.py --by-ida
+```
+
+This shows: for each `id_assistant` tester, the standards where their verdicts most frequently disagree with QA-team IDs. Present as:
+
+```
+IDA Quality Report
+
+| IDA | Standard | Their Verdicts | Overrides | Agreement |
+|-----|----------|---------------|-----------|-----------|
+| Alice Chen | Standard 08 | 14 | 6 | 57% ⚠ |
+| Alice Chen | Standard 22 | 11 | 1 | 91% ✓ |
+```
+
+Standards where an IDA has < 75% agreement are coaching opportunities — not dismissals. Offer to show the IDA's specific overrides for review.
+
+### Enrichment Card Improvement Workflow
+
+When a standard's agreement rate is below 70%, the audit prompt needs improvement. Walk through this workflow:
+
+1. Show the standards below threshold: `python3 scripts/rlhf_analysis.py --low-agreement --threshold 70`
+2. For each low-agreement standard, show the overridden findings with reviewer corrections:
+   ```bash
+   python3 scripts/rlhf_analysis.py --standard <ID> --show-overrides
+   ```
+3. Identify the pattern in disagreements (e.g., AI flags as Met when reviewers say Not Met)
+4. Suggest enrichment card updates to `config/standards_enrichment.yaml`:
+   - Add a new `considerations` entry addressing the edge case
+   - Sharpen the `measurable_criteria` for the ambiguous criterion
+   - Add a concrete `examples` entry showing the failing pattern
+5. After updating the enrichment YAML, commit and tell the team to run `/update-idw`
+
 ---
 
 ## 3. Manage Testers

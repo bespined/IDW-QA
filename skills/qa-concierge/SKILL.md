@@ -29,6 +29,28 @@ python3 scripts/idw_metrics.py --track skill_invoked --context '{"skill": "qa-co
 
 ---
 
+## Step 0: Role-Aware Context
+
+Before greeting, silently run:
+
+```bash
+python3 scripts/role_gate.py --check any
+```
+
+Use the tester role to shape the experience:
+
+| Role | What to Show | What to Emphasize |
+|---|---|---|
+| `id_assistant` | Audit + Fix queue only | "Here's your assigned course. Want to start the audit, or work through the fix queue?" |
+| `id` | Full options (audit, review, search, submit for QA) | Standard flow |
+| `admin` | Full options + system health link | Mention `/admin` is available |
+
+**If `id_assistant`**: skip "Audit this course" as a self-service option. Their primary workflow is auditing assigned courses and working through findings flagged by QA. Present as: "Run the assigned audit" and "Work through my fix queue."
+
+**If no tester ID configured** (role gate fails): guide through setup inline. Ask for their name and email, then ask an admin to register them via `/assign`.
+
+---
+
 ## Step 1: Context-Aware Greeting
 
 Before presenting options, silently check for `.env`, `course-config.json`, and session state:
@@ -63,15 +85,23 @@ Then greet:
 
 ### Present Options
 
-Present exactly one `AskUserQuestion` with three options:
+Present exactly one `AskUserQuestion` with options tailored to the tester's role:
 
-**Question**: (Use the greeting above — do NOT add a second question)
+**For `id` and `admin` roles:**
 
 | Label | Description |
 |---|---|
 | **Audit this course** | Run a full quality check — design standards, accessibility, and launch readiness |
 | **Review & fix issues** | Walk through findings and remediate problems — quiz settings, rubrics, content, dates |
+| **Work through fix queue** | Pull findings flagged for remediation and fix them one by one |
 | **Search course content** | Find specific text, pages, or assessments across the course |
+
+**For `id_assistant` role:**
+
+| Label | Description |
+|---|---|
+| **Run assigned audit** | Run the quality audit on my assigned course |
+| **Work through fix queue** | Pull findings flagged for my review and fix them |
 
 Based on the user's selection, proceed to the corresponding path below.
 
@@ -137,6 +167,18 @@ After the audit completes, always offer:
 > "The audit found [N] issues. Would you like to walk through them and fix what we can?"
 
 If yes, transition to Path B.
+
+---
+
+## Path D: Fix Queue
+
+Pull findings where `remediation_requested = true` for the active course and fix them in order.
+
+```bash
+python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback
+```
+
+Present each finding with its criterion ID, reviewer feedback, and a route to the appropriate remediation skill. After each fix, the skill records a `remediation_events` row and clears the `remediation_requested` flag.
 
 ---
 

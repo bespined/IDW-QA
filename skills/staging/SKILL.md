@@ -26,12 +26,16 @@ This includes:
 - Bulk fixes across multiple pages
 
 **The required sequence for every page body change:**
-1. Write corrected HTML to `staging/{slug}.html`
-2. Screenshot the staged page and show it in conversation
-3. Wait for explicit user approval before proceeding
-4. Push only after the user says "looks good", "push it", or equivalent
+1. Write corrected HTML via `staging_manager.py --stage --slug <slug> --html-file <file>`
+2. **Generate the unified preview**: `python3 scripts/unified_preview.py`
+3. **Start the staging preview server** (if not running): `preview_start("staging-preview")`
+4. **Open the unified preview** at `http://localhost:8111/_unified_preview.html` and screenshot it in conversation
+5. Wait for explicit user approval before proceeding
+6. Push only after the user says "looks good", "push it", or equivalent
 
-**Never push page HTML to Canvas in a single step** — even when the fix is trivial, obvious, or the user requested the change. Always stage → show → wait → push.
+**Never push page HTML to Canvas in a single step** — even when the fix is trivial, obvious, or the user requested the change. Always stage → unified preview → wait → push.
+
+**Always use the unified preview for multi-page staging.** When 2+ pages are staged, generate the unified preview so the user can scroll through all pages in one view with the TOC sidebar, approval checkboxes, and text editor. For a single page, individual page preview at `http://localhost:8111/{slug}.html` is acceptable.
 
 ---
 
@@ -56,8 +60,15 @@ Preview staged pages locally or on Canvas.
 ### Local Preview (Staged Content)
 
 1. Run: `python scripts/staging_manager.py --list`
-2. For each page (or user-specified page), open the staged HTML file via the local preview server (port 8111)
-3. Screenshot into the conversation
+2. **Start the staging preview server** using Claude Preview MCP:
+   ```
+   preview_start("staging-preview")
+   ```
+   This launches `staging_server.py` on port 8111 (configured in `.claude/launch.json`).
+3. For each staged page, use `preview_screenshot` to capture and display it in conversation:
+   - Individual page: `http://localhost:8111/{slug}.html`
+   - Unified preview: `http://localhost:8111/_unified_preview.html`
+4. **Always show the screenshot in conversation** — never just tell the user "it's staged." They need to see it before approving.
 
 ### Canvas Preview (Live Content)
 
@@ -174,9 +185,65 @@ For each page:
 2. **Push** staged HTML: `canvas_api.update_page(config, slug, staged_html)` (or create new page via POST)
 3. **Clear** staged file: `python scripts/staging_manager.py --clear --slug <slug>`
 
-### Step 5 — Report
+### Step 5 — Report + Remediation Trail
 
 Show push results with ✓ status per page, backup location, and rollback instructions.
+
+**If any pushed pages were fixing audit findings** (i.e., finding IDs were passed in context from a fix-queue session), record a `remediation_events` row for each finding after successful push:
+
+```bash
+python3 -c "
+import requests, os
+from dotenv import load_dotenv
+load_dotenv('.env.local')
+url = os.getenv('SUPABASE_URL')
+key = os.getenv('SUPABASE_SERVICE_KEY')
+tester_id = os.getenv('IDW_TESTER_ID', '')
+
+resp = requests.post(
+    f'{url}/rest/v1/remediation_events',
+    headers={'apikey': key, 'Authorization': f'Bearer {key}', 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
+    json={
+        'finding_id': '<FINDING_ID>',
+        'remediated_by': tester_id,
+        'skill_used': 'staging',
+        'description': 'Page HTML updated via staging workflow',
+        'page_slug': '<SLUG>'
+    },
+    timeout=15
+)
+print(resp.status_code)
+"
+```
+
+Also clear the finding's `remediation_requested` flag:
+
+```bash
+python3 -c "
+import requests, os
+from dotenv import load_dotenv
+load_dotenv('.env.local')
+url = os.getenv('SUPABASE_URL')
+key = os.getenv('SUPABASE_SERVICE_KEY')
+resp = requests.patch(
+    f'{url}/rest/v1/audit_findings?id=eq.<FINDING_ID>',
+    headers={'apikey': key, 'Authorization': f'Bearer {key}', 'Content-Type': 'application/json'},
+    json={'remediation_requested': False},
+    timeout=15
+)
+print(resp.status_code)
+"
+```
+
+If no finding IDs are in context (standalone staging push), skip this step.
+
+### Non-Page Content (Assignments, Quizzes, Discussions)
+
+When staged content is pushed to a non-page Canvas endpoint (e.g., assignment descriptions, quiz instructions, discussion prompts), the staging push mode doesn't apply directly since those use different API endpoints. In this case:
+
+1. **Preview** still uses the staging workflow (stage → unified preview → approve)
+2. **Push** is handled manually via the appropriate Canvas API (e.g., `PUT /assignments/:id`)
+3. **Clear** must still happen after push: `python scripts/staging_manager.py --clear --slug <slug>` — **do not leave staged files behind after a successful push**
 
 ---
 

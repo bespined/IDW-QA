@@ -87,12 +87,20 @@ Present as:
 > ### What changed:
 > - **Skills**: [list modified skill files]
 > - **Scripts**: [list modified scripts]
-> - **Config**: [list modified config/standards files]
+> - **Config**: [list modified config/standards files — **these affect audit quality**]
 > - **Migrations**: [list new migration files — IMPORTANT: these need to be run!]
 >
 > ### Commits:
 > - `abc1234` feat: add /assignments skill
 > - `def5678` fix: dashboard view column names
+
+**If `config/standards_enrichment.yaml` changed**, call that out explicitly:
+
+> **Audit quality improvement**: The enrichment cards were updated based on RLHF disagreement analysis. Standards with previously low agreement rates have sharper criteria. Your next audit will produce more accurate findings.
+
+**If any `skills/*.md` changed**, note:
+
+> **Skills updated**: [list]. These changes take effect immediately — no restart needed.
 
 ### 5. Migration Alert
 

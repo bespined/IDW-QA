@@ -72,8 +72,9 @@ def extract_raw(html: str) -> str:
 
 
 def extract_module_number(slug: str) -> int:
-    """Extract module number from slug like 'm3-overview' → 3."""
-    m = re.match(r'^m(\d+)', slug)
+    """Extract module number from slug like 'm3-overview' or 'module-3-video-assignment' → 3."""
+    # Match 'm3-...' or 'module-3-...'
+    m = re.match(r'^m(?:odule-?)?(\d+)', slug)
     return int(m.group(1)) if m else 999
 
 
