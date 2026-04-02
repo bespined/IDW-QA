@@ -467,6 +467,8 @@ def evaluate_all(cd, filter_standard=None):
         sid = std["id"]
         if sid == "crc":
             continue
+        if std.get("excluded"):
+            continue
         if filter_standard and sid != filter_standard:
             continue
 
