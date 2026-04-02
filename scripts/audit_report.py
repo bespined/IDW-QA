@@ -1678,18 +1678,18 @@ def generate_report(data: dict) -> str:
     {empty_warning_html}
 
     <!-- Score Breakdown -->
-    <div style="display:flex;gap:16px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
-      <div style="text-align:center;padding:12px 24px;background:white;border-radius:8px;border:1px solid #eee">
-        <div style="font-size:28px;font-weight:700;color:{'#1e7e34' if (readiness_score or 0) >= 80 else '#b5540a' if (readiness_score or 0) >= 50 else '#c62828'}">{readiness_score if readiness_score is not None else '—'}%</div>
-        <div style="font-size:12px;color:#888;font-weight:500">READINESS (Col B)</div>
+    <div style="display:flex;gap:12px;justify-content:center;margin-bottom:16px">
+      <div style="text-align:center;padding:8px 16px;background:white;border-radius:6px;border:1px solid #eee;min-width:90px">
+        <div style="font-size:22px;font-weight:700;color:{'#1e7e34' if (readiness_score or 0) >= 80 else '#b5540a' if (readiness_score or 0) >= 50 else '#c62828'}">{readiness_score if readiness_score is not None else '—'}%</div>
+        <div style="font-size:10px;color:#888;font-weight:500;text-transform:uppercase">Readiness</div>
       </div>
-      <div style="text-align:center;padding:12px 24px;background:white;border-radius:8px;border:1px solid #eee">
-        <div style="font-size:28px;font-weight:700;color:{'#1e7e34' if (design_score_val or 0) >= 80 else '#b5540a' if (design_score_val or 0) >= 50 else '#6a7883' if design_score_val is None else '#c62828'}">{f'{design_score_val}%' if design_score_val is not None else 'N/A'}</div>
-        <div style="font-size:12px;color:#888;font-weight:500">DESIGN (Col C)</div>
+      <div style="text-align:center;padding:8px 16px;background:white;border-radius:6px;border:1px solid #eee;min-width:90px">
+        <div style="font-size:22px;font-weight:700;color:{'#1e7e34' if (design_score_val or 0) >= 80 else '#b5540a' if (design_score_val or 0) >= 50 else '#6a7883' if design_score_val is None else '#c62828'}">{f'{design_score_val}%' if design_score_val is not None else 'N/A'}</div>
+        <div style="font-size:10px;color:#888;font-weight:500;text-transform:uppercase">Design</div>
       </div>
-      <div style="text-align:center;padding:12px 24px;background:white;border-radius:8px;border:1px solid {'#c62828' if (a11y_score_val or 0) < 50 else '#eee'}">
-        <div style="font-size:28px;font-weight:700;color:{'#1e7e34' if (a11y_score_val or 0) >= 80 else '#b5540a' if (a11y_score_val or 0) >= 50 else '#c62828'}">{a11y_score_val if a11y_score_val is not None else '—'}%</div>
-        <div style="font-size:12px;color:#888;font-weight:500">A11Y (ASU Mandated)</div>
+      <div style="text-align:center;padding:8px 16px;background:white;border-radius:6px;border:1px solid {'#c62828' if (a11y_score_val or 0) < 50 else '#eee'};min-width:90px">
+        <div style="font-size:22px;font-weight:700;color:{'#1e7e34' if (a11y_score_val or 0) >= 80 else '#b5540a' if (a11y_score_val or 0) >= 50 else '#c62828'}">{a11y_score_val if a11y_score_val is not None else '—'}%</div>
+        <div style="font-size:10px;color:#888;font-weight:500;text-transform:uppercase">A11y</div>
       </div>
     </div>
 
