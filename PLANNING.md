@@ -1233,6 +1233,12 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 3. bulk-edit uses inline HTTP POST instead of centralized script — standardize.
 4. audit_report.py clears remediation_requested flag but doesn't record an event — add event recording.
 
+*Airtable sync uses AI verdict, ignores IDA corrections (CRITICAL BUG):*
+`airtable_sync.py` line 255 uses `f.get("ai_verdict")` and line 201 uses `f.get("ai_reasoning")` — always the AI's original call. The `feedback_map` (IDA verdicts stored in `finding_feedback`) is fetched but never applied. This means:
+- IDA marks AI finding as "Incorrect" with corrected verdict → Airtable still shows AI's wrong answer
+- IDA adds correction note explaining why AI was wrong → note never appears in Airtable
+Fix: `build_airtable_row()` must check `feedback_map` for each finding — if feedback exists with `decision = 'incorrect'`, use `corrected_finding` as the verdict and `correction_note` as the notes instead of `ai_verdict`/`ai_reasoning`. This is the whole point of the RLHF loop.
+
 *Enforcement script wiring (pre-pilot):*
 The 6 enforcement scripts (push_to_canvas, post_write_verify, audit_session_manager, remediation_tracker, admin_actions, assignment_status) are built and tested but NOT yet called by the skills that need them. Skills still reference inline API calls. Must update:
 1. `staging/SKILL.md` — replace `canvas_api.update_page()` with `push_to_canvas.py --type page`
@@ -1347,9 +1353,9 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 
 **Vercel app readiness:**
 - [ ] Verify review app is deployed and accessible at production URL
-- [ ] Verify login works for all registered users (Supabase Auth + testers table match)
+- [x] Verify login works for all registered users (Supabase Auth + testers table match) ✅ TESTED
 - [ ] Verify RLS policies: IDA sees only assigned sessions, ID sees own sessions, admin sees all
-- [ ] Test "Mark Complete" → sync → Airtable row appears correctly
+- [x] Test "Mark Complete" → sync → Airtable row appears correctly ✅ TESTED
 
 ---
 
