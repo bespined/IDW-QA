@@ -1267,9 +1267,8 @@ Your audit is complete. What would you like to do?
 
 **Still remaining — Phase 5 completion (updated 2026-04-02):**
 
-*1. CRITICAL — Airtable sync uses AI verdict, ignores IDA corrections:*
-`airtable_sync.py` `build_airtable_row()` fetches `feedback_map` but never applies it. Line 255 always uses `ai_verdict`, line 201 always uses `ai_reasoning`. IDA corrections never reach Airtable.
-Fix: check `feedback_map[finding_id]` — if `decision = 'incorrect'`, use `corrected_finding` as verdict and `correction_note` as notes. This is the core RLHF output.
+*1. ✅ DONE — Airtable sync uses IDA corrections:*
+Fixed `build_airtable_row()` + `_generate_notes()` to check `feedback_map` for each finding. If IDA marked `decision = 'incorrect'`, uses `corrected_finding` as verdict and `correction_note` as notes.
 
 *2. ✅ DONE — Enforcement script wiring:*
 All skills now reference their enforcement scripts:
@@ -1279,7 +1278,14 @@ All skills now reference their enforcement scripts:
 - `assignments/SKILL.md` → `assignment_status.py` (replaced inline Supabase PATCH)
 - bulk-edit, quiz, discussion-generator, assignment-generator, rubric-creator, interactive-content → `remediation_tracker.py` ✅
 
-*3. CRITICAL — Session grouping in Vercel app:*
+*3. ✅ DONE — audit_report.py --local-only flag + syntax fix:*
+- Added `--local-only` flag: generates HTML/XLSX report without pushing to Supabase (for progress checks)
+- Fixed f-string syntax error (backslashes in JS regex broke Python 3.9 compilation — script was non-functional)
+- Fixed `Path | None` type hint (requires `from __future__ import annotations` for Python 3.9)
+
+**Remaining code items:**
+
+*4. CRITICAL — Session grouping in Vercel app:*
 Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 self-audits per course = 150-250 sessions. Must group by `course_id` + `audit_purpose`:
 1. Vercel sessions home: group by course, latest round expanded, prior rounds collapsed
 2. Score trend visualization (41 → 65 → 78)
@@ -1287,14 +1293,8 @@ Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 s
 4. Prior rounds view-only
 5. Audit skill: show score delta vs. prior round after completion
 
-*4. HIGH — Remediation event batch fetch in Vercel:*
+*5. HIGH — Remediation event batch fetch in Vercel:*
 Session detail page only fetches first finding's events, not all. QA team can't see full remediation history.
-
-*5. ✅ DONE — audit_report.py --local-only flag + syntax fix:*
-- Added `--local-only` flag: generates HTML/XLSX report without pushing to Supabase (for progress checks)
-- Fixed f-string syntax error (backslashes in JS regex broke Python 3.9 compilation — script was non-functional)
-- Fixed `Path | None` type hint (requires `from __future__ import annotations` for Python 3.9)
-- `remediation_requested: False` on new rows is correct default behavior (not a bug)
 
 *6. MEDIUM — Error message polish:*
 Core error messages are done (role_gate, canvas_api 401 handling, push_to_canvas). Remaining:
@@ -1422,6 +1422,77 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 - [x] Verify login works for all registered users (Supabase Auth + testers table match) ✅ TESTED
 - [ ] Verify RLS policies: IDA sees only assigned sessions, ID sees own sessions, admin sees all
 - [x] Test "Mark Complete" → sync → Airtable row appears correctly ✅ TESTED
+
+---
+
+### Phase 5.5 — Pilot Launch Implementation Plan (updated 2026-04-02)
+
+Three sub-phases: code → prep → go-live. Each phase must complete before the next starts.
+
+#### Phase 5.5a — Remaining Code (Claude + Brent, ~6 hours)
+
+| # | Task | Owner | Effort | Dependency |
+|---|---|---|---|---|
+| 1 | Session grouping in Vercel (group by course, collapse rounds, score trend) | Claude + Brent | 3-4 hrs | None |
+| 2 | Remediation event batch fetch (session page loads all events, not first only) | Claude + Brent | 1 hr | None |
+| 3 | Error message polish (Vercel toasts, sync errors, "Report this error" link) | Claude + Brent | 1-2 hrs | None |
+| 4 | Progress check prompt in audit skill (AskUserQuestion before push to Supabase) | Claude | 30 min | Item 3 from Phase 5 `--local-only` ✅ done |
+| 5 | Test rollback end-to-end on sandbox (stage → push → rollback → verify original restored) | Brent | 30 min | None |
+
+Items 1-3 can run in parallel. Item 4 is a quick skill prompt update. Item 5 is manual testing.
+
+**Exit criteria:** All Vercel changes deployed. Rollback verified. `audit_report.py --local-only` tested with a real audit.
+
+#### Phase 5.5b — User Provisioning & Credentials (Brent, ~3 hours)
+
+| # | Task | Owner | Effort | Notes |
+|---|---|---|---|---|
+| 1 | Compile pilot user list: name, email, role (id / id_assistant / admin) | Brent | 30 min | Get from QA team lead |
+| 2 | Batch-register testers in Supabase `testers` table | Brent + Claude | 30 min | `python3 scripts/admin_actions.py --register` per user |
+| 3 | Register same users in Supabase Auth (email+password) | Brent | 30 min | Supabase dashboard → Authentication → Users |
+| 4 | Confirm Canvas token permissions — can all IDs generate personal access tokens? | Brent | 15 min | Check with Canvas admin if unsure |
+| 5 | Confirm Claude Code access — all pilot users have Anthropic accounts/licenses | Brent | 15 min | Check org plan |
+| 6 | Pre-assign IDAs to courses via `/assign` | Brent + Claude | 30 min | Requires user list + course list |
+| 7 | Prepare `.env` template + `.env.local` with Supabase keys | Claude | 15 min | Claude generates, Brent fills in secrets |
+| 8 | Distribute credentials to users (Slack DM or 1-on-1 setup) | Brent | 30 min | Each user gets: `.env` template, `.env.local`, their `IDW_TESTER_ID` |
+
+**Exit criteria:** All users registered in both Supabase tables (testers + Auth). All users have credentials. All IDAs assigned to at least one course.
+
+#### Phase 5.5c — Communication & Go-Live (Brent + Claude, ~2 hours)
+
+| # | Task | Owner | Effort | Notes |
+|---|---|---|---|---|
+| 1 | Create Slack feedback channel (e.g., `#scout-ultra-pilot`) | Brent | 5 min | |
+| 2 | Write quick-start guide (`ONBOARDING.md`) | Claude (draft) → Brent (review) | 1 hr | "Your first 10 minutes" — setup, first audit, review findings |
+| 3 | Write rollback instructions (1-pager) | Claude | 15 min | "If you pushed something wrong..." |
+| 4 | Draft pilot kickoff message (Slack/email) | Claude (draft) → Brent (review) | 30 min | What the system does, links to guide, feedback channel, escalation path |
+| 5 | Send kickoff message | Brent | 5 min | |
+| 6 | Verify RLS policies with a non-admin test account | Brent | 15 min | Login as id_assistant, confirm they only see assigned sessions |
+
+**Exit criteria:** Kickoff message sent. Users have the guide. Feedback channel exists. RLS verified.
+
+#### Post-Launch Operational Rhythm (ongoing during pilot)
+
+| Cadence | Task | Owner |
+|---|---|---|
+| Daily (week 1) | Check Slack feedback channel for blockers | Brent |
+| Daily (week 1) | Check error queue via `/admin` → Error Queue | Brent |
+| Weekly | Review RLHF agreement rates via `/admin` → RLHF Stats | Brent |
+| Weekly | Triage and fix reported bugs | Brent + Claude |
+| Bi-weekly | Update enrichment cards for standards with <70% agreement | Brent + Claude |
+| Ad-hoc | Re-assign courses as IDAs complete their queues | Brent |
+| Ad-hoc | Run `/update-idw` (or `/update-scout` after rename) to push fixes to all users | Brent |
+
+#### Timeline
+
+```
+Day 1-2:  Phase 5.5a — Code (session grouping, batch fetch, error polish)
+Day 2-3:  Phase 5.5b — Provisioning (user list, register, credentials)
+Day 3:    Phase 5.5c — Communication (guide, kickoff message, go-live)
+Day 4:    🚀 Pilot launches
+Week 1:   Daily monitoring, rapid bug fixes
+Week 2+:  Weekly rhythm, enrichment card updates, RLHF analysis
+```
 
 ---
 
