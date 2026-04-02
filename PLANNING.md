@@ -1274,6 +1274,14 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 - **Standard 23** (Tool Accessibility): Excluded from audits. All external tools must pass ASU accessibility standards before approval. Always Met by policy.
 - **Standards 05, 14**: Design audits only (Col C, ID reviews). Not ID Assistant scope.
 
+*Optional report generation:*
+- Audit skill should ask "Generate HTML report?" after audit completes
+- New course dev IDs iterate many times before submitting for QA review — they don't need a report every run
+- Report generation also pushes to Supabase which creates a new session — wasteful for iterative audits
+- Options: "Yes — generate report + push to Supabase" / "No — just show results in conversation"
+- criterion_evaluator.py `--quick-check` and `--full-audit` should support `--no-report` flag to skip audit_report.py
+- This keeps iterative audits lightweight while still producing reports when ready for review
+
 *Session status after admin override (manual for pilot):*
 - Admin changes verdict from change request → admin re-syncs to Airtable
 - Recurring: stays complete, admin re-syncs
