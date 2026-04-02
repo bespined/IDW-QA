@@ -478,9 +478,17 @@ def evaluate_all(cd, filter_standard=None):
             reviewer_tier = crit.get("reviewer_tier", "id")
             check_type = crit.get("check_type", "ai")
 
+            # Low-confidence criteria — evaluator gives default, human should verify
+            LOW_CONFIDENCE = {
+                "B-04.7", "B-06.1", "B-13.1", "B-13.2", "B-13.3", "B-13.4",
+                "B-13.5", "B-13.6", "B-13.7", "B-13.8", "B-17.1", "B-17.2",
+                "B-22.9", "B-22.11",
+            }
+
             if cid_str.startswith("B-"):
                 # Deterministic evaluation
                 status, evidence = evaluate_b_criterion(cid_str, crit_text, cd)
+                confidence = "low" if cid_str in LOW_CONFIDENCE else "high"
                 results.append({
                     "criterion_id": cid_str,
                     "criterion_text": crit_text,
@@ -490,6 +498,7 @@ def evaluate_all(cd, filter_standard=None):
                     "evidence": evidence,
                     "check_type": "deterministic",
                     "reviewer_tier": reviewer_tier,
+                    "confidence": confidence,
                     "needs_ai_review": False,
                 })
             else:
@@ -503,6 +512,7 @@ def evaluate_all(cd, filter_standard=None):
                     "evidence": "",
                     "check_type": "ai",
                     "reviewer_tier": reviewer_tier,
+                    "confidence": "medium",
                     "needs_ai_review": True,
                 })
 
