@@ -436,7 +436,7 @@ def evaluate_b_criterion(cid_str, text, cd):
         if "ally" in t:
             return ("N/A", "Requires Ally dashboard — enter manually")
         if "scout" in t:
-            return ("N/A", "Requires SCOUT tool — enter manually")
+            return ("N/A", "SCOUT score no longer used — skip")
         if "readability" in t:
             return ("N/A", "Requires readability analysis — enter manually")
 
