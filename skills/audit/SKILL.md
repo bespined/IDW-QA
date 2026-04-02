@@ -26,27 +26,31 @@ Unified audit skill with 3 modes: Quick Check (deterministic only), Deep Audit (
 - "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
 - "Just check essential standards" → **Deep Audit --scope essential** (skip prompt)
 
-## Audit Purpose Inference
+## Audit Session Creation (Mandatory)
 
-**Before any other setup**, determine `audit_purpose` from the tester's role. This controls the Supabase session type, who can verdict findings in the review app, and the post-audit workflow.
+**Before any audit work**, create a session in Supabase via the enforcement script. This deterministically infers `audit_purpose` from the tester's role and counts prior sessions for `audit_round`. Never create sessions via inline Supabase calls.
 
 ```bash
-python3 scripts/role_gate.py --check any
+python3 scripts/audit_session_manager.py --create --course-id <COURSE_ID> --scope <all|essential|crc> --mode <quick_scan|full_audit|guided_review>
 ```
 
-| Tester Role | Context | `audit_purpose` |
-|---|---|---|
-| `id` | Running on their own course (course ID matches an assignment they own) | `self_audit` |
-| `id` | Running on a course assigned to another tester (QA review of someone else's work) | `qa_review` |
-| `id_assistant` | Running on any assigned course | `recurring` |
-| `admin` | Running on any course | `qa_review` |
+The script:
+1. Reads tester role from `role_gate.py`
+2. Infers `audit_purpose` deterministically:
+   - `id_assistant` → always `recurring`
+   - `admin` → always `qa_review`
+   - `id` on a course assigned to another tester → `qa_review`
+   - `id` on their own course → `self_audit`
+3. Counts prior sessions → sets `audit_round`
+4. Creates `audit_sessions` row in Supabase
+5. Returns session ID + review app URL
 
-**Infer from context:**
-- If `id_assistant` role → always `recurring`
-- If `id` or `admin` role → check whether the course matches a `tester_course_assignments` row owned by another tester. If yes → `qa_review`. Otherwise → `self_audit`.
-- Store the inferred `audit_purpose` and use it when creating the Supabase `audit_sessions` row.
+**Use the returned `session_id`** for all subsequent operations: pushing findings via `audit_report.py`, and linking to the review app.
 
-**Also infer `audit_round`**: Query `audit_sessions` for prior sessions on this course + purpose combination. `audit_round` = count of prior sessions + 1. Pass to the audit session row and to `audit_report.py`.
+After the audit completes, if `audit_purpose` is `self_audit`, offer to submit for QA review:
+```bash
+python3 scripts/audit_session_manager.py --submit --session-id <SESSION_ID>
+```
 
 ---
 

@@ -196,15 +196,32 @@ def _find_notes_field(notes_fields, std_id):
     return None
 
 
-def _generate_notes(findings):
-    """Generate high-level notes from findings for a standard."""
-    failing = [f for f in findings if _verdict_to_yes_no(f.get("ai_verdict")) == "No"]
+def _generate_notes(findings, feedback_map=None):
+    """Generate high-level notes from findings for a standard.
+
+    If IDA corrected a finding, use their correction_note instead of AI reasoning.
+    """
+    def _effective_verdict(f):
+        fid = f.get("id", "")
+        fb = feedback_map.get(fid) if feedback_map else None
+        if fb and fb.get("decision") == "incorrect" and fb.get("corrected_finding"):
+            return fb["corrected_finding"]
+        return f.get("ai_verdict", "")
+
+    def _effective_reasoning(f):
+        fid = f.get("id", "")
+        fb = feedback_map.get(fid) if feedback_map else None
+        if fb and fb.get("decision") == "incorrect" and fb.get("correction_note"):
+            return _strip_html(fb["correction_note"])
+        return _strip_html(f.get("ai_reasoning") or "")
+
+    failing = [f for f in findings if _verdict_to_yes_no(_effective_verdict(f)) == "No"]
     if not failing:
         return "All criteria met. No issues found."
 
     issues = []
     for f in failing[:5]:
-        reasoning = _strip_html(f.get("ai_reasoning") or "")
+        reasoning = _effective_reasoning(f)
         cid = f.get("criterion_id", "")
         if reasoning:
             issues.append(f"{cid}: {reasoning}")
@@ -249,13 +266,29 @@ def build_airtable_row(session, findings, crit_map, rating_fields, notes_fields,
         total_standards += 1
 
         # Map per-criterion findings to Airtable columns
+        # If IDA corrected the AI (decision='incorrect'), use the corrected verdict
         for f in std_findings:
             cid = f.get("criterion_id", "")
-            if cid and cid in crit_map:
+            if not cid or cid not in crit_map:
+                continue
+            fid = f.get("id", "")
+            fb = feedback_map.get(fid) if feedback_map else None
+            if fb and fb.get("decision") == "incorrect" and fb.get("corrected_finding"):
+                # IDA corrected this finding — use their verdict
+                fields[crit_map[cid]] = _verdict_to_yes_no(fb["corrected_finding"])
+            else:
                 fields[crit_map[cid]] = _verdict_to_yes_no(f.get("ai_verdict", ""))
 
         # Derive standard-level rating from criteria
-        verdicts = [_verdict_to_yes_no(f.get("ai_verdict", "")) for f in std_findings]
+        # Same logic: prefer IDA corrections over AI verdicts
+        def _effective_verdict(f):
+            fid = f.get("id", "")
+            fb = feedback_map.get(fid) if feedback_map else None
+            if fb and fb.get("decision") == "incorrect" and fb.get("corrected_finding"):
+                return fb["corrected_finding"]
+            return f.get("ai_verdict", "")
+
+        verdicts = [_verdict_to_yes_no(_effective_verdict(f)) for f in std_findings]
         verdicts_excl_na = [v for v in verdicts if v != "N/A"]
 
         if not verdicts_excl_na:
@@ -285,7 +318,7 @@ def build_airtable_row(session, findings, crit_map, rating_fields, notes_fields,
         # Set notes field
         nf = _find_notes_field(notes_fields, sid)
         if nf:
-            fields[nf] = _generate_notes(std_findings)
+            fields[nf] = _generate_notes(std_findings, feedback_map)
 
     # Summary counts
     fields["Standards Met"] = f"{met_count}/{total_standards} Standards Met"

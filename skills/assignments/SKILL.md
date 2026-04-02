@@ -113,32 +113,15 @@ Then offer actions:
 
 ### 4. Status Updates
 
+**All status changes MUST go through `assignment_status.py`.** This enforces ownership checks and valid state transitions (assigned → in_progress → completed).
+
 When the user wants to update an assignment status:
 
 ```bash
-python3 -c "
-import json, os, sys, requests
-sys.path.insert(0, 'scripts')
-from role_gate import _get_supabase_config
-
-url, key = _get_supabase_config()
-assignment_id = '<ASSIGNMENT_ID>'
-new_status = '<STATUS>'  # 'in_progress' or 'completed'
-
-resp = requests.patch(
-    f'{url}/rest/v1/tester_course_assignments?id=eq.{assignment_id}',
-    headers={
-        'apikey': key,
-        'Authorization': f'Bearer {key}',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-    },
-    json={'status': new_status},
-    timeout=15,
-)
-print(json.dumps(resp.json(), indent=2, default=str))
-"
+python3 scripts/assignment_status.py --update --assignment-id <ASSIGNMENT_ID> --status <in_progress|completed>
 ```
+
+The script validates: tester owns the assignment (or is admin), and the transition is valid (e.g., can't go from `completed` back to `assigned`).
 
 ### 5. No Assignments
 

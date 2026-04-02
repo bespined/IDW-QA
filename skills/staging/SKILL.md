@@ -172,18 +172,31 @@ User can:
 - "Skip 2" → push all except
 - "Cancel" → abort
 
-### Step 4 — Backup + Push
+### Step 4 — Push via Enforcement Script
 
-For each page:
-1. **Backup** current Canvas version before overwriting:
-   - First, GET the current page body from Canvas via `canvas_api.get_page(config, slug)`
-   - Save it to a temp file, then run:
-   ```
-   python scripts/backup_manager.py --save --course-id <id> --page-slug <slug> --html-file <tempfile> --diff-summary "<summary>"
-   ```
-   **IMPORTANT:** The flag is `--save` (not `--save-page`). This step MUST succeed before pushing.
-2. **Push** staged HTML: `canvas_api.update_page(config, slug, staged_html)` (or create new page via POST)
-3. **Clear** staged file: `python scripts/staging_manager.py --clear --slug <slug>`
+**All page pushes MUST use `push_to_canvas.py`.** This script atomically handles backup → push → clear → verify in one call. Never call `canvas_api.update_page()` directly.
+
+For a single page:
+```bash
+python3 scripts/push_to_canvas.py --type page --slug <slug>
+```
+
+For multiple pages:
+```bash
+python3 scripts/push_to_canvas.py --type page --slugs <slug1>,<slug2>,<slug3>
+```
+
+If the push is fixing audit findings, include finding IDs for remediation tracking:
+```bash
+python3 scripts/push_to_canvas.py --type page --slug <slug> --finding-ids <id1>,<id2> --skill staging
+```
+
+The script handles:
+1. **Backup** — GETs current Canvas page, saves via `backup_manager.py` (blocks push if backup fails)
+2. **Push** — writes staged HTML to Canvas
+3. **Clear** — removes staged file via `staging_manager.py --clear`
+4. **Verify** — fetches page back from Canvas, confirms content length > 0
+5. **Remediation trail** — records events in Supabase if `--finding-ids` provided
 
 ### Step 5 — Report + Remediation Trail
 

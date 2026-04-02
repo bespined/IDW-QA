@@ -182,33 +182,15 @@ When a standard's agreement rate is below 70%, the audit prompt needs improvemen
 ### List All Testers
 
 ```bash
-python3 -c "
-import json, sys
-sys.path.insert(0, 'scripts')
-from role_gate import _get_supabase_config, _supabase_get
-
-url, key = _get_supabase_config()
-testers = _supabase_get(url, key, 'testers', {'order': 'role.asc,name.asc'})
-print(json.dumps(testers or [], indent=2, default=str))
-"
-```
-
-Present as:
-
-```
-## Testers (N total)
-
-| Name | Email | Role | Active | Added |
-|------|-------|------|--------|-------|
-| Alice Chen | alice@asu.edu | id_assistant | Yes | Mar 10 |
-| Bob Smith | bob@asu.edu | id_assistant | Yes | Mar 12 |
-| Jane Doe | jane@asu.edu | admin | Yes | Mar 1 |
+python3 scripts/admin_actions.py --list-testers
 ```
 
 ### Register New Tester
 
+**All tester management MUST go through `admin_actions.py`.** This enforces admin role verification and writes to the audit log.
+
 ```bash
-python3 scripts/role_gate.py --register --name "<NAME>" --email "<EMAIL>" --role <ROLE>
+python3 scripts/admin_actions.py --register --name "<NAME>" --email "<EMAIL>" --role <ROLE>
 ```
 
 After registration, show the new tester's ID so the admin can share it:
@@ -219,30 +201,16 @@ After registration, show the new tester's ID so the admin can share it:
 ### Deactivate Tester
 
 ```bash
-python3 -c "
-import json, sys, requests
-sys.path.insert(0, 'scripts')
-from role_gate import _get_supabase_config
-
-url, key = _get_supabase_config()
-resp = requests.patch(
-    f'{url}/rest/v1/testers?id=eq.<TESTER_ID>',
-    headers={
-        'apikey': key,
-        'Authorization': f'Bearer {key}',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-    },
-    json={'is_active': False},
-    timeout=15,
-)
-print(json.dumps(resp.json(), indent=2, default=str))
-"
+python3 scripts/admin_actions.py --deactivate --tester-id <TESTER_ID>
 ```
 
 ### Change Role
 
-Same pattern as deactivate but with `{'role': '<NEW_ROLE>'}`.
+```bash
+python3 scripts/admin_actions.py --change-role --tester-id <TESTER_ID> --new-role <ROLE>
+```
+
+All operations are logged to `logs/admin_audit.jsonl` with caller ID and timestamp.
 
 ---
 

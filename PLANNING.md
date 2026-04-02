@@ -1220,13 +1220,13 @@ IDs will run multiple self-audits during a course build for iterative improvemen
 `airtable_sync.py` `build_airtable_row()` fetches `feedback_map` but never applies it. Line 255 always uses `ai_verdict`, line 201 always uses `ai_reasoning`. IDA corrections never reach Airtable.
 Fix: check `feedback_map[finding_id]` — if `decision = 'incorrect'`, use `corrected_finding` as verdict and `correction_note` as notes. This is the core RLHF output.
 
-*2. CRITICAL — Enforcement script wiring (3 skills still need updates):*
-Of the 6 enforcement scripts, most are now referenced by skills. Still remaining:
-- `staging/SKILL.md` — still uses `canvas_api.update_page()` on line 185, must use `push_to_canvas.py`
-- `audit/SKILL.md` — unclear if it calls `audit_session_manager.py --create` for session creation (needs verification + explicit wiring)
-- `admin/SKILL.md` — unclear if it calls `admin_actions.py` for tester management (needs verification + explicit wiring)
-- `assignments/SKILL.md` — unclear if it calls `assignment_status.py` for status changes (needs verification + explicit wiring)
-Already done: bulk-edit, quiz, discussion-generator, assignment-generator, rubric-creator, interactive-content all reference `remediation_tracker.py` ✅
+*2. ✅ DONE — Enforcement script wiring:*
+All skills now reference their enforcement scripts:
+- `staging/SKILL.md` → `push_to_canvas.py` (replaced `canvas_api.update_page()`)
+- `audit/SKILL.md` → `audit_session_manager.py --create` (replaced inline purpose inference)
+- `admin/SKILL.md` → `admin_actions.py` (replaced inline Supabase PATCH + role_gate.py --register)
+- `assignments/SKILL.md` → `assignment_status.py` (replaced inline Supabase PATCH)
+- bulk-edit, quiz, discussion-generator, assignment-generator, rubric-creator, interactive-content → `remediation_tracker.py` ✅
 
 *3. CRITICAL — Session grouping in Vercel app:*
 Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 self-audits per course = 150-250 sessions. Must group by `course_id` + `audit_purpose`:
@@ -1239,8 +1239,8 @@ Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 s
 *4. HIGH — Remediation event batch fetch in Vercel:*
 Session detail page only fetches first finding's events, not all. QA team can't see full remediation history.
 
-*5. HIGH — audit_report.py clears flags but doesn't record events:*
-`audit_report.py` sets `remediation_requested: False` but doesn't insert into `remediation_events` table. Fix: call `remediation_tracker.py` or equivalent.
+*5. ✅ NOT A BUG — audit_report.py:*
+Reviewed: `audit_report.py` sets `remediation_requested: False` as a default on NEW finding rows during audit push — not clearing flags on existing findings. This is correct behavior.
 
 *6. MEDIUM — Error message polish:*
 Core error messages are done (role_gate, canvas_api 401 handling, push_to_canvas). Remaining:
