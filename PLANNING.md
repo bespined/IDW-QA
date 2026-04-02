@@ -1166,10 +1166,41 @@ This is the biggest remaining quality issue — without specific evidence, the r
 - Deterministic evaluator — criterion_evaluator.py produces complete audit JSON, guaranteed consistency
 - Split scores — Readiness / Design / A11y shown separately in HTML report + Vercel session header
 
-**Still remaining:**
-- Remediation event recording from Claude Code skills (bulk-edit, quiz, etc. write back to remediation_events)
-- Airtable views (manual setup — instructions provided to QA team)
-- Vercel deployment fix (main domain not pointing to latest)
+**Completed (cont.):**
+- IDA feedback isolation — IDA sees own action buttons, ID decision shown as context
+- Airtable views — manually created (ID/IDA, ID Assistant, Admin Summary)
+- Vercel deployment — main domain working
+
+**Still remaining — Phase 5 completion:**
+
+*ID Assistant self-sync to Airtable:*
+- ID Asst can sync after marking complete (both recurring AND new course dev sessions)
+- Admin retains sync ability as backup for backlogs/forgotten syncs
+- Confirmation modal: "Sync findings to Airtable? Any further edits after sync must be escalated to Admin"
+- After sync: session locked for that ID Asst (moved to archived/completed queue, view-only)
+- Admin can still make changes + re-sync (Airtable row overwrites, Supabase keeps full decision history)
+- Sync button placement: same location as admin sync (near Report download in session header)
+- Button unlocks only after "Mark Complete"
+
+*Request Change flow (post-sync):*
+- IDA clicks "Request Change" on a synced/locked finding
+- Creates a change request with reason text
+- Admin sees "Change Requests" queue on home page
+- Admin can view request + make the change directly from the queue (without navigating into the session)
+- After fixing, admin re-syncs to Airtable
+
+*Admin sync visibility:*
+- Sessions home page shows sync status badge:
+  - 🟡 Not synced (qa_approved but airtable_synced_at is null)
+  - ✅ Synced (has airtable_synced_at)
+  - — No badge (not yet approved)
+
+*Remediation event recording — wiring fixes:*
+Infrastructure exists (table, API, tracker script, push_to_canvas integration). Missing:
+1. Fix Review App batch fetch — session page only fetches first finding's events, not all. CRITICAL.
+2. Standardize skills — quiz, assignment-generator, discussion-generator, rubric-creator, interactive-content need to call `remediation_tracker.py --record` after fixing.
+3. bulk-edit uses inline HTTP POST instead of centralized script — standardize.
+4. audit_report.py clears remediation_requested flag but doesn't record an event — add event recording.
 
 ---
 
