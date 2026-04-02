@@ -58,13 +58,15 @@ Supabase is ALWAYS the source of truth. Airtable is a downstream read-only sync.
 
 ## 2. Roles and Permissions
 
-| Role | Claude Code | Vercel App | What they do |
-|---|---|---|---|
-| **ID** (course builder) | Yes (own token) | Yes | Self-audit during course dev, remediate, submit for QA review |
-| **IDA** (ID Assistant) | TBD (see [Q1](#17-unresolved-questions)) | Yes | Verdict Col B findings only, assigned specific courses |
-| **Admin** (QA team + admins) | Yes (QA token) | Yes (/admin route) | Run recurring audits, review all findings (Col B + C), approve launch gate, manage testers, error queue, RLHF review |
+| Role in system | Who | Claude Code | Vercel App | What they do |
+|---|---|---|---|---|
+| `id` | IDs AND IDAs (ID Associates) | Yes | Yes | Audit both Col B + C, remediate, submit for QA review |
+| `id_assistant` | Student workers / Working learners | No (web app only) | Yes | Verdict Col B findings only, validate readiness, assigned by admin |
+| `admin` | QA team (3 people) | Yes (QA token) | Yes (/admin) | Run recurring audits, assign ID Assistants, manage testers, outreach, analytics |
 
-**Note**: The `qa_team` role was merged into `admin` — there are now 3 roles, not 4. All QA team members are admins.
+**Naming clarification:** IDA = "ID Associate" = full `id` role (can audit + remediate). ID Assistant = student worker = `id_assistant` role (verdict Col B only, no Canvas access, no remediation). These are NOT the same despite similar names.
+
+**Note**: The `qa_team` role was merged into `admin` — there are now 3 roles, not 4.
 
 ### Key role rules
 - IDs can audit ANY course (use Canvas API to list their courses)
@@ -1047,7 +1049,13 @@ Airtable is NOT a separate system with its own structure. It mirrors Supabase da
 | **Airtable** | Standard-level rating + notes (criteria columns empty) | All 147 B/C columns populated + standard rating + notes |
 | **RLHF feedback** | Verdicts on standard-level findings | Verdicts on individual criteria (more precise training signal) |
 
-##### Airtable Base Structure (QA Test)
+##### Architecture Decision: Vercel + Airtable (Dual Approach)
+
+Vercel app handles interactive review workflow (finding cards, role-based views, verdict buttons, remediation tracking). Airtable handles reporting and analytics (filter by school/program, stakeholder views, faculty outreach). Both read from Supabase (source of truth). Neither is redundant — removing Vercel degrades the workflow, removing Airtable degrades reporting. See `IDW-QA-Frontend-Architecture-Recommendation.docx` on Desktop for full rationale.
+
+Data flow: Canvas → Plugin → Supabase → Vercel (review) → Supabase (verdicts) → Airtable (reporting)
+
+##### Airtable Base Structure (QA Test — use this during testing, NOT SCOUT ULTRA)
 
 - **Base:** appHzYJqoyopf4jN8 (QA Test)
 - **Table:** Course Audits (tblI55WEIy16aftkS) — 207 fields
@@ -1304,11 +1312,33 @@ Core error messages are done (role_gate, canvas_api 401 handling, push_to_canvas
   - Has Disagrees (new course dev) → session status: revisions_required → ID re-remediates → ID Asst re-validates
   - Has Disagrees (recurring) → sync anyway, findings logged as-is (no remediation in recurring)
 
-*Col B criteria needing human verification (evaluator gives default answer):*
-The Python evaluator handles these deterministically but with low confidence. Human reviewer should verify:
-- **B-04.7** Template personalization/customization — evaluator says "Met" but can't verify actual customization
-- **B-06.1** Workload details — evaluator checks syllabus length but can't verify workload is described
-- **B-13.1-13.8** Content quality (typos, formatting, completeness, design best practices) — evaluator says "Met" by default, can't read for typos
+*Col B criteria needing human verification (22 total, low confidence):*
+The Python evaluator handles these deterministically but gives default answers. Flagged with `confidence: low` and red badge in UI.
+
+Quality judgment (can't assess content quality):
+- **B-13.1-13.8** Content quality, typos, formatting, completeness, design practices
+- **B-13.10** Text free of typos
+- **B-13.14** Text not too dense
+
+Reading comprehension (can't verify meaning):
+- **B-06.1** Workload details provided — checks length but not content
+- **B-06.2** Time commitments clearly communicated
+- **B-09.1** Assessment instructions clearly explain
+- **B-22.5** Hyperlinks use descriptive meaningful text
+
+Cross-reference checks (can't compare across sources):
+- **B-04.7** Template personalization/customization
+- **B-04.14** Grade breakdown in syllabus
+- **B-09.6** Grade breakdown alignment with syllabus
+- **B-17.1** Moderation policy exists
+- **B-17.2** Response turnaround time specified
+
+External tools required (manual entry fields):
+- **B-22.9** Ally accessibility score
+- **B-22.11** Readability score
+
+Manual review (criteria undefined for pilot):
+- **B-24.1** Mobile/offline access specifications — collecting ID feedback during pilot
 - **B-17.1** Moderation policy — evaluator checks discussion exists but can't verify policy content
 - **B-17.2** Response turnaround time — evaluator searches for keywords but may miss
 - **B-22.9** Ally score — requires Ally dashboard (manual entry field)
