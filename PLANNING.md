@@ -24,8 +24,9 @@
 14. [Notifications](#14-notifications)
 15. [Plugin Version Tracking](#15-plugin-version-tracking)
 16. [Concurrency Rules](#16-concurrency-rules)
-17. [Unresolved Questions](#17-unresolved-questions)
-18. [Reference Files](#18-reference-files)
+17. [System Rename: IDW QA → SCOUT ULTRA](#17-system-rename-idw-qa--scout-ultra)
+18. [Unresolved Questions](#18-unresolved-questions)
+19. [Reference Files](#19-reference-files)
 
 ---
 
@@ -1209,6 +1210,13 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 - Add a "Report this error" link that pre-fills `/report-error` with context
 - Sync errors should explain whether the data was partially written or not
 
+*Session status after admin override (deferred — discuss pre-pilot):*
+- When admin changes a verdict (from change request), should the session auto-reopen?
+- Recurring: session stays complete, admin re-syncs to Airtable with updated data
+- New course dev: if admin changes to Incorrect, session should revert to revisions_required → ID remediates
+- For pilot: admin handles manually (has Undo/Reopen buttons). Auto-reopening deferred to post-pilot.
+- Key rule: session is only "complete" when all verdicts are Correct/Agree/N/A. Any Incorrect/Disagree should block completion.
+
 ---
 
 ## 13. Pilot Scope
@@ -1277,7 +1285,120 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 
 ---
 
-## 17. Unresolved Questions
+## 17. System Rename: IDW QA → SCOUT ULTRA
+
+### Rationale
+
+The system has outgrown its original name. "IDW QA" (ID Workbench Quality Assurance) implies a narrow auditing tool. The system is now a full issue/project management platform — audit, findings management, remediation tracking, role-based workflows, analytics, and Airtable sync — used by IDs, QA team IDs, and student workers. "SCOUT ULTRA" aligns with the existing Airtable SCOUT ULTRA format and is already familiar to the team.
+
+### Naming Map
+
+| Current | New | Scope |
+|---|---|---|
+| `IDW QA` | `SCOUT ULTRA` | Display name everywhere |
+| `idw-review-app` | `scout-ultra` | Vercel project name + repo |
+| `idw-review-app.vercel.app` | `scout-ultra.vercel.app` | URL (after Vercel rename) |
+| `IDW_TESTER_ID` | `SCOUT_TESTER_ID` | Environment variable (`.env`) |
+| `idw_logger.py` | `scout_logger.py` | Module file + all imports |
+| `idw_metrics.py` | `scout_metrics.py` | Module file + all imports |
+| `idw_metrics.json` | `scout_metrics.json` | Metrics data file + `.gitignore` |
+| `update-idw` (skill) | `update-scout` | Skill folder + name + command |
+| `IDW-QA-*.mmd/.md` | `SCOUT-ULTRA-*.mmd/.md` | Document filenames in repo root |
+| `rlhf-reports` (Supabase bucket) | `scout-reports` | Storage bucket (optional, low priority) |
+| `/Users/bespined/claude-plugins/IDW-QA/` | `/Users/bespined/claude-plugins/scout-ultra/` | Directory path (last — breaks all absolute paths) |
+| `/Users/bespined/Desktop/idw-review-app/` | `/Users/bespined/Desktop/scout-ultra/` | Vercel app directory path |
+
+### What stays the same
+
+- `qa-concierge` skill name — still accurate, QA is what users do
+- Supabase table names (`audit_sessions`, `audit_findings`, `testers`, etc.) — renaming tables requires migrations and risks breaking the live review app
+- Canvas API patterns — no naming dependency
+- `role_gate.py`, `canvas_api.py`, `staging_manager.py`, etc. — script names that don't contain "idw"
+- Standards/config YAML files — no naming dependency
+
+### Migration Phases
+
+#### Phase A: Internal code (no user-visible impact)
+
+1. **Rename logger + metrics modules**
+   - `scripts/idw_logger.py` → `scripts/scout_logger.py`
+   - `scripts/idw_metrics.py` → `scripts/scout_metrics.py`
+   - Update all `from idw_logger import` → `from scout_logger import` across ~25 scripts
+   - Update all `from idw_metrics import` → `from scout_metrics import` across ~25 scripts
+   - Keep backward-compat shims: `idw_logger.py` that imports from `scout_logger` (so old code doesn't break mid-transition)
+   - Update `.gitignore`: `idw_metrics.json` → `scout_metrics.json`
+
+2. **Rename env variable**
+   - All scripts: `IDW_TESTER_ID` → `SCOUT_TESTER_ID`
+   - Backward compat: read both, prefer `SCOUT_TESTER_ID`, fall back to `IDW_TESTER_ID`
+   - Update `.env` template and setup instructions
+   - Announce to testers: "Add `SCOUT_TESTER_ID=<your-id>` to `.env` — the old name still works but will be removed"
+
+3. **Rename skill folder + command**
+   - `skills/update-idw/` → `skills/update-scout/`
+   - Update SKILL.md: `name: update-scout`, `> **Run**: /update-scout`
+   - Update all CLAUDE.md and PLANNING.md references
+   - Update metric tracking context: `'{"skill": "update-scout"}'`
+
+4. **Update all SKILL.md metric tracking lines**
+   - Every skill has: `python3 scripts/idw_metrics.py --track skill_invoked`
+   - Change to: `python3 scripts/scout_metrics.py --track skill_invoked`
+
+#### Phase B: Documentation + display names
+
+5. **CLAUDE.md**: Replace all "IDW QA" → "SCOUT ULTRA", update script table, update skill table
+6. **PLANNING.md**: Replace all "IDW QA" → "SCOUT ULTRA", update paths
+7. **Skill SKILL.md files**: Replace "IDW QA" in descriptions and user-facing messages (qa-concierge greeting, admin panel title, etc.)
+8. **Migration SQL comments**: Replace "IDW QA" → "SCOUT ULTRA" (cosmetic only)
+9. **Rename root documents**: `IDW-QA-system.mmd` → `SCOUT-ULTRA-system.mmd`, etc.
+
+#### Phase C: Vercel app + URLs (requires Vercel dashboard)
+
+10. **Rename Vercel project**: `idw-review-app` → `scout-ultra` in Vercel dashboard
+11. **Update domain**: `scout-ultra.vercel.app` (Vercel auto-assigns)
+12. **Update all URL references** in scripts and skills: `idw-review-app.vercel.app` → `scout-ultra.vercel.app`
+13. **Rename local directory**: `/Users/bespined/Desktop/idw-review-app/` → `/Users/bespined/Desktop/scout-ultra/`
+
+#### Phase D: Repository + directory rename (last — highest impact)
+
+14. **Rename GitHub repo**: `IDW-QA` → `scout-ultra` (GitHub Settings → rename)
+15. **Rename local directory**: `/Users/bespined/claude-plugins/IDW-QA/` → `/Users/bespined/claude-plugins/scout-ultra/`
+16. **Update all absolute paths** in skills that reference `/Users/bespined/claude-plugins/IDW-QA/`
+17. **Update `.claude/` project references** (Claude Code project settings reference the directory path)
+18. **Re-clone or `git remote set-url`** for all testers using the plugin
+
+### Impact per file category
+
+| Category | File count | Effort | Risk |
+|---|---|---|---|
+| Scripts (imports) | ~25 | Medium — bulk find/replace + backward compat shims | Low — internal only |
+| Skills (SKILL.md) | 21 | Medium — metric lines + scattered references | Low — prompt text |
+| Documentation (CLAUDE.md, PLANNING.md) | 3 | Low — find/replace | None |
+| Root documents (.mmd, .md) | 5 | Low — git mv | None |
+| Migration SQL | 8 | Low — comment-only changes | None |
+| Environment variable | ~40 refs | Medium — backward compat needed | Medium — breaks auth if not careful |
+| Vercel app | Separate repo | Medium — dashboard rename + local directory | Medium — URL changes break links |
+| GitHub repo + directory | 1 | Low — but cascading path updates | High — breaks all absolute paths |
+
+### Order of operations
+
+```
+Phase A (internal) → commit + push → have testers run /update-scout
+Phase B (docs) → commit + push
+Phase C (Vercel) → rename in dashboard → update URLs → commit + push
+Phase D (repo/dir) → rename repo → update all absolute paths → commit + push → notify all testers to re-clone
+```
+
+### Backward compatibility period
+
+- `IDW_TESTER_ID` accepted for 30 days after rename (scripts check both)
+- `idw_logger.py` / `idw_metrics.py` shim files kept for 30 days
+- `/update-idw` command keeps working for 30 days (redirects to `/update-scout`)
+- After 30 days: remove all backward compat shims
+
+---
+
+## 18. Unresolved Questions (renumbered from 17)
 
 ### Q1: IDA Canvas token access (BLOCKS: who triggers recurring audits)
 - **Options**: A (no token, QA runs audits) vs B (IDA has token + Claude Code)
@@ -1298,7 +1419,7 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 
 ---
 
-## 18. Reference Files
+## 19. Reference Files (renumbered from 18)
 
 ### Plugin structure
 ```
