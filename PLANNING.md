@@ -1158,6 +1158,49 @@ IDs will run multiple self-audits during a course build for iterative improvemen
 **Why this matters for pilot:**
 - 40-50 courses × 3-5 rounds each = 150-250 sessions
 - Without grouping, the dashboard is unusable
+
+### Progress Check vs. Submit for Review (CLARIFIED 2026-04-02)
+
+**Problem:** Currently every audit pushes findings to Supabase + Vercel. IDs running iterative self-audits to fix their course flood Supabase with intermediate findings that:
+- IDAs waste time reviewing (Round 1 findings the ID already fixed by Round 3)
+- Pollute RLHF data (verdicts on stale findings train the system on outdated course state)
+- Clutter the Vercel dashboard with sessions that were never meant for review
+
+**Solution:** The audit skill must ask **before pushing to Supabase**:
+
+```
+Your audit is complete. What would you like to do?
+
+  [Progress check]  — Save the report locally. I'm still fixing this course.
+  [Submit for review] — Push findings to the review app for QA team/IDA review.
+```
+
+**Behavior by choice:**
+
+| | Progress Check | Submit for Review |
+|---|---|---|
+| HTML report generated | ✅ Yes (local file) | ✅ Yes (local file) |
+| `audit_results.json` saved | ✅ Yes | ✅ Yes |
+| Supabase `audit_sessions` row | ❌ No | ✅ Yes |
+| Supabase `audit_findings` rows | ❌ No | ✅ Yes |
+| Vercel review app link | ❌ No | ✅ Yes |
+| IDA can review/verdict | ❌ No | ✅ Yes |
+| RLHF data collected | ❌ No | ✅ Yes |
+| Airtable sync available | ❌ No | ✅ Yes (after IDA review) |
+| Score delta shown | ✅ Yes (from local prior `audit_results.json`) | ✅ Yes |
+
+**Implementation:**
+1. `audit/SKILL.md` — add AskUserQuestion after audit completes, before calling `audit_report.py`
+2. `audit_report.py` — add `--local-only` flag that generates HTML/XLSX but skips `push_to_rlhf()`
+3. For progress checks: `python3 scripts/audit_report.py --input audit_results.json --open --local-only`
+4. For submissions: `python3 scripts/audit_report.py --input audit_results.json --open` (existing behavior)
+5. Score delta: compare current `audit_results.json` against prior saved results (store as `audit_results_round_N.json`)
+
+**RLHF impact:** Only submitted audits enter the feedback loop. This means:
+- Fewer but higher-quality findings for IDAs to review
+- Verdicts reflect the course's final state, not intermediate states
+- Agreement rates are more meaningful (comparing AI vs human on the same content)
+- No need to retroactively clean stale findings from Supabase
 - With grouping, each course shows as ONE card with progress history
 
 *Vercel admin view:*
