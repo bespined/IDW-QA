@@ -483,6 +483,8 @@ def evaluate_all(cd, filter_standard=None):
                 "B-04.7", "B-06.1", "B-13.1", "B-13.2", "B-13.3", "B-13.4",
                 "B-13.5", "B-13.6", "B-13.7", "B-13.8", "B-17.1", "B-17.2",
                 "B-22.9", "B-22.11", "B-24.1",
+                # Cross-reference / reading comprehension / quality judgment
+                "B-04.14", "B-06.2", "B-09.1", "B-09.6", "B-13.10", "B-13.14", "B-22.5",
             }
 
             if cid_str.startswith("B-"):
