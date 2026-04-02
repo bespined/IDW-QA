@@ -442,7 +442,7 @@ def evaluate_b_criterion(cid_str, text, cd):
 
     # ── Standard 24 ──
     if cid_str.startswith("B-24."):
-        return ("Not Met", f'No mobile access specifications in {num_pages} pages')
+        return ("N/A", "Manual review required — verify if mobile/offline access statements exist. Collecting ID feedback during pilot to define criteria.")
 
     # ── Standard 25 ──
     if cid_str.startswith("B-25."):
@@ -482,7 +482,7 @@ def evaluate_all(cd, filter_standard=None):
             LOW_CONFIDENCE = {
                 "B-04.7", "B-06.1", "B-13.1", "B-13.2", "B-13.3", "B-13.4",
                 "B-13.5", "B-13.6", "B-13.7", "B-13.8", "B-17.1", "B-17.2",
-                "B-22.9", "B-22.11",
+                "B-22.9", "B-22.11", "B-24.1",
             }
 
             if cid_str.startswith("B-"):
