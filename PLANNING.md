@@ -1283,9 +1283,19 @@ All skills now reference their enforcement scripts:
 - Fixed f-string syntax error (backslashes in JS regex broke Python 3.9 compilation — script was non-functional)
 - Fixed `Path | None` type hint (requires `from __future__ import annotations` for Python 3.9)
 
+*4. ✅ DONE — Remediation event batch fetch:* Fixed (dead code cleanup, Supabase .in() query works correctly)
+
+*5. ✅ DONE — Error message polish:* Sync errors show HTTP status + response. "Report error" mailto link with session context. Confidence filter added (All / Low / High).
+
+*6. ✅ DONE — Optional report generation:* Audit skill asks "Generate report?" after audit. Yes = HTML + Supabase. No = results in conversation only.
+
+*7. ✅ DONE — Confidence filter:* Session page filter for IDs/Admins: All / Low (verify) / High. Low-confidence findings flagged with red badge.
+
+*8. Smart remediation:* Deferred — ID maintains full control via manual /bulk-edit. Element-level auto-fix risky for judgment calls (alt text, content quality).
+
 **Remaining code items:**
 
-*4. CRITICAL — Session grouping in Vercel app:*
+*9. CRITICAL — Session grouping in Vercel app:*
 Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 self-audits per course = 150-250 sessions. Must group by `course_id` + `audit_purpose`:
 1. Vercel sessions home: group by course, latest round expanded, prior rounds collapsed
 2. Score trend visualization (41 → 65 → 78)
