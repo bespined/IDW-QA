@@ -165,19 +165,25 @@ Detailed findings below...
 
 #### Quick Check (Col B only — no AI evaluation)
 
-One command. No Claude evaluation needed at all:
-
+Step 1: Run the evaluator:
 ```bash
 python3 scripts/criterion_evaluator.py --quick-check > audit_results.json
-python3 scripts/audit_report.py --input audit_results.json --open
 ```
 
-That's it. The evaluator fetches course data, evaluates all 124 B-criteria deterministically, builds the complete audit JSON, and `audit_report.py` generates the HTML report + pushes to Supabase. **Claude's only job is to run these two commands and display the results.**
+Step 2: Show the summary (Met/Partial/Not Met counts + overall score) in conversation.
 
-After the report generates, show the user:
-1. The summary (Met/Partial/Not Met counts + overall score)
-2. The link to the HTML report
-3. The Supabase session ID
+Step 3: Ask the user using `AskUserQuestion`:
+> Generate HTML report and push to Supabase?
+> 1. **Yes — Generate report** (creates shareable HTML + pushes session to review app)
+> 2. **No — Just show results** (for iterative checks during course dev, no session created)
+
+If Yes:
+```bash
+python3 scripts/audit_report.py --input audit_results.json --open
+```
+Show the link to the HTML report and Supabase session ID.
+
+If No: just display the results in conversation. No report generated, no Supabase push. The user can run `/audit` again later and generate the report when ready.
 4. Offer: "Want me to open the report?" or "Ready to review findings?"
 
 #### Deep Audit (Col B deterministic + Col C AI evaluation)
@@ -196,10 +202,17 @@ This produces the complete JSON with B-criteria evaluated and C-criteria marked 
    - Update the criterion's `status` and `evidence` fields in the JSON
    - Set `needs_ai_review` to `false`
 3. **Save the updated JSON** to `audit_results.json`
-4. **Generate the report:**
+4. **Show the summary** (Met/Partial/Not Met counts + overall score) in conversation.
+5. **Ask the user** using `AskUserQuestion`:
+   > Generate HTML report and push to Supabase?
+   > 1. **Yes — Generate report** (creates shareable HTML + pushes session to review app)
+   > 2. **No — Just show results** (for iterative checks during course dev)
+
+   If Yes:
    ```bash
    python3 scripts/audit_report.py --input audit_results.json --open
    ```
+   If No: display results only. No report, no Supabase push.
 
 **IMPORTANT: Do NOT rebuild the JSON from scratch. Read the evaluator's output, update only the C-criteria, and pass through.** The B-criteria results, QA categories, accessibility findings, and readiness checks are all produced by the Python engine with guaranteed field names.
 
