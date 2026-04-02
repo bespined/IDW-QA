@@ -1197,74 +1197,56 @@ IDs will run multiple self-audits during a course build for iterative improvemen
 - Deterministic evaluator — criterion_evaluator.py produces complete audit JSON, guaranteed consistency
 - Split scores — Readiness / Design / A11y shown separately in HTML report + Vercel session header
 
+**Completed (Apr 2 code review — items previously listed as remaining):**
+- ✅ IDA self-sync to Airtable — Vercel sync button is role-aware: IDA can sync after "complete" or "qa_approved", locked after sync, admin retains backup ability
+- ✅ Change request flow — migration 008 run, Vercel API (GET/POST/PATCH), UI on FindingCard + admin queue on home page
+- ✅ Admin sync visibility — sync badges on sessions home page
+- ✅ Remediation tracker script — `remediation_tracker.py` fully functional (validates, records, clears)
+- ✅ 6 remediation skills reference `remediation_tracker.py` — quiz, assignment-generator, discussion-generator, rubric-creator, interactive-content, bulk-edit
+- ✅ 6 enforcement scripts built + tested — push_to_canvas, post_write_verify, audit_session_manager, remediation_tracker, admin_actions, assignment_status
+- ✅ Admin actions audit trail — `admin_actions.py` logs to `logs/admin_audit.jsonl`
+- ✅ Error messages — role_gate.py, canvas_api.py (401 handling), push_to_canvas.py all have clear, actionable messages
+- ✅ Session completion logic — clarified and documented
+- ✅ Vercel login + Airtable sync — tested end-to-end
+
 **Completed (cont.):**
 - IDA feedback isolation — IDA sees own action buttons, ID decision shown as context
 - Airtable views — manually created (ID/IDA, ID Assistant, Admin Summary)
 - Vercel deployment — main domain working
 
-**Still remaining — Phase 5 completion:**
+**Still remaining — Phase 5 completion (updated 2026-04-02):**
 
-*ID Assistant self-sync to Airtable:*
-- ID Asst can sync after marking complete (both recurring AND new course dev sessions)
-- Admin retains sync ability as backup for backlogs/forgotten syncs
-- Confirmation modal: "Sync findings to Airtable? Any further edits after sync must be escalated to Admin"
-- After sync: session locked for that ID Asst (moved to archived/completed queue, view-only)
-- Admin can still make changes + re-sync (Airtable row overwrites, Supabase keeps full decision history)
-- Sync button placement: same location as admin sync (near Report download in session header)
-- Button unlocks only after "Mark Complete"
+*1. CRITICAL — Airtable sync uses AI verdict, ignores IDA corrections:*
+`airtable_sync.py` `build_airtable_row()` fetches `feedback_map` but never applies it. Line 255 always uses `ai_verdict`, line 201 always uses `ai_reasoning`. IDA corrections never reach Airtable.
+Fix: check `feedback_map[finding_id]` — if `decision = 'incorrect'`, use `corrected_finding` as verdict and `correction_note` as notes. This is the core RLHF output.
 
-*Request Change flow (post-sync):*
-- IDA clicks "Request Change" on a synced/locked finding
-- Creates a change request with reason text
-- Admin sees "Change Requests" queue on home page
-- Admin can view request + make the change directly from the queue (without navigating into the session)
-- After fixing, admin re-syncs to Airtable
+*2. CRITICAL — Enforcement script wiring (3 skills still need updates):*
+Of the 6 enforcement scripts, most are now referenced by skills. Still remaining:
+- `staging/SKILL.md` — still uses `canvas_api.update_page()` on line 185, must use `push_to_canvas.py`
+- `audit/SKILL.md` — unclear if it calls `audit_session_manager.py --create` for session creation (needs verification + explicit wiring)
+- `admin/SKILL.md` — unclear if it calls `admin_actions.py` for tester management (needs verification + explicit wiring)
+- `assignments/SKILL.md` — unclear if it calls `assignment_status.py` for status changes (needs verification + explicit wiring)
+Already done: bulk-edit, quiz, discussion-generator, assignment-generator, rubric-creator, interactive-content all reference `remediation_tracker.py` ✅
 
-*Admin sync visibility:*
-- Sessions home page shows sync status badge:
-  - 🟡 Not synced (qa_approved but airtable_synced_at is null)
-  - ✅ Synced (has airtable_synced_at)
-  - — No badge (not yet approved)
+*3. CRITICAL — Session grouping in Vercel app:*
+Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 self-audits per course = 150-250 sessions. Must group by `course_id` + `audit_purpose`:
+1. Vercel sessions home: group by course, latest round expanded, prior rounds collapsed
+2. Score trend visualization (41 → 65 → 78)
+3. "Submit for QA Review" only on latest round
+4. Prior rounds view-only
+5. Audit skill: show score delta vs. prior round after completion
 
-*Remediation event recording — wiring fixes:*
-Infrastructure exists (table, API, tracker script, push_to_canvas integration). Missing:
-1. Fix Review App batch fetch — session page only fetches first finding's events, not all. CRITICAL.
-2. Standardize skills — quiz, assignment-generator, discussion-generator, rubric-creator, interactive-content need to call `remediation_tracker.py --record` after fixing.
-3. bulk-edit uses inline HTTP POST instead of centralized script — standardize.
-4. audit_report.py clears remediation_requested flag but doesn't record an event — add event recording.
+*4. HIGH — Remediation event batch fetch in Vercel:*
+Session detail page only fetches first finding's events, not all. QA team can't see full remediation history.
 
-*Airtable sync uses AI verdict, ignores IDA corrections (CRITICAL BUG):*
-`airtable_sync.py` line 255 uses `f.get("ai_verdict")` and line 201 uses `f.get("ai_reasoning")` — always the AI's original call. The `feedback_map` (IDA verdicts stored in `finding_feedback`) is fetched but never applied. This means:
-- IDA marks AI finding as "Incorrect" with corrected verdict → Airtable still shows AI's wrong answer
-- IDA adds correction note explaining why AI was wrong → note never appears in Airtable
-Fix: `build_airtable_row()` must check `feedback_map` for each finding — if feedback exists with `decision = 'incorrect'`, use `corrected_finding` as the verdict and `correction_note` as the notes instead of `ai_verdict`/`ai_reasoning`. This is the whole point of the RLHF loop.
+*5. HIGH — audit_report.py clears flags but doesn't record events:*
+`audit_report.py` sets `remediation_requested: False` but doesn't insert into `remediation_events` table. Fix: call `remediation_tracker.py` or equivalent.
 
-*Enforcement script wiring (pre-pilot):*
-The 6 enforcement scripts (push_to_canvas, post_write_verify, audit_session_manager, remediation_tracker, admin_actions, assignment_status) are built and tested but NOT yet called by the skills that need them. Skills still reference inline API calls. Must update:
-1. `staging/SKILL.md` — replace `canvas_api.update_page()` with `push_to_canvas.py --type page`
-2. All 6 remediation skills — add `remediation_tracker.py --record` call after each fix push
-3. All content skills — add `post_write_verify.py` call after every Canvas write
-4. `audit/SKILL.md` — wire `audit_session_manager.py --create` for session creation
-5. `admin/SKILL.md` — wire `admin_actions.py` for tester registration/deactivation
-6. `assignments/SKILL.md` — wire `assignment_status.py` for status transitions
-Without this wiring, the scripts exist but aren't enforced — Claude will still use inline code.
-
-*Session grouping in Vercel app (pre-pilot):*
-IDs will run multiple self-audits during course builds. Without grouping, the dashboard becomes a flat wall of 150-250 sessions. Must implement before pilot:
-1. Vercel sessions home page: group sessions by `course_id` + `audit_purpose` instead of flat list
-2. Within each group: show latest round expanded, prior rounds collapsed with score + date
-3. Score trend visualization: mini-chart or inline numbers showing improvement (41 → 65 → 78)
-4. "Submit for QA Review" button only appears on the latest round
-5. Prior rounds are view-only (historical context)
-6. Audit skill: after completing, show score delta vs. prior round ("Score improved from 65 to 78, 8 fewer findings")
-See Section 17 "Iterative self-audits during course build" for full design.
-
-*Error message UX (pre-pilot):*
-- All user-facing error messages should be clear and actionable
-- Include: what happened, what the user can do, and what to report to admin
-- Replace generic "network error" with specific messages including HTTP status codes
-- Add a "Report this error" link that pre-fills `/report-error` with context
-- Sync errors should explain whether the data was partially written or not
+*6. MEDIUM — Error message polish:*
+Core error messages are done (role_gate, canvas_api 401 handling, push_to_canvas). Remaining:
+- Vercel app — some generic error toasts may need specific messages
+- Sync errors — should explain if data was partially written
+- Add "Report this error" link that pre-fills `/report-error` with context
 
 *Session completion logic (CLARIFIED):*
 - "Mark Complete" = "I've reviewed every finding." That's the only requirement.
