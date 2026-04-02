@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import annotations
 """Audit Report Generator — produce a polished, shareable HTML report from audit results.
 
 Generates a comprehensive HTML report covering:
@@ -1319,6 +1320,9 @@ def generate_report(data: dict) -> str:
     # ── Score ring color ──
     score_color = '#1e7e34' if overall_score >= 80 else '#b5540a' if overall_score >= 60 else '#c62828'
 
+    # JS regex for extracting tier from onclick — must be outside f-string due to backslash restriction
+    _js_tier_regex = r"toggleTier\(this,\s*'[^']+',\s*'([^']+)'\)"
+
     return f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1739,7 +1743,7 @@ def generate_report(data: dict) -> str:
         <button class="filter-btn" onclick="filterFindings(this, 'standards', 'met')">Met ({ds_summary.get('Met', 0)})</button>
         <button class="filter-btn" onclick="filterFindings(this, 'standards', 'partially-met')">Partially Met ({ds_summary.get('Partially Met', 0)})</button>
         <button class="filter-btn" onclick="filterFindings(this, 'standards', 'not-met')">Not Met ({ds_summary.get('Not Met', 0)})</button>
-        {f'<button class="filter-btn" onclick="filterFindings(this, \'standards\', \'not-auditable\')">Not Auditable ({ds_summary.get("Not Auditable", 0)})</button>' if ds_summary.get('Not Auditable', 0) > 0 else ''}
+        {"" if not ds_summary.get("Not Auditable", 0) else f'<button class="filter-btn" onclick="filterFindings(this, &apos;standards&apos;, &apos;not-auditable&apos;)">Not Auditable ({ds_summary.get("Not Auditable", 0)})</button>'}
       </div>
       <div class="filter-bar" style="margin-top:4px">
         <span style="font-size:11px;color:#888;margin-right:8px">Category:</span>
@@ -1873,7 +1877,7 @@ def generate_report(data: dict) -> str:
       tierBtns.forEach(b => {{
         if (b.classList.contains('active')) {{
           // Extract tier from onclick attribute
-          const match = b.getAttribute('onclick').match(/toggleTier\\(this,\\s*'[^']+',\\s*'([^']+)'\\)/);
+          const match = b.getAttribute('onclick').match(/{_js_tier_regex}/);
           if (match) activeTiers.add(match[1]);
         }}
       }});
@@ -2699,6 +2703,7 @@ def main():
     parser.add_argument('--xlsx', action='store_true', help='Generate XLSX report in QA Initiate format')
     parser.add_argument('--xlsx-output', type=str, help='Custom XLSX output path')
     parser.add_argument('--faculty', action='store_true', help='Generate plain-text faculty summary instead of HTML/XLSX report')
+    parser.add_argument('--local-only', action='store_true', help='Generate report locally without pushing findings to Supabase (for progress checks)')
     args = parser.parse_args()
 
     if not args.demo:
@@ -2780,11 +2785,14 @@ def main():
             pass
 
         # Push RLHF findings for XLSX-only mode
-        try:
-            rlhf_sid = push_to_rlhf(data, xlsx_path=str(archive_path))
-            result["rlhf_session_id"] = rlhf_sid
-        except Exception:
-            pass
+        if getattr(args, 'local_only', False):
+            _log.info("--local-only: skipping Supabase push for XLSX (progress check)")
+        else:
+            try:
+                rlhf_sid = push_to_rlhf(data, xlsx_path=str(archive_path))
+                result["rlhf_session_id"] = rlhf_sid
+            except Exception:
+                pass
 
         print(json.dumps(result))
 
@@ -2835,11 +2843,15 @@ def main():
             pass  # Never block on score sync
 
         # 5. Push structured findings to RLHF Supabase (non-blocking)
+        #    Skip if --local-only (progress check, not a formal submission)
         rlhf_session_id = None
-        try:
-            rlhf_session_id = push_to_rlhf(data, html_path=str(archive_path))
-        except Exception:
-            pass  # Never block on RLHF push
+        if getattr(args, 'local_only', False):
+            _log.info("--local-only: skipping Supabase push (progress check)")
+        else:
+            try:
+                rlhf_session_id = push_to_rlhf(data, html_path=str(archive_path))
+            except Exception:
+                pass  # Never block on RLHF push
 
         result = {
             "ok": True,
@@ -2847,6 +2859,7 @@ def main():
             "archive_path": str(archive_path),
             "remote_url": remote_url,
             "rlhf_session_id": rlhf_session_id,
+            "local_only": getattr(args, 'local_only', False),
         }
         print(json.dumps(result))
 

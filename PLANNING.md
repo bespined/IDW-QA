@@ -1282,8 +1282,11 @@ Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 s
 *4. HIGH — Remediation event batch fetch in Vercel:*
 Session detail page only fetches first finding's events, not all. QA team can't see full remediation history.
 
-*5. ✅ NOT A BUG — audit_report.py:*
-Reviewed: `audit_report.py` sets `remediation_requested: False` as a default on NEW finding rows during audit push — not clearing flags on existing findings. This is correct behavior.
+*5. ✅ DONE — audit_report.py --local-only flag + syntax fix:*
+- Added `--local-only` flag: generates HTML/XLSX report without pushing to Supabase (for progress checks)
+- Fixed f-string syntax error (backslashes in JS regex broke Python 3.9 compilation — script was non-functional)
+- Fixed `Path | None` type hint (requires `from __future__ import annotations` for Python 3.9)
+- `remediation_requested: False` on new rows is correct default behavior (not a bug)
 
 *6. MEDIUM — Error message polish:*
 Core error messages are done (role_gate, canvas_api 401 handling, push_to_canvas). Remaining:
