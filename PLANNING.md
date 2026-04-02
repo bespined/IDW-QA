@@ -1210,12 +1210,20 @@ Infrastructure exists (table, API, tracker script, push_to_canvas integration). 
 - Add a "Report this error" link that pre-fills `/report-error` with context
 - Sync errors should explain whether the data was partially written or not
 
-*Session status after admin override (deferred — discuss pre-pilot):*
-- When admin changes a verdict (from change request), should the session auto-reopen?
-- Recurring: session stays complete, admin re-syncs to Airtable with updated data
-- New course dev: if admin changes to Incorrect, session should revert to revisions_required → ID remediates
-- For pilot: admin handles manually (has Undo/Reopen buttons). Auto-reopening deferred to post-pilot.
-- Key rule: session is only "complete" when all verdicts are Correct/Agree/N/A. Any Incorrect/Disagree should block completion.
+*Session completion logic (CLARIFIED):*
+- "Mark Complete" = "I've reviewed every finding." That's the only requirement.
+- Any mix of Correct/Incorrect/Agree/Disagree/N/A is valid — all are review outcomes.
+- Incorrect means "AI was wrong" — no fix needed, not a blocker.
+- Disagree means "ID's fix didn't work" (post-remediation only) — triggers revisions_required → back to ID.
+- After Mark Complete, routing depends on whether any Disagrees exist:
+  - No Disagrees → ready to sync to Airtable
+  - Has Disagrees (new course dev) → session status: revisions_required → ID re-remediates → ID Asst re-validates
+  - Has Disagrees (recurring) → sync anyway, findings logged as-is (no remediation in recurring)
+
+*Session status after admin override (manual for pilot):*
+- Admin changes verdict from change request → admin re-syncs to Airtable
+- Recurring: stays complete, admin re-syncs
+- New course dev: admin manually reopens if needed (has Undo/Reopen buttons)
 
 ---
 
