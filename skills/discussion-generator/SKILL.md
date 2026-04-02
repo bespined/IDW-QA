@@ -233,6 +233,30 @@ The skill produces:
 | Canvas API 401/403 | "Authentication issue — check your Canvas token and course permissions." | Guide re-auth |
 | Read-only mode | "Read-only mode is active. The discussion is staged locally but can't be pushed until writes are enabled." | Guide .env change |
 
-## Preview
+## Post-Push Verification (Required)
 
-After pushing the discussion to Canvas, offer: "Want me to preview this on Canvas? I can screenshot how it looks in the browser." If the user accepts, run the `/canvas-preview` workflow using the discussion URL returned by the Canvas API.
+After pushing the discussion to Canvas, always:
+
+1. **Fetch and confirm** the created discussion via `GET /api/v1/courses/:id/discussion_topics/:id` and display:
+   - Title, points, rubric attached (yes/no), published status, post-before-seeing-replies setting
+2. **Provide the direct Canvas link**: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/discussion_topics/{id}`
+3. **Offer a screenshot**: "Want me to screenshot how this looks in Canvas?" If yes, navigate to the Canvas URL and capture it.
+
+
+## Remediation Event Recording
+
+When this skill fixes an issue that was flagged from an audit finding, record the remediation event so the FindingCard shows the fix history. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill discussion-generator --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /<skill> (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to create something new), skip this step.
+

@@ -18,26 +18,15 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 One skill for all multi-page content modifications: apply content from a source document across pages, copy a page template across modules with variable substitution, or bulk-fix accessibility and branding issues.
 
-## Reviewer Tier Awareness
+## Remediation Event Recording
 
-When bulk-edit fixes issues from audit findings, tag each remediation with the correct `criterion_id` (B-XX.Y or C-XX.Y format). After pushing a fix, record a `remediation_events` row:
+When bulk-edit fixes issues from audit findings, record the event after pushing. Use the centralized script:
 
 ```bash
-python3 -c "
-import requests, os, json
-from dotenv import load_dotenv
-from pathlib import Path
-load_dotenv(Path('.env'))
-load_dotenv(Path('.env.local'))
-# Record remediation event via API
-resp = requests.post('https://YOUR_VERCEL_URL/api/remediation-events',
-    json={'finding_id': '<FINDING_ID>', 'remediated_by': os.getenv('IDW_TESTER_ID'), 'skill_used': 'bulk-edit', 'description': '<WHAT_WAS_FIXED>'},
-    timeout=15)
-print(resp.json())
-"
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill bulk-edit --description "<WHAT_WAS_FIXED>"
 ```
 
-This creates a trail visible on the FindingCard: "Remediated via /bulk-edit (Name, Date)".
+This records the event in Supabase, clears `remediation_requested`, and the FindingCard shows "Remediated via /bulk-edit (Name, Date)".
 
 ## When to Use
 
@@ -476,12 +465,21 @@ Remove leftover content from a previously imported template that doesn't belong 
 
 ### Staging Integration
 
-All bulk edits flow through the staging workflow:
+**All bulk edits that touch page HTML body MUST flow through staging — no exceptions:**
 1. Generate modified HTML
 2. Stage to `staging/{slug}.html`
-3. Preview (local server or screenshots)
+3. Preview (local server or screenshots) — show the user before pushing
 4. Iterate on changes
-5. Push with backup when approved
+5. Push with backup only after explicit user approval
+
+### Post-Push Verification (Required)
+
+After any bulk push completes, always:
+
+1. **Report Canvas links** for every modified page:
+   - `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/pages/{slug}`
+2. **Offer screenshots** of a sample of changed pages (up to 3): "Want me to screenshot a few of the updated pages to confirm they look right?"
+3. **For Mode 4 deletions** (Template Cleanup): confirm deleted items are no longer in the course tree by re-fetching the module list.
 
 ### Safety
 

@@ -252,6 +252,15 @@ The `assignment_id` is returned in the quiz object as `assignment_id`.
 - Practice quizzes use `quiz_type: "practice_quiz"` — they do NOT create an assignment object and do NOT appear in the gradebook
 - Graded quizzes use `quiz_type: "assignment"` — they create a linked assignment and appear in the gradebook
 
+## Post-Push Verification (Required)
+
+After creating or editing a quiz, always:
+
+1. **Fetch and confirm** via `GET /api/v1/courses/:id/quizzes/:id` and display:
+   - Title, question count, points_possible, attempts, time limit, published status
+2. **Provide the direct Canvas link**: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/quizzes/{id}`
+3. **Offer a screenshot**: "Want me to screenshot how this looks in Canvas?" If yes, navigate to the Canvas URL and capture it.
+
 ## Error Handling
 
 | Error | Resolution |
@@ -261,3 +270,22 @@ The `assignment_id` is returned in the quiz object as `assignment_id`.
 | Invalid answer format | Validate before API call |
 | Quiz is published | Warn changes are live |
 | Quiz shows 0 pts after push | Run the points_possible sync PUT (Step 5) |
+
+
+## Remediation Event Recording
+
+When this skill fixes an issue that was flagged from an audit finding, record the remediation event so the FindingCard shows the fix history. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill quiz --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /<skill> (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to create something new), skip this step.
+

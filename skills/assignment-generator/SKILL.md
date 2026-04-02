@@ -35,22 +35,69 @@ Generate a ~20 minute "Create an Artifact" assignment for each module. These are
 
 ## Pre-Generation Prompt — Assignment Configuration
 
-Before generating any assignment, **always confirm these parameters with the user**:
+Before generating any assignment, **always walk through these questions with the user** using `AskUserQuestion`. Ask them in order — each answer shapes the next question.
 
-> **1. Assignment type** — "Which type fits this module?"
+### Question 1: Assignment Format
+
+> "What type of assignment is this?"
+
+| Label | Description |
+|---|---|
+| **Video assignment** | Students record and submit a video (presentation, demonstration, reflection) |
+| **Written assignment** | Students write and submit a document (analysis, report, problem set) |
+| **Discussion** | Students post and respond to peers in a threaded discussion → *Route to `skills/discussion-generator/SKILL.md` instead — discussions are a separate skill with their own prompt types and peer interaction model.* |
+
+If the user picks **Discussion**, hand off to the discussion-generator skill seamlessly. Do not generate a discussion as an assignment.
+
+### Question 2: Bloom's Complexity Level
+
+> "What cognitive complexity level should this assignment target?"
+
+| Label | Description |
+|---|---|
+| **Remember (Level 1)** | Recall facts, dates, definitions. *Rarely appropriate for graded assignments — suggest a higher level.* |
+| **Understand (Level 2)** | Explain concepts, summarize, compare at a basic level. |
+| **Apply (Level 3)** | Use knowledge in new situations — solve problems, demonstrate, implement. |
+| **Analyze (Level 4)** | Break down information, find patterns, explain relationships and causes. |
+| **Evaluate (Level 5)** | Judge, assess, critique, defend a position with evidence. |
+| **Create (Level 6)** | Design, build, propose something new by synthesizing knowledge. |
+
+**Default recommendation**: Level 3 (Apply) for early modules, Level 4-5 for mid/late modules. Always suggest a level based on where the module sits in the course, but let the user override.
+
+The selected Bloom's level directly shapes the assignment instructions:
+- **Level 1-2**: Structured prompts, recall-focused tasks (flag as potentially too low for graded work)
+- **Level 3**: Application scenarios — "use X to solve Y," demonstrations, implementations
+- **Level 4**: Analysis tasks — "break down," "compare," "explain why," cause-effect chains
+- **Level 5**: Evaluation tasks — "assess," "critique," "defend," evidence-based arguments
+- **Level 6**: Creation tasks — "design," "propose," "build," original artifacts
+
+### Question 3: Assignment Subtype
+
+**For Video assignments:**
+
+| Label | Description |
+|---|---|
+| **Presentation** | Student presents analysis or findings (with slides or visuals) |
+| **Demonstration** | Student demonstrates a skill, process, or technique |
+| **Reflection** | Student reflects on learning, connects to experience |
+| **Explainer** | Student explains a concept as if teaching it to someone else |
+
+**For Written assignments:**
+
+| Label | Description |
+|---|---|
+| **Case Analysis** | Analyze a real-world scenario using module concepts |
+| **Concept Map** | Visualize relationships between interconnected concepts |
+| **Calculation Problem Set** | Apply formulas/quantitative reasoning to real problems |
+| **Comparison/Contrast** | Structured analysis of parallel systems or approaches |
+
+### Question 4: Points, Word Count, Rubric
+
+> **Points** — "30 points is our default. Does this fit your grading scheme?"
 >
-> | Type | Best For | Example |
-> |---|---|---|
-> | **Case Analysis** | Professional/clinical connections — analyze a real-world scenario | "Analyze this forensic case using signal detection theory" |
-> | **Concept Map** | Complex interconnected concepts — visualize relationships | "Map the relationships between cognitive bias types" |
-> | **Calculation Problem Set** | Quantitative modules — apply formulas to real problems | "Calculate reliability metrics for this forensic lab" |
-> | **Comparison/Contrast** | Parallel systems or approaches — structured analysis | "Compare adversarial vs. inquisitorial expert testimony models" |
+> **Word count / Video length** — "400-600 words (or 3-5 min video) is standard. Need more or less?"
 >
-> **2. Points** — "30 points is our default. Does this fit your grading scheme?"
->
-> **3. Word count** — "400-600 words is standard. Need more or less for this module?"
->
-> **4. Rubric structure** — "3 criteria × 10 pts each (default), or different?"
+> **Rubric structure** — "3 criteria × 10 pts each (default), or different?"
 >
 > | Points | Typical Rubric | Use Case |
 > |---|---|---|
@@ -58,9 +105,57 @@ Before generating any assignment, **always confirm these parameters with the use
 > | 50 pts | 4 criteria (15/15/10/10) | Heavier module or midpoint assignment |
 > | 100 pts | 5 criteria (25/25/20/15/15) | Final project or capstone |
 >
-> **5. Submission type** — "Text entry, file upload, or both?" (default: both)
+> **Submission type** — "Text entry, file upload, media recording, or combination?" (default: file upload for video, text + upload for written)
+
+### Question 5: Page Design
+
+> "Should the assignment description use the ASU page design system (styled HTML with callout boxes, colored sections), or plain HTML?"
+
+| Label | Description |
+|---|---|
+| **Plain HTML** | Clean, unstyled HTML — standard for assignment descriptions that go into the Canvas assignment body. **(Default)** |
+| **Styled (Page Design System)** | Uses the ASU page design system from `standards/page-design.md` — appropriate when the assignment has its own Canvas wiki page |
+
+**Default is plain HTML.** Only use the page design system when the user explicitly requests styled output or the assignment lives on a standalone Canvas page (not an assignment description field).
 
 If the user specifies "assignments for all modules," ask these once for the batch and apply consistently, noting any per-module overrides.
+
+---
+
+## Instruction Quality Requirements
+
+**Every generated assignment MUST include all of the following sections.** Thin or vague instructions are not acceptable — the goal is for a student to read the instructions and know exactly what success looks like.
+
+### Required Sections in Assignment Instructions
+
+1. **Context / Hook** (1-2 paragraphs)
+   - Set the scene: why does this topic matter in the real world or in their discipline?
+   - Connect to current events, professional scenarios, or personal relevance
+   - Engage the student — don't just state the task cold
+
+2. **Task Description** (1-2 paragraphs)
+   - Clearly state what the student must do, using verbs matched to the Bloom's level
+   - Be explicit about scope: what to include and what NOT to include
+   - Reference specific module concepts, readings, or videos they should draw from
+
+3. **Deliverable Checklist** ("Your Submission Should Include:")
+   - Bulleted list of every required component
+   - Word counts, video lengths, format requirements
+   - Required references, diagrams, or supporting evidence
+   - For video: presentation quality expectations (lighting, audio, slides if applicable)
+
+4. **Peer Interaction Expectations** (if applicable — especially for video assignments)
+   - How many peer responses are required
+   - What constitutes a substantive response (not just "great job")
+   - Specific prompts for peer feedback (e.g., "identify one strength and one area for deeper analysis")
+
+5. **Success Criteria** ("How You'll Be Evaluated:")
+   - Brief summary of rubric criteria in plain language
+   - What distinguishes excellent from adequate work
+   - Common pitfalls to avoid
+
+6. **Closing Motivation** (1-2 sentences)
+   - Tie back to why this matters — professional growth, skill building, or real-world application
 
 ---
 
@@ -324,6 +419,30 @@ The skill produces:
 | Canvas API 401/403 | "Authentication issue — check your Canvas token and course permissions." | Guide re-auth |
 | Read-only mode | "Read-only mode is active. The assignment is staged locally but can't be pushed until writes are enabled." | Guide .env change |
 
-## Preview
+## Post-Push Verification (Required)
 
-After pushing the assignment to Canvas, offer: "Want me to preview this on Canvas? I can screenshot how it looks in the browser." If the user accepts, run the `/canvas-preview` workflow using the assignment URL returned by the Canvas API.
+After pushing the assignment to Canvas, always:
+
+1. **Fetch and confirm** the created assignment via `GET /api/v1/courses/:id/assignments/:id` and display:
+   - Assignment name, points, submission types, rubric attached (yes/no)
+2. **Provide the direct Canvas link**: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
+3. **Offer a screenshot**: "Want me to screenshot how this looks in Canvas?" If yes, navigate to the Canvas URL and capture it.
+
+
+## Remediation Event Recording
+
+When this skill fixes an issue that was flagged from an audit finding, record the remediation event so the FindingCard shows the fix history. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill assignment-generator --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /<skill> (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to create something new), skip this step.
+

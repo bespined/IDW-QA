@@ -186,9 +186,39 @@ Before generating a rubric, verify it aligns with the assessment it serves and t
 4. **Check complementarity with other module rubrics**: If the module has both an Artifact rubric and a Discussion rubric, ensure criteria don't overlap heavily — each should evaluate different dimensions of learning
 5. **Document alignment** in the output: include a criterion-to-objective mapping table
 
+## Post-Push Verification (Required)
+
+After pushing a rubric to Canvas, always:
+
+1. **Fetch and confirm** via `GET /api/v1/courses/:id/rubrics/:id` and display:
+   - Rubric title, criterion count, total points, assessment it's attached to
+2. **Provide the direct Canvas link** to the associated assignment or discussion:
+   - Assignment: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
+   - Discussion: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/discussion_topics/{id}`
+3. **Offer a screenshot**: "Want me to screenshot the rubric as it appears in Canvas?" If yes, navigate and capture it.
+
 ## Output
 The skill produces:
 1. Complete analytic rubric formatted for Canvas
 2. Criterion-to-objective alignment map (using blueprint objective IDs)
 3. Point distribution rationale
 4. Canvas setup instructions (how to attach rubric to assignment)
+
+
+## Remediation Event Recording
+
+When this skill fixes an issue that was flagged from an audit finding, record the remediation event so the FindingCard shows the fix history. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill rubric-creator --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /<skill> (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to create something new), skip this step.
+

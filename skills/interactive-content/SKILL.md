@@ -349,6 +349,29 @@ When invoked, the skill produces:
 | Read-only mode | "Read-only mode is active. The interactive is staged locally but can't be pushed until writes are enabled." | Guide .env change |
 | deploy_interactives.py error | "The interactive deployment script hit an issue. Your HTML is saved locally. Let me try a different injection approach." | Use fallback chain |
 
-## Preview
+## Post-Push Verification (Required)
 
-After deploying the interactive to Canvas, offer: "Want me to preview this on Canvas? I can screenshot how it looks in the browser." If the user accepts, run the `/canvas-preview` workflow using the page URL where the interactive was embedded.
+After deploying an interactive activity to Canvas, always:
+
+1. **Fetch and confirm** the page it was embedded in via `GET /api/v1/courses/:id/pages/:slug` and verify the iframe is present in the body HTML.
+2. **Provide the direct Canvas link**: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/pages/{slug}`
+3. **Take a screenshot**: Navigate to the page in Canvas and capture a screenshot to confirm the interactive renders correctly — do not skip this step. Show it to the user as proof the embed worked.
+
+
+## Remediation Event Recording
+
+When this skill fixes an issue that was flagged from an audit finding, record the remediation event so the FindingCard shows the fix history. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill interactive-content --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /<skill> (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to create something new), skip this step.
+
