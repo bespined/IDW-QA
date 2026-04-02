@@ -1270,6 +1270,22 @@ See Section 17 "Iterative self-audits during course build" for full design.
   - Has Disagrees (new course dev) → session status: revisions_required → ID re-remediates → ID Asst re-validates
   - Has Disagrees (recurring) → sync anyway, findings logged as-is (no remediation in recurring)
 
+*Col B criteria needing human verification (evaluator gives default answer):*
+The Python evaluator handles these deterministically but with low confidence. Human reviewer should verify:
+- **B-04.7** Template personalization/customization — evaluator says "Met" but can't verify actual customization
+- **B-06.1** Workload details — evaluator checks syllabus length but can't verify workload is described
+- **B-13.1-13.8** Content quality (typos, formatting, completeness, design best practices) — evaluator says "Met" by default, can't read for typos
+- **B-17.1** Moderation policy — evaluator checks discussion exists but can't verify policy content
+- **B-17.2** Response turnaround time — evaluator searches for keywords but may miss
+- **B-22.9** Ally score — requires Ally dashboard (manual entry field)
+- **B-22.11** Readability score — requires readability tool (manual entry field)
+
+These should be flagged with `confidence: low` in the evaluator output so the FindingCard shows a visual indicator ("⚠ Verify" badge) prompting the reviewer to double-check.
+
+*Standard exclusions:*
+- **Standard 23** (Tool Accessibility): Excluded from audits. All external tools must pass ASU accessibility standards before approval. Always Met by policy.
+- **Standards 05, 14**: Design audits only (Col C, ID reviews). Not ID Assistant scope.
+
 *Session status after admin override (manual for pilot):*
 - Admin changes verdict from change request → admin re-syncs to Airtable
 - Recurring: stays complete, admin re-syncs
