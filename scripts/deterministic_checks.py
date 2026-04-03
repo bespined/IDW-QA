@@ -1,6 +1,11 @@
 #!/usr/bin/env python3
-"""Deterministic check engine for IDW audit.
+"""DEPRECATED — Superseded by criterion_evaluator.py for all audit operations.
 
+This module is kept for backward compatibility and reference. Do not call
+directly for new audits. Use criterion_evaluator.py --quick-check or --full-audit
+instead, which produces complete audit JSON with guaranteed field names.
+
+Original purpose: Deterministic check engine for IDW audit.
 Consumes alignment graph data + Canvas API data (page HTML, assignments, etc.).
 Returns per-criterion results for criteria with check_type="deterministic".
 Dispatched by criterion_id from standards.yaml.

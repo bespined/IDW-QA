@@ -50,12 +50,12 @@ def check_env():
         return False, ".env has placeholder token — update CANVAS_TOKEN"
     token = ""
     domain = ""
+    active = ""  # Must be outside loop — was resetting on every line iteration
     for line in content.splitlines():
         if line.startswith("CANVAS_TOKEN="):
             token = line.split("=", 1)[1].strip()
         if line.startswith("CANVAS_DOMAIN="):
             domain = line.split("=", 1)[1].strip()
-        active = ""
         if line.startswith("CANVAS_ACTIVE_INSTANCE="):
             active = line.split("=", 1)[1].strip()
     if not token:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Centralized logging for ID Workbench.
+"""Centralized logging for IDW QA (SCOUT ULTRA).
 
 Provides persistent file logging + console output for all scripts.
 Log files are stored in ~/.idw/logs/ with daily rotation.
