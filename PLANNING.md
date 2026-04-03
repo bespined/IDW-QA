@@ -1293,7 +1293,7 @@ All skills now reference their enforcement scripts:
 
 *8. Smart remediation:* Deferred — ID maintains full control via manual /bulk-edit. Element-level auto-fix risky for judgment calls (alt text, content quality).
 
-**Remaining code items:**
+**Remaining code items (1 item):**
 
 *9. CRITICAL — Session grouping in Vercel app:*
 Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 self-audits per course = 150-250 sessions. Must group by `course_id` + `audit_purpose`:
@@ -1302,15 +1302,6 @@ Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 s
 3. "Submit for QA Review" only on latest round
 4. Prior rounds view-only
 5. Audit skill: show score delta vs. prior round after completion
-
-*5. HIGH — Remediation event batch fetch in Vercel:*
-Session detail page only fetches first finding's events, not all. QA team can't see full remediation history.
-
-*6. MEDIUM — Error message polish:*
-Core error messages are done (role_gate, canvas_api 401 handling, push_to_canvas). Remaining:
-- Vercel app — some generic error toasts may need specific messages
-- Sync errors — should explain if data was partially written
-- Add "Report this error" link that pre-fills `/report-error` with context
 
 *Session completion logic (CLARIFIED):*
 - "Mark Complete" = "I've reviewed every finding." That's the only requirement.
@@ -1439,19 +1430,18 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 
 Three sub-phases: code → prep → go-live. Each phase must complete before the next starts.
 
-#### Phase 5.5a — Remaining Code (Claude + Brent, ~6 hours)
+#### Phase 5.5a — Remaining Code (Claude + Brent, ~4 hours)
 
-| # | Task | Owner | Effort | Dependency |
+| # | Task | Owner | Effort | Status |
 |---|---|---|---|---|
-| 1 | Session grouping in Vercel (group by course, collapse rounds, score trend) | Claude + Brent | 3-4 hrs | None |
-| 2 | Remediation event batch fetch (session page loads all events, not first only) | Claude + Brent | 1 hr | None |
-| 3 | Error message polish (Vercel toasts, sync errors, "Report this error" link) | Claude + Brent | 1-2 hrs | None |
-| 4 | ✅ DONE — Progress check prompt in audit skill (AskUserQuestion before push to Supabase) | Claude | 30 min | `--local-only` flag + skill prompt updated |
-| 5 | Test rollback end-to-end on sandbox (stage → push → rollback → verify original restored) | Brent | 30 min | None |
+| 1 | Session grouping in Vercel (group by course, collapse rounds, score trend) | Claude + Brent | 3-4 hrs | **REMAINING — only code item left** |
+| 2 | ✅ Remediation event batch fetch | — | — | Done |
+| 3 | ✅ Error message polish (sync errors, report link, confidence filter) | — | — | Done |
+| 4 | ✅ Progress check prompt in audit skill (`--local-only`) | — | — | Done |
+| 5 | Test rollback end-to-end on sandbox | Brent | 30 min | **REMAINING — manual test** |
+| 6 | ✅ HTML report score layout (compact, matches Vercel app) | — | — | Done |
 
-Items 1-3 can run in parallel. Item 4 is a quick skill prompt update. Item 5 is manual testing.
-
-**Exit criteria:** All Vercel changes deployed. Rollback verified. `audit_report.py --local-only` tested with a real audit.
+**Exit criteria:** Session grouping deployed. Rollback verified.
 
 #### Phase 5.5b — User Provisioning & Credentials (Brent, ~3 hours)
 
