@@ -1386,43 +1386,12 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 
 ### Pre-launch operational checklist (non-code)
 
-**User provisioning (before day 1):**
-- [ ] Compile full list of pilot users: name, email, role (id / id_assistant / admin)
-- [ ] Batch-register all testers in Supabase `testers` table via `/admin` → `admin_actions.py --register`
-- [ ] Register same users in Supabase Auth (email+password) for Vercel review app login
-- [ ] Confirm all IDs can generate Canvas personal access tokens (admin permission required)
-- [ ] Confirm all pilot users have Claude Code access (Anthropic license/org)
-- [ ] Pre-assign IDAs to courses via `/assign` so they see assignments on day 1
+**Moved to standalone document:** `~/Desktop/SCOUT-ULTRA-Pilot-Ops-Checklist.md`
+Covers user provisioning, credential distribution, communication, rollback testing, post-launch rhythm, known limitations, and success criteria. Brent owns all operational items.
 
-**Credential distribution:**
-- [ ] Prepare `.env` template with `CANVAS_TOKEN`, `CANVAS_DOMAIN`, `CANVAS_COURSE_ID` placeholders
-- [ ] Prepare `.env.local` with shared Supabase credentials (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY`)
-- [ ] Decide distribution method: Slack DM, shared secure doc, or 1-on-1 setup session
-- [ ] Each user gets their unique `SCOUT_TESTER_ID` (or `IDW_TESTER_ID` until rename)
-
-**Communication:**
-- [ ] Pilot kickoff message: what the system does, how to install, what to expect
-- [ ] Quick-start guide: "Your first 10 minutes" (setup → first audit → review findings)
-- [ ] Feedback channel: dedicated Slack channel or thread for bug reports + questions
-- [ ] Escalation path: who to contact when something breaks (you? QA lead?)
-- [ ] Tell users about `/report-error` for in-tool bug reporting
-
-**Operational rhythm:**
-- [ ] Weekly: review RLHF agreement rates via `/admin` → RLHF Stats
-- [ ] Weekly: check error queue via `/admin` → Error Queue
-- [ ] Bi-weekly: update enrichment cards for standards with <70% agreement
-- [ ] Ad-hoc: re-assign courses as IDAs complete their queues
-
-**Rollback readiness:**
-- [ ] Test `/staging rollback` on sandbox — confirm backup restore works end-to-end
-- [ ] Document rollback steps for IDs: "If you pushed something wrong, run `/staging` → Rollback"
-- [ ] Confirm backups directory is NOT in `.gitignore` (or if it is, that backups persist locally)
-
-**Vercel app readiness:**
-- [ ] Verify review app is deployed and accessible at production URL
-- [x] Verify login works for all registered users (Supabase Auth + testers table match) ✅ TESTED
-- [ ] Verify RLS policies: IDA sees only assigned sessions, ID sees own sessions, admin sees all
-- [x] Test "Mark Complete" → sync → Airtable row appears correctly ✅ TESTED
+**Previously tested:**
+- [x] Verify login works for all registered users (Supabase Auth + testers table match) ✅
+- [x] Test "Mark Complete" → sync → Airtable row appears correctly ✅
 
 ---
 
