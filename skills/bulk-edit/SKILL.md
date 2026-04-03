@@ -368,8 +368,8 @@ Link color:        #8C1D40
    Total                 12 pages         47 issues
    ```
 4. **Confirm scope**: "Fix all 47 issues across 12 pages? Or would you like to exclude any fix types?"
-5. **Generate fixes**: Modify HTML programmatically for each fix type
-6. **Stage all fixes** to `staging/` for preview
+5. **Prepare fixes**: Generate corrected HTML for each fix type and stage to `staging/` (nothing touches Canvas yet)
+6. **Preview staged fixes** via unified preview
 7. **Preview**: Show before/after diffs for a sample page per fix type
 8. **Push**: When approved, push all via staging workflow (backup + diff + push)
 

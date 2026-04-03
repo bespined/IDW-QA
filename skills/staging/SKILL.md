@@ -35,7 +35,7 @@ This includes:
 
 **Never push page HTML to Canvas in a single step** — even when the fix is trivial, obvious, or the user requested the change. Always stage → unified preview → wait → push.
 
-**Always use the unified preview for multi-page staging.** When 2+ pages are staged, generate the unified preview so the user can scroll through all pages in one view with the TOC sidebar, approval checkboxes, and text editor. For a single page, individual page preview at `http://localhost:8111/{slug}.html` is acceptable.
+**Use the unified preview for all staging.** Run `python3 scripts/unified_preview.py`, then open `http://localhost:8111/_unified_preview.html` so the user can scroll through all pages with the TOC sidebar. For a single page only, individual preview at `http://localhost:8111/{slug}.html` is acceptable as a shortcut. Unified preview is always preferred.
 
 ---
 

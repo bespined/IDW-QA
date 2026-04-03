@@ -1368,10 +1368,10 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 ✅ DONE — Terminology:
 - **assign, assignments**: "IDA" → "ID Assistant" throughout
 
-Remaining — low priority (post-pilot):
-- **bulk-edit**: Reword "Generate fixes" to "Prepare fixes"
-- **rubric-creator**: Clarify standalone mode optional inputs
-- **staging**: Align unified preview wording with CLAUDE.md
+✅ DONE — Low priority:
+- **bulk-edit**: "Generate fixes" → "Prepare fixes" (clarifies nothing touches Canvas)
+- **rubric-creator**: Standalone mode clarified — course-config.json not required, all inputs asked interactively
+- **staging**: Unified preview wording aligned with CLAUDE.md — "always preferred"
 
 *Session status after admin override (manual for pilot):*
 - Admin changes verdict from change request → admin re-syncs to Airtable

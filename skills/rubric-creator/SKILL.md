@@ -38,7 +38,7 @@ Use `/rubric-creator` directly to generate a rubric for any assessment — even 
 5. **Discipline context?** — The academic field (for terminology and rubric language)
 6. **What does success look like?** — Brief description of exemplary work (helps calibrate the Exemplary level)
 
-Standalone mode skips the intra-module alignment check (since there may be no `course-config.json`). All other rubric design principles apply fully.
+Standalone mode does NOT require `course-config.json`. It asks for all inputs interactively and skips the intra-module alignment check. Module number and objectives are optional — if unavailable, the rubric is built from the assessment description alone. All other rubric design principles apply fully.
 
 ## Required Inputs
 
