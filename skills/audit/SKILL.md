@@ -124,7 +124,7 @@ Every finding MUST be tagged with `reviewer_tier` from `standards.yaml`:
 ### Quick Check (Mode 1)
 
 Runs **Pass 1 (deterministic) + light AI verification**. Two steps:
-1. All deterministic checks run via `deterministic_checks.py`
+1. All deterministic checks run via `criterion_evaluator.py --quick-check` (supersedes legacy `deterministic_checks.py`)
 2. One AI verification call: Claude receives a summary of all deterministic results + raw content from flagged pages (syllabus body, module overviews, CLO text). The AI checks for obvious false positives and false negatives — pages that exist but are empty, CLOs that technically use measurable verbs but are meaningless, template placeholders that weren't caught by regex. The AI does NOT evaluate instructional quality — that's what Deep Audit does.
 
 All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for recurring courses reviewed by student workers (`id_assistant` role).

@@ -136,7 +136,10 @@ This gives users a review loop before anything touches Canvas. Skills support `-
 | Admin tester management | `python3 scripts/admin_actions.py` | Inline Supabase PATCH + no audit trail |
 | Assignment status transitions | `python3 scripts/assignment_status.py` | Inline Supabase PATCH + no ownership check |
 
-**The only exception** is quick metadata edits (rename, due date, points) that don't touch HTML body content — those can use the Canvas API directly via `canvas_api.py` functions.
+**Exceptions:**
+- Quick metadata edits (rename, due date, points) that don't touch HTML body content — use `canvas_api.py` directly.
+- Interactive content uploads — use `deploy_interactives.py` (uploads HTML files to Canvas Files + patches page with iframe embed, different flow than page body edits).
+- Quiz/rubric/discussion settings — these modify Canvas object properties, not page HTML. Use the Canvas API directly.
 
 ## Post-Push Verification (Required)
 
@@ -227,6 +230,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `audit_pages.py` | Audit all pages for accessibility issues |
 | `alignment_graph.py` | CLO→MLO→Material→Assessment alignment analysis |
 | `preflight_checks.py` | Lightweight content-type validation |
+| `preflight.py` | Pre-flight checklist — verifies env, credentials, and dependencies are ready |
 | `diff_engine.py` | Unified diff and summary between two HTML strings |
 | `backup_manager.py` | Save/list/restore page backups with SHA256 checksums |
 | `staging_manager.py` | Stage pages locally in Canvas-like shell for preview |
@@ -244,7 +248,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, reviewer, criterion, trends |
 | `airtable_sync.py` | Sync approved findings to Airtable SCOUT ULTRA format (one row per course, 25 standards) |
 | `criterion_evaluator.py` | Deterministic criterion evaluator — evaluates all B-criteria, produces complete audit JSON. `--quick-check` for Col B only, `--full-audit` for B+C with AI flags |
-| `deterministic_checks.py` | Legacy deterministic checks (superseded by criterion_evaluator.py for full audits) |
+| `deterministic_checks.py` | Legacy deterministic checks (superseded by `criterion_evaluator.py` — do not call directly) |
 | `build_checkpoint.py` | Save/restore audit progress checkpoints for long-running audits |
 | `metrics_sync.py` | Sync usage metrics to Supabase for admin dashboard |
 | `staging_server.py` | Local HTTP server for staging page previews (port 8111) |
