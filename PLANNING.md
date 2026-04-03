@@ -1514,32 +1514,63 @@ Start with `criterion_evaluator.py` (extract keyword matching to config-driven l
 
 **Full plan:** See `codex-frontend-cleanup-plan.md` in repo root.
 
-**Non-negotiable pilot blockers (Phases 1-3):**
+**Non-negotiable pilot blockers — ALL FIXED:**
 
-1. **Server route authorization** — All 6 API routes use `SUPABASE_SERVICE_KEY` without verifying the caller. Anyone who can reach the Vercel URL can `curl` any route and mutate data. Every route must authenticate the caller server-side and enforce role policy before any DB write.
-   - Files: all routes in `src/app/api/`
-   - New files needed: `src/lib/server-auth.ts`, `src/lib/server-supabase.ts`
-   - Suggested helpers: `requireUser()`, `requireRole([...])`, `requireAdmin()`
+1. **Server route authorization** — ~~All 6 API routes use `SUPABASE_SERVICE_KEY` without verifying the caller.~~ **FIXED.** All 11 API routes now authenticate callers server-side via shared `route-auth.ts` helpers. Role-based access enforced per route. Actor fields (`requested_by`, `resolved_by`, `remediated_by`, `submitted_by`) derived from auth, never trusted from browser payloads.
 
-2. **session-complete behavior mismatch** — Route claims Col C findings are auto-approved but never actually inserts feedback rows. Database state and UI disagree. Either persist the approvals (Option A) or change the response to match reality (Option B).
+2. **session-complete behavior mismatch** — ~~Route claims Col C findings are auto-approved but never actually inserts feedback rows.~~ **FIXED** (previous session). Route now inserts `finding_feedback` rows for Col C auto-approvals. Auto-approval insert errors now surface as 500 instead of silent success.
 
-3. **Privileged admin mutations** — Admin page writes directly to Supabase via anon client. Should go through authenticated server routes, or RLS policies must be explicitly verified and documented.
+3. **Privileged admin mutations** — ~~Admin page writes directly to Supabase via anon client.~~ **FIXED.** All 7 admin mutations moved behind authenticated server routes. Admin page uses `fetch()` to `/api/admin/*` routes. Success/error banners added. See `ADMIN_RLS_STATUS.md`.
 
-**Recommended execution order:**
-1. Phase 0: Baseline lint/typecheck output
-2. Phase 1: Build shared server auth helpers (`server-auth.ts`)
-3. Phase 2: Lock down all service-key routes with auth + role checks
-4. Phase 3: Fix session-complete persistence
-5. Phase 4: Move admin mutations behind server routes (or document RLS)
-6. Phase 5: Clean lint errors
-7. Phase 8: Manual pilot QA checklist
+4. **Browser-to-server auth transport** — ~~Browser client stored auth in localStorage; server route handlers read cookies. They never saw each other's session.~~ **FIXED.** Browser client swapped from `createClient` (`@supabase/supabase-js`) to `createBrowserClient` (`@supabase/ssr`) so auth tokens go to cookies. Server `createServerClient` in `route-auth.ts` reads the same cookies.
+
+**Route auth matrix (all routes):**
+
+| Route | Method | Required Role | Key Hardening |
+|---|---|---|---|
+| `/api/admin/testers` | POST | admin | |
+| `/api/admin/testers/[id]` | PATCH, DELETE | admin | Self-deletion blocked |
+| `/api/admin/assignments` | POST | admin | `assigned_by` from auth |
+| `/api/admin/assignments/[id]` | DELETE | admin | |
+| `/api/admin/errors/[id]` | PATCH | admin | `resolved_by` from auth |
+| `/api/session-assign` | GET, POST | admin | Validates target is active IDA |
+| `/api/change-requests` | GET | admin (global), any auth (with session_id) | Non-admin scoped |
+| `/api/change-requests` | POST | admin or id_assistant | `requested_by` from auth |
+| `/api/change-requests` | PATCH | admin | `resolved_by` from auth |
+| `/api/sync-airtable` | POST | any auth | IDA: must be assigned + session complete |
+| `/api/findings/remediation` | PATCH | id or admin | Not IDA |
+| `/api/remediation-events` | GET | any auth | |
+| `/api/remediation-events` | POST | id or admin | `remediated_by` from auth |
+| `/api/session-complete` | POST | id only | `submitted_by` from auth |
+
+**Execution status — ALL COMPLETE:**
+1. ~~Phase 0: Baseline lint/typecheck output~~ — DONE
+2. ~~Phase 1: Build shared server auth helpers~~ — DONE (`route-auth.ts`, `supabase-admin.ts`)
+3. ~~Phase 2: Lock down all 6 service-key routes~~ — DONE (auth + role checks + payload hardening)
+4. ~~Phase 3: Fix session-complete persistence~~ — DONE (previous session)
+5. ~~Phase 4: Move admin mutations behind server routes~~ — DONE (5 routes, 7 handlers)
+6. ~~Phase 5: Clean lint errors~~ — DONE (0 errors, 2 warnings — both harmless unused vars)
+7. ~~Phase 4b: Fix browser auth transport~~ — DONE (`createBrowserClient` swap)
+8. Phase 4c: Client caller cleanup — DONE (removed `resolved_by`, `requested_by` from payloads)
+9. Phase 8: Manual pilot QA checklist — **REMAINING (runtime verification)**
+
+**Runtime verification needed (post-deploy):**
+- Sign in → hit protected route → confirm 200 for correct role
+- Sign out → same route → confirm 401
+- Sign in as wrong role → confirm 403
+- Verify admin page actions actually persist (add tester, assign course, resolve error)
+- Verify Airtable sync works for IDA on assigned session, blocked for unassigned
 
 **Deferred to post-pilot:**
-- Phase 6: Decision vocabulary cleanup (normalizeDecision already handles legacy values)
-- Phase 7: Automated regression harness (manual QA checklist sufficient for pilot)
-- Phase 9: Component refactors (FindingCard split, session page split)
+- Decision vocabulary cleanup (normalizeDecision already handles legacy values)
+- Automated regression harness (manual QA checklist sufficient for pilot)
+- Component refactors (FindingCard split, session page split)
+- Remove unused `reviewerId` prop threading (FindingCard → StandardGroup → session page)
 
-**Access note:** If the Vercel app is only accessible to the QA team (not publicly reachable), the auth gap is low risk for pilot. If publicly reachable, Phases 1-2 are blocking.
+**Plans created by Codex (OpenAI):**
+- `codex-frontend-cleanup-plan.md` — 9-phase frontend pilot readiness (most phases complete)
+- `codex-admin-rls-fix-plan.md` — Admin page RLS fix (complete)
+- `codex-service-route-auth-plan.md` — Service route auth lockdown (complete, with adjustments noted in review)
 
 ---
 

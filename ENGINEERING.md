@@ -211,16 +211,39 @@ audit_sessions  N ──→ 1  testers (assigned_to)
 
 ## 3. Vercel API Routes
 
-All routes use `getSupabase()` (lazy init) with `SUPABASE_SERVICE_KEY`.
+### Auth Layer
 
-| Route | Method | Auth | Purpose |
+All routes authenticate callers server-side via shared helpers in `src/lib/server/`:
+
+- **`route-auth.ts`** — SSR cookie auth using `@supabase/ssr` `createServerClient`. Reads auth from request cookies (set by `createBrowserClient` in `src/lib/supabase.ts`). Looks up the tester record by email from the `testers` table.
+  - `getAuthUser(req)` → returns `ServerAuthUser | null`
+  - `requireSignedInUser(req)` → returns auth or 401
+  - `requireRole(req, roles[])` → returns auth or 401/403
+  - `requireAdminUser(req)` → shorthand for `requireRole(req, ["admin"])`
+  - `isAuthError(result)` → type guard for NextResponse
+
+- **`supabase-admin.ts`** — `getServiceSupabase()` returns a service-role client for DB writes. Server-only, never exposed to client.
+
+Actor fields (`requested_by`, `resolved_by`, `remediated_by`, `submitted_by`, `assigned_by`) are derived from the authenticated tester server-side. Browser payloads for these fields are ignored.
+
+### Route Reference
+
+| Route | Method | Required Role | Purpose |
 |---|---|---|---|
-| `/api/findings/remediation` | PATCH | Service key | Toggle `remediation_requested` on a finding |
-| `/api/remediation-events` | GET, POST | Service key | Fetch or record remediation events |
-| `/api/session-complete` | POST | Service key | Mark session complete, auto-approve Col C |
-| `/api/session-assign` | GET, POST | Service key | List ID Assistants (GET) or assign to session (POST) |
-| `/api/sync-airtable` | POST | Service key + Airtable token | Sync session findings to Airtable |
-| `/api/change-requests` | GET, POST, PATCH | Service key | CRUD for post-sync change requests |
+| `/api/admin/testers` | POST | admin | Create tester |
+| `/api/admin/testers/[id]` | PATCH, DELETE | admin | Update/delete tester |
+| `/api/admin/assignments` | POST | admin | Create course assignments |
+| `/api/admin/assignments/[id]` | DELETE | admin | Remove assignment |
+| `/api/admin/errors/[id]` | PATCH | admin | Resolve error report |
+| `/api/session-assign` | GET, POST | admin | List IDAs / assign to session |
+| `/api/change-requests` | GET | admin (global) or any auth (with session_id) | List change requests |
+| `/api/change-requests` | POST | admin or id_assistant | Create change request |
+| `/api/change-requests` | PATCH | admin | Resolve change request |
+| `/api/sync-airtable` | POST | any auth (IDA: assigned + complete) | Sync findings to Airtable |
+| `/api/findings/remediation` | PATCH | id or admin | Toggle `remediation_requested` |
+| `/api/remediation-events` | GET | any auth | Fetch remediation events |
+| `/api/remediation-events` | POST | id or admin | Record remediation event |
+| `/api/session-complete` | POST | id only | Mark session complete, auto-approve Col C |
 
 ### Sync-Airtable Route Details
 - Uses **hardcoded** rating + notes field name maps (no schema discovery)

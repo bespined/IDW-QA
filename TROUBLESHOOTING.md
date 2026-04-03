@@ -39,7 +39,7 @@ Common issues and how to fix them. For engineering details, see `ENGINEERING.md`
 ### RLS Blocking Writes
 **Symptom:** Supabase returns 200 but empty array (silent failure).
 **Cause:** Row Level Security policy blocks the operation for the current auth level.
-**Fix:** The anon key has limited permissions. Most writes go through API routes using the service key. Check `migrations/005_allow_anon_remediation_toggle.sql` for RLS policies. If a new table needs anon access, add a policy.
+**Fix:** All mutations should go through server-side API routes (which use the service key). The anon key is only used for reads. If a client-side write is silently failing, move it to a server route. See `ADMIN_RLS_STATUS.md` in the review app repo for the full fix history.
 
 ### Connection Timeout
 **Symptom:** "fetch failed" or timeout errors when talking to Supabase.
@@ -157,3 +157,18 @@ Required Vercel env vars:
 **Symptom:** ID Assistant logs into Vercel but the session list is empty.
 **Cause:** No sessions have `assigned_to` = their tester ID, or the session status is `in_progress` (not yet submitted for review).
 **Fix:** Admin must assign the ID Assistant to the session. Session must be in `pending_qa_review` or later status.
+
+### Review App API Returns 401
+**Symptom:** Admin page actions fail, or Airtable sync returns 401.
+**Cause:** Browser auth cookies not reaching the server. Likely the browser Supabase client isn't using `@supabase/ssr`'s `createBrowserClient`.
+**Fix:** Verify `src/lib/supabase.ts` uses `createBrowserClient` from `@supabase/ssr` (not `createClient` from `@supabase/supabase-js`). The former stores auth in cookies; the latter uses localStorage which server routes can't read.
+
+### Review App API Returns 403
+**Symptom:** User is signed in but gets "Forbidden" on an API call.
+**Cause:** The user's role doesn't match the route's `requireRole()` check, or their `testers` record has `is_active = false`.
+**Fix:** Check the route auth matrix in `ENGINEERING.md` section 3 for required roles. Verify the user's email matches an active row in the `testers` table with the correct role.
+
+### Admin Page Actions Silently Fail (Legacy)
+**Symptom:** Admin adds a tester or assigns a course but it doesn't persist after page refresh.
+**Cause:** (Pre-v1.1) The admin page wrote directly to Supabase via the anon key, which RLS blocked silently.
+**Status:** Fixed in v1.1. All admin mutations now go through `/api/admin/*` routes using the service key with server-side auth. If you still see this, you're running an old version.

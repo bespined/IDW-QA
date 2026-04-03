@@ -287,15 +287,21 @@ All migrations are in `<plugin_root>/migrations/`. Run in order in the Supabase 
 
 ## Review App API Routes
 
-The Vercel review app (`idw-review-app`) has server-side API routes using the Supabase service key:
+The Vercel review app (`idw-review-app`) has server-side API routes. All routes authenticate callers via SSR cookie auth (`src/lib/server/route-auth.ts`) and use the service key for DB writes (`src/lib/server/supabase-admin.ts`). Actor fields are derived server-side from auth.
 
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/findings/remediation` | PATCH | Toggle `remediation_requested` on audit_findings (bypasses RLS) |
-| `/api/remediation-events` | GET, POST | Fetch or record remediation events for a finding |
-| `/api/session-complete` | POST | Mark session complete — Col C auto-approves, Col B → pending_qa_review |
-| `/api/sync-airtable` | POST | Trigger Airtable sync for a session (admin only) |
-| `/api/session-assign` | GET, POST | List available ID Assistants (GET) or assign one to a session (POST) |
+| Route | Method | Required Role | Purpose |
+|---|---|---|---|
+| `/api/admin/testers` | POST | admin | Create tester |
+| `/api/admin/testers/[id]` | PATCH, DELETE | admin | Update/delete tester |
+| `/api/admin/assignments` | POST | admin | Create course assignments |
+| `/api/admin/assignments/[id]` | DELETE | admin | Remove assignment |
+| `/api/admin/errors/[id]` | PATCH | admin | Resolve error report |
+| `/api/session-assign` | GET, POST | admin | List IDAs / assign to session |
+| `/api/change-requests` | GET, POST, PATCH | varies | GET: admin (global) or auth+session_id; POST: admin/IDA; PATCH: admin |
+| `/api/sync-airtable` | POST | any auth | Trigger Airtable sync (IDA: must be assigned + session complete) |
+| `/api/findings/remediation` | PATCH | id or admin | Toggle `remediation_requested` on a finding |
+| `/api/remediation-events` | GET, POST | GET: any auth; POST: id/admin | Fetch or record remediation events |
+| `/api/session-complete` | POST | id only | Mark session complete — Col C auto-approves, Col B → pending_qa_review |
 
 ## MCP Connectors
 
