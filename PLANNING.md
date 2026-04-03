@@ -752,8 +752,8 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Step 5 ✅ Session page — AuthGuard, IDA sees Col B only (reviewer_tier filter), Submit for QA Review button (ID), Approve/Request Revisions (QA), status badges, round indicator, revisions banner
 - Step 6 ✅ Home page — AuthGuard, sign out, user name+role in header, session status badges, audit purpose labels, round numbers
 - Step 7 ✅ Admin page — /admin route (admin-only AuthGuard), testers management (add/activate/deactivate), error queue (list/resolve), RLHF summary stats
-- Step 8: Notification badges — deferred to post-pilot-testing (needs real usage data to be meaningful)
-- Step 9: Dashboard IDA quality tracking — deferred to post-pilot-testing (existing dashboard already shows agreement rates)
+- Step 8: Notification badges — POST-LAUNCH (needs real usage data to be meaningful)
+- Step 9: Dashboard IDA quality tracking — POST-LAUNCH (existing dashboard already shows agreement rates)
 - Build verified: zero TypeScript errors, all routes registered (/, /login, /admin, /dashboard, /session/[id])
 - NOTE: Before testing login, user must: (1) Enable email+password in Supabase Auth dashboard (Authentication → Providers → Email), (2) Create user in Supabase Auth, (3) Create matching row in testers table with same email
 - Phase 3 IN PROGRESS — core MVP working, admin review UX remaining.
@@ -816,9 +816,11 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - ✅ IDA only sees recurring sessions (not ID self-audits)
 - ✅ Completed filter count includes IDA 'complete' status
 - ✅ Reopen button for IDA after marking complete
-- **Advanced filters (post-Phase 3)**: Jira/Asana-style dropdowns + checkboxes for tester, role, course, status. Save View button for persistent default views per user (localStorage or Supabase). Major UI feature.
-- Notification badges — deferred
-- Dashboard IDA quality tracking — deferred
+- **Advanced filters**: Jira/Asana-style dropdowns + checkboxes. Save View button. — POST-LAUNCH
+- Notification badges — POST-LAUNCH
+- Dashboard IDA quality tracking — POST-LAUNCH
+- Smart remediation — POST-LAUNCH (deferred, ID maintains control via manual /bulk-edit)
+- ASU SSO (SAML/OIDC) — POST-PILOT (not needed during pilot, linked to UUID)
 
 **Phase order discussion**:
 - Consider swapping Phase 4 (Airtable) and Phase 5 (RLHF/Admin skills) — Airtable sync may be less critical than getting the admin/IDA skills working in Claude Code. Discuss before proceeding.
@@ -1421,12 +1423,12 @@ Three sub-phases: code → prep → go-live. Each phase must complete before the
 | 2 | ✅ Remediation event batch fetch | — | — | Done |
 | 3 | ✅ Error message polish (sync errors, report link, confidence filter) | — | — | Done |
 | 4 | ✅ Progress check prompt in audit skill (`--local-only`) | — | — | Done |
-| 5 | Test rollback end-to-end on sandbox | Brent | 30 min | **REMAINING — manual test** |
+| 5 | Test rollback end-to-end on sandbox | Brent | 30 min | **PRE-LAUNCH — manual test** |
 | 6 | ✅ HTML report score layout (compact, matches Vercel app) | — | — | Done |
 
 **Exit criteria:** Session grouping deployed. Rollback verified.
 
-#### Phase 5.5b — User Provisioning & Credentials (Brent, ~3 hours)
+#### Phase 5.5b — User Provisioning & Credentials (PRE-LAUNCH — Brent, ~3 hours)
 
 | # | Task | Owner | Effort | Notes |
 |---|---|---|---|---|
@@ -1441,7 +1443,7 @@ Three sub-phases: code → prep → go-live. Each phase must complete before the
 
 **Exit criteria:** All users registered in both Supabase tables (testers + Auth). All users have credentials. All IDAs assigned to at least one course.
 
-#### Phase 5.5c — Communication & Go-Live (Brent + Claude, ~2 hours)
+#### Phase 5.5c — Communication & Go-Live (PRE-LAUNCH — Brent + Claude, ~2 hours)
 
 | # | Task | Owner | Effort | Notes |
 |---|---|---|---|---|
@@ -1479,16 +1481,16 @@ Week 2+:  Weekly rhythm, enrichment card updates, RLHF analysis
 
 ---
 
-### Phase 6 — Faculty Outreach, Analytics & Prioritization
+### Phase 6 — Faculty Outreach, Analytics & Prioritization (ALL POST-LAUNCH)
 
-| Task | Details | Priority |
-|---|---|---|
-| Faculty outreach email templates | Template-based drafts from Airtable findings. Admin reviews + sends. Use standard-level notes as the email body. Include course name, top issues, specific action items. | High — QA team needs this for recurring course workflow |
-| Draft generation in Claude Code | `/admin` or new `/outreach` skill generates email draft from a session's findings. Plain text, no jargon, grouped by priority (critical → important → enhancement). | High |
-| Post-launch analytics | DWF (Drop/Withdraw/Fail) rates, grade distributions, summative/formative assessment analysis. IDs use this data for course improvements. Requires external data source from ASU institutional systems. | Medium — not blocking pilot, data source TBD |
-| Course prioritization | Filter/sort courses by enrollment count, DWF rates to decide which courses to audit first. Airtable view + Claude Code `/admin` integration. Requires enrollment data. | Medium — depends on post-launch analytics data |
-| Automated outreach triggers | Airtable automations that draft emails when findings reach certain thresholds (e.g., >5 Not Met standards). Admin still reviews before sending. | Low — manual outreach works for pilot scale |
-| IDA audit vs ID Assistant audit comparison | Dashboard view comparing what the ID found vs what the ID Assistant found on the same course. Highlights discrepancies for training. | Medium — valuable for RLHF but not launch-blocking |
+| Task | Details | Priority | When |
+|---|---|---|---|
+| Faculty outreach email templates | Template-based drafts from Airtable findings. Admin reviews + sends. | High | Post-launch Week 2+ |
+| Draft generation in Claude Code | `/admin` or new `/outreach` skill generates email draft. Plain text, no jargon, grouped by priority. | High | Post-launch Week 2+ |
+| Post-launch analytics | DWF rates, grade distributions, assessment analysis. Requires ASU institutional data source. | Medium | Post-launch — needs data source |
+| Course prioritization | Filter/sort by enrollment, DWF rates. Requires enrollment data. | Medium | Post-launch — depends on analytics |
+| Automated outreach triggers | Airtable automations at thresholds. Needs stakeholder input on cadence. | Low | Post-launch — pending stakeholder input |
+| IDA vs ID Assistant comparison | Dashboard comparing ID and ID Assistant findings on same course. | Medium | Post-launch Week 4+ |
 
 **Dependencies:**
 - Post-launch analytics requires DWF/enrollment data from ASU systems (API or spreadsheet import)
@@ -1525,7 +1527,7 @@ Week 2+:  Weekly rhythm, enrichment card updates, RLHF analysis
 
 ---
 
-## 17. System Rename: IDW QA → SCOUT ULTRA
+## 17. System Rename: IDW QA → SCOUT ULTRA (POST-LAUNCH — after pilot stabilizes)
 
 ### Rationale
 
