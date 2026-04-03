@@ -37,7 +37,7 @@ Four components, three audiences:
 | Component | Who uses it | Purpose |
 |---|---|---|
 | **Claude Code** (IDW QA plugin) | IDs, QA team | Run audits, remediate courses, stage/push content |
-| **Vercel App** (idw-review-app) | IDs, IDAs, QA team, Admins | Review findings, verdict, track sessions, launch gate |
+| **Vercel App** (idw-review-app) | IDs, ID Assistants, QA team, Admins | Review findings, verdict, track sessions, launch gate |
 | **Supabase** | Backend (no direct user access) | Source of truth for all audit data, auth, RLHF |
 | **Airtable** | QA team, IDs (read-only) | Reporting/archive layer, synced from Supabase |
 
@@ -70,8 +70,8 @@ Supabase is ALWAYS the source of truth. Airtable is a downstream read-only sync.
 
 ### Key role rules
 - IDs can audit ANY course (use Canvas API to list their courses)
-- IDAs are ASSIGNED courses via `tester_course_assignments` table
-- IDAs are CS masters students, semester-long tenure, may not have ASU email on day one
+- ID Assistants are ASSIGNED courses via `tester_course_assignments` table
+- ID Assistants are CS masters students, semester-long tenure, may not have ASU email on day one
 - QA team = IDs who exclusively do QA work (not course building)
 - Admin = QA team members with admin flag in testers table
 
@@ -213,7 +213,7 @@ status             TEXT NOT NULL DEFAULT 'in_progress'
                    -- | 'revisions_required' | 'qa_approved'
 submitted_by       UUID REFERENCES testers(id)
                    -- who ran the audit
-assigned_to        UUID[] -- array of IDA UUIDs assigned to review
+assigned_to        UUID[] -- array of ID Assistant UUIDs assigned to review
 launch_gate_approved BOOLEAN DEFAULT false
 launch_gate_approved_by UUID REFERENCES testers(id)
 launch_gate_approved_at TIMESTAMPTZ
@@ -268,7 +268,7 @@ original_decision  TEXT
                    -- 'correct' | 'incorrect' | 'not_applicable'
                    -- NULL if not overridden
 overridden_by      UUID REFERENCES testers(id)
-                   -- if QA team ID overrides IDA verdict
+                   -- if QA team ID overrides ID Assistant verdict
 overridden_at      TIMESTAMPTZ
 override_reason    TEXT
 ```
@@ -302,12 +302,12 @@ CREATE TABLE tester_course_assignments (
   canvas_domain   TEXT,
   assigned_by     UUID REFERENCES testers(id),
   assigned_at     TIMESTAMPTZ DEFAULT now(),
-  completed_at    TIMESTAMPTZ,          -- when IDA finishes review
+  completed_at    TIMESTAMPTZ,          -- when ID Assistant finishes review
   status          TEXT DEFAULT 'assigned'
                   -- 'assigned' | 'in_progress' | 'completed'
 );
 
--- NOTE: IDAs only. IDs are not assigned — they can audit any course.
+-- NOTE: ID Assistants only. IDs are not assigned — they can audit any course.
 ```
 
 #### `error_reports`
@@ -332,7 +332,7 @@ CREATE TABLE error_reports (
 -- audit_sessions: authenticated users can SELECT/INSERT/UPDATE own sessions
 -- audit_findings: authenticated users can SELECT; INSERT only via service key (audit script)
 -- finding_feedback: authenticated users can INSERT own verdicts, SELECT all
--- tester_course_assignments: IDAs SELECT own rows; admins full CRUD
+-- tester_course_assignments: ID Assistants SELECT own rows; admins full CRUD
 -- error_reports: authenticated INSERT; admin SELECT/UPDATE
 ```
 
@@ -348,7 +348,7 @@ Location: `/Users/bespined/Desktop/idw-review-app/`
 - Login returns UUID + role → session cookie → role-based routing
 - No ASU SSO for pilot (new hires don't have ASU email for weeks)
 
-### IDA View
+### ID Assistant View
 - **Sees**: Only findings where `reviewer_tier = 'id_assistant'` (Col B)
 - **Queue**: Courses assigned to them via `tester_course_assignments`
 - **Finding card shows**:
@@ -370,10 +370,10 @@ Location: `/Users/bespined/Desktop/idw-review-app/`
 - **Fix Queue**: findings where `remediation_requested = true`
 
 ### QA Team View
-- **Sees**: ALL findings + IDA verdicts
+- **Sees**: ALL findings + ID Assistant verdicts
 - **Queue**: "Pending Review" — courses with `status = 'pending_qa_review'`
-- **Assign IDAs**: select from active IDAs, assign to session
-- **Override**: can change IDA verdicts with reason
+- **Assign ID Assistants**: select from active ID Assistants, assign to session
+- **Override**: can change ID Assistant verdicts with reason
 - **Launch gate**: approve/reject button → sets `launch_gate_approved`
 - **Recurring audits**: list of sessions with `audit_purpose = 'recurring'`
 
@@ -382,7 +382,7 @@ Location: `/Users/bespined/Desktop/idw-review-app/`
 - **Error queue**: list of `error_reports`, filterable by status/type
 - **RLHF patterns**: aggregate disagreement rates by standard, criterion, reviewer
 - **Tester management**: create/edit/deactivate testers
-- **Course assignments**: assign IDAs to courses
+- **Course assignments**: assign ID Assistants to courses
 - **Release notes**: view current plugin version, push updates
 
 ### Rename requirements (existing code)
@@ -556,7 +556,7 @@ Admin reviews patterns on Vercel /admin dashboard
 ### Airtable is NOT
 - The operational system (that's Supabase)
 - Editable by anyone during pilot
-- The place where IDAs submit verdicts
+- The place where ID Assistants submit verdicts
 
 ---
 
@@ -565,7 +565,7 @@ Admin reviews patterns on Vercel /admin dashboard
 ### Pilot auth (Supabase Auth email+password)
 ```
 1. QA admin creates tester record in Supabase (name, role, email, password)
-2. IDA/ID opens Vercel app → login form
+2. ID Assistant/ID opens Vercel app → login form
 3. Supabase Auth validates credentials → returns session
 4. App reads testers table for UUID + role
 5. Role-based view loads
@@ -709,8 +709,8 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 |---|---|
 | `src/lib/supabase.ts` | Update TypeScript interfaces: add new fields to AuditSession, AuditFinding, FindingFeedback. Add Tester, TesterCourseAssignment, ErrorReport interfaces. |
 | `src/components/FindingCard.tsx` | Rename actions: Approved→Agree, Rejected→Disagree, False Positive→Not an Issue, add N/A. Show content_excerpt inline. Add canvas_link as clickable button. Update feedback insert to use new field names (corrected_finding, correction_note). |
-| `src/app/page.tsx` | Add role-based filtering: IDA sees assigned sessions only. Add session status badges (in_progress, pending_qa_review, etc.). Show audit_purpose tag. |
-| `src/app/session/[id]/page.tsx` | Add reviewer_tier filter (IDA sees Col B only). Replace text name input with auth-based reviewer. Add "Submit for QA Review" button (ID view). Show QA feedback when status=revisions_required. |
+| `src/app/page.tsx` | Add role-based filtering: ID Assistant sees assigned sessions only. Add session status badges (in_progress, pending_qa_review, etc.). Show audit_purpose tag. |
+| `src/app/session/[id]/page.tsx` | Add reviewer_tier filter (ID Assistant sees Col B only). Replace text name input with auth-based reviewer. Add "Submit for QA Review" button (ID view). Show QA feedback when status=revisions_required. |
 | `src/app/dashboard/page.tsx` | Add IDA quality tracking (override rates). Add enrichment card effectiveness. |
 | `src/app/globals.css` | Minor — update any hardcoded color values if needed. |
 
@@ -729,7 +729,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 1. Update TypeScript interfaces (supabase.ts) — foundation for everything else
 2. Update FindingCard.tsx — rename actions, add evidence inline, add N/A
 3. Add Supabase Auth (login page + auth helpers) — unblocks role-based views
-4. Add role-based routing + AuthGuard — IDA/ID/QA/Admin views
+4. Add role-based routing + AuthGuard — ID Assistant/ID/QA/Admin views
 5. Update session page — reviewer_tier filter, Submit for QA Review
 6. Update home page — role-based session list, status badges
 7. Build admin page — error queue, RLHF patterns, tester management
@@ -741,7 +741,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Notifications: in-app badges only (no email)
 - IDA view: Col B findings only (reviewer_tier = id_assistant)
 - ID view: all findings + Submit for QA Review button
-- QA team view: Pending Review queue + assign IDAs + override verdicts
+- QA team view: Pending Review queue + assign ID Assistants + override verdicts
 - Admin: /admin route, password-gated via env var
 
 **Phase 3 progress**:
@@ -749,7 +749,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Step 2 ✅ FindingCard updated — Agree/Disagree/Not an Issue/N/A + evidence inline + canvas link + reviewer_tier badges
 - Step 3 ✅ Supabase Auth — login page (src/app/login/page.tsx), auth helpers (src/lib/auth.ts)
 - Step 4 ✅ AuthGuard component — render prop wrapper, redirects to /login, role checking
-- Step 5 ✅ Session page — AuthGuard, IDA sees Col B only (reviewer_tier filter), Submit for QA Review button (ID), Approve/Request Revisions (QA), status badges, round indicator, revisions banner
+- Step 5 ✅ Session page — AuthGuard, ID Assistant sees Col B only (reviewer_tier filter), Submit for QA Review button (ID), Approve/Request Revisions (QA), status badges, round indicator, revisions banner
 - Step 6 ✅ Home page — AuthGuard, sign out, user name+role in header, session status badges, audit purpose labels, round numbers
 - Step 7 ✅ Admin page — /admin route (admin-only AuthGuard), testers management (add/activate/deactivate), error queue (list/resolve), RLHF summary stats
 - Step 8: Notification badges — POST-LAUNCH (needs real usage data to be meaningful)
@@ -762,7 +762,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - Login page + Supabase Auth (email+password)
 - AuthGuard + role-based routing (3 roles: id, id_assistant, admin)
 - FindingCard: Correct/Incorrect/N/A verdicts with Undo, ASU brand colors, evidence inline, canvas link
-- Session page: reviewer_tier filter (IDA=Col B only), Submit for QA Review, pending banner
+- Session page: reviewer_tier filter (ID Assistant=Col B only), Submit for QA Review, pending banner
 - Home page: auth, sign out, status badges, audit purpose
 - Admin page: tester management (add/edit role/delete/activate), error queue, RLHF summary
 - Audit modes renamed: Quick Check / Deep Audit / Guided Review
@@ -798,24 +798,24 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 **Remaining Phase 3 work (continue next session)**:
 - ✅ Bug fixed: Admin re-review after ID revision — old feedback deleted, fresh Agree/Disagree shown
 - ✅ Course assignment UI — admin page "Course Assignments" tab with assign/remove
-- ✅ IDA home page filtering — IDAs only see sessions for assigned courses
+- ✅ ID Assistant home page filtering — ID Assistants only see sessions for assigned courses
 - ✅ Course assignment UI on admin page
 - ✅ Feedback history preserved (no deletion on re-review, most recent picked by reviewed_at)
-- ✅ Bug fixed: IDA dropdown — RLS policy updated so authenticated users can read all testers
+- ✅ Bug fixed: ID Assistant dropdown — RLS policy updated so authenticated users can read all testers
 - ✅ "Needs Review" filter added for admin mode
-- ✅ Assignment table search filter (by IDA name or course)
+- ✅ Assignment table search filter (by ID Assistant name or course)
 - **Bug: Assignment INSERT blocked by RLS** — need to run SQL: policy for authenticated users on tester_course_assignments
 - **Bug: Admin round 2 shows Undo** — root cause: admin's agree/disagree UPDATEs the feedback row's overridden_at. When ID re-reviews (new row), the new row is clean, but if admin already agreed on it, overridden_at is set → shows Undo. Test session has been reset for clean round testing.
 - ✅ Feedback history UI — collapsible "Show decision history (N entries)" per finding, reverse chronological, shows all decisions + admin comments
 - **Admin round 2 Undo bug** — admin may still see Undo instead of Agree/Disagree after ID re-reviews. Verify with testing.
 - ✅ Mass course assignment (comma-separated IDs)
 - ✅ Tester page search + role filter
-- ✅ IDA "Mark as Complete" flow (no QA gate — IDA verdicts are final for Col B)
-- **IDA end-to-end test** — assign course → IDA reviews Col B → marks complete → verdicts ready for Airtable
+- ✅ ID Assistant "Mark as Complete" flow (no QA gate — ID Assistant verdicts are final for Col B)
+- **ID Assistant end-to-end test** — assign course → ID Assistant reviews Col B → marks complete → verdicts ready for Airtable
 - **IDA workflow clarification**: Admin does NOT Agree/Disagree on IDA verdicts. IDA's correction is final say for Col B. Admin only spot-checks quality via dashboard metrics.
-- ✅ IDA only sees recurring sessions (not ID self-audits)
-- ✅ Completed filter count includes IDA 'complete' status
-- ✅ Reopen button for IDA after marking complete
+- ✅ ID Assistant only sees recurring sessions (not ID self-audits)
+- ✅ Completed filter count includes ID Assistant 'complete' status
+- ✅ Reopen button for ID Assistant after marking complete
 - **Advanced filters**: Jira/Asana-style dropdowns + checkboxes. Save View button. — POST-LAUNCH
 - Notification badges — POST-LAUNCH
 - Dashboard IDA quality tracking — POST-LAUNCH
@@ -823,7 +823,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 - ASU SSO (SAML/OIDC) — POST-PILOT (not needed during pilot, linked to UUID)
 
 **Phase order discussion**:
-- Consider swapping Phase 4 (Airtable) and Phase 5 (RLHF/Admin skills) — Airtable sync may be less critical than getting the admin/IDA skills working in Claude Code. Discuss before proceeding.
+- Consider swapping Phase 4 (Airtable) and Phase 5 (RLHF/Admin skills) — Airtable sync may be less critical than getting the admin/ID Assistant skills working in Claude Code. Discuss before proceeding.
 
 ### Phase 4 — RLHF + Admin Skills ✅ COMPLETE
 
@@ -831,8 +831,8 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 
 | Skill | Trigger | Role gate | What it does |
 |---|---|---|---|
-| `/assignments` | "my assignments", "what courses" | IDA only | Query tester_course_assignments → show assigned courses + status |
-| `/assign` | "assign IDA to course" | Admin only | Insert into tester_course_assignments via Supabase service key |
+| `/assignments` | "my assignments", "what courses" | ID Assistant only | Query tester_course_assignments → show assigned courses + status |
+| `/assign` | "assign ID Assistant to course" | Admin only | Insert into tester_course_assignments via Supabase service key |
 | `/report-error` | "report a bug", "something broke" | All roles | Insert into error_reports table with context (session_id, skill, etc.) |
 | `/update-idw` | "update plugin", "pull latest" | Admin only | git pull to get latest prompts/config, show changelog |
 | `/admin` | "admin", "error queue" | Admin only | View error_reports, RLHF stats, manage testers from Claude Code |
@@ -853,7 +853,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 **Implementation order**:
 1. Fix dashboard (quick — update queries)
 2. Role gating helper (shared by all skills)
-3. `/assignments` + `/assign` (IDA + admin course management)
+3. `/assignments` + `/assign` (ID Assistant + admin course management)
 4. `/report-error` (all roles)
 5. `fetch_fix_queue.py` + `/course-review` integration
 6. `/update-idw` + `/admin`
@@ -876,7 +876,7 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 
 3. **XLSX report — Phase 2 fields added:**
    - Column K: Reviewer Tier ("IDA" or "ID") with color coding
-   - Dashboard sheet: reviewer tier breakdown row (IDA-reviewable vs ID-reviewable counts)
+   - Dashboard sheet: reviewer tier breakdown row (ID Assistant-reviewable vs ID-reviewable counts)
 
 4. **Report download from Vercel** — session page header shows "Report" download button when `report_html_url` exists on the session. Opens HTML report from Supabase storage.
 
@@ -899,19 +899,19 @@ Tiptap Lite RTE in unified preview, staging_server.py with PUT API, course-scope
 ##### EDL New Course Development Workflow
 
 ```
-1. ID/IDA runs /audit on the course
-2. ID/IDA reviews ALL findings (Col B + C) in review app
+1. ID runs /audit on the course
+2. ID reviews ALL findings (Col B + C) in review app
    ├── Verdicts: correct / incorrect / N/A
    ├── Flags "needs remediation" on confirmed issues
    └── Remediates with faculty using plugin skills
-3. ID/IDA marks session complete
+3. ID marks session complete
    ├── Col C findings: auto-set to qa_approved (no review gate)
    └── Col B findings: move to pending_qa_review for ID Assistant validation
 4. ID Assistant validates Col B findings
    ├── Round 1 (pre-remediation): Correct/Incorrect on AI finding
    ├── Round 2+ (post-remediation): Agree/Disagree on whether fix worked
    ├── All agree → qa_approved
-   └── Any disagree → revisions_required → back to ID/IDA
+   └── Any disagree → revisions_required → back to ID
        └── Auto-sets remediation_requested=true → finding re-enters fix queue
 5. All qa_approved findings → single Airtable sync
 ```
@@ -998,7 +998,7 @@ When ID Assistant disagrees on a remediated finding:
 2. `audit_findings.remediation_requested` auto-set to `true`
 3. Session status → `revisions_required`
 4. Finding re-appears in `/course-review` Step 0 fix queue
-5. ID/IDA re-remediates → new `remediation_events` row
+5. ID re-remediates → new `remediation_events` row
 6. ID Assistant re-validates
 
 #### Airtable Integration
@@ -1067,7 +1067,7 @@ Data flow: Canvas → Plugin → Supabase → Vercel (review) → Supabase (verd
   - Col B criteria (106): `B-XX.Y Description` (Yes/No/N/A) — ID Assistant reviewable
   - Col C criteria (41): `C-XX.Y Description` (Yes/No/N/A) — ID reviewable
 - **Views:** (create manually in Airtable — API doesn't support view creation)
-  - ID/IDA view: all columns
+  - ID/ID view: all columns
   - ID Assistant view: metadata + B-* columns only (Col C hidden)
   - Admin/Summary view: metadata + ratings + notes only (criteria hidden)
 
@@ -1172,7 +1172,7 @@ IDs will run multiple self-audits during a course build for iterative improvemen
 ### Progress Check vs. Submit for Review (CLARIFIED 2026-04-02)
 
 **Problem:** Currently every audit pushes findings to Supabase + Vercel. IDs running iterative self-audits to fix their course flood Supabase with intermediate findings that:
-- IDAs waste time reviewing (Round 1 findings the ID already fixed by Round 3)
+- ID Assistants waste time reviewing (Round 1 findings the ID already fixed by Round 3)
 - Pollute RLHF data (verdicts on stale findings train the system on outdated course state)
 - Clutter the Vercel dashboard with sessions that were never meant for review
 
@@ -1182,7 +1182,7 @@ IDs will run multiple self-audits during a course build for iterative improvemen
 Your audit is complete. What would you like to do?
 
   [Progress check]  — Save the report locally. I'm still fixing this course.
-  [Submit for review] — Push findings to the review app for QA team/IDA review.
+  [Submit for review] — Push findings to the review app for QA team/ID Assistant review.
 ```
 
 **Behavior by choice:**
@@ -1194,9 +1194,9 @@ Your audit is complete. What would you like to do?
 | Supabase `audit_sessions` row | ❌ No | ✅ Yes |
 | Supabase `audit_findings` rows | ❌ No | ✅ Yes |
 | Vercel review app link | ❌ No | ✅ Yes |
-| IDA can review/verdict | ❌ No | ✅ Yes |
+| ID Assistant can review/verdict | ❌ No | ✅ Yes |
 | RLHF data collected | ❌ No | ✅ Yes |
-| Airtable sync available | ❌ No | ✅ Yes (after IDA review) |
+| Airtable sync available | ❌ No | ✅ Yes (after ID Assistant review) |
 | Score delta shown | ✅ Yes (from local prior `audit_results.json`) | ✅ Yes |
 
 **Implementation:**
@@ -1251,7 +1251,7 @@ Your audit is complete. What would you like to do?
 - Split scores — Readiness / Design / A11y shown separately in HTML report + Vercel session header
 
 **Completed (Apr 2 code review — items previously listed as remaining):**
-- ✅ IDA self-sync to Airtable — Vercel sync button is role-aware: IDA can sync after "complete" or "qa_approved", locked after sync, admin retains backup ability
+- ✅ ID Assistant self-sync to Airtable — Vercel sync button is role-aware: ID Assistant can sync after "complete" or "qa_approved", locked after sync, admin retains backup ability
 - ✅ Change request flow — migration 008 run, Vercel API (GET/POST/PATCH), UI on FindingCard + admin queue on home page
 - ✅ Admin sync visibility — sync badges on sessions home page
 - ✅ Remediation tracker script — `remediation_tracker.py` fully functional (validates, records, clears)
@@ -1263,14 +1263,14 @@ Your audit is complete. What would you like to do?
 - ✅ Vercel login + Airtable sync — tested end-to-end
 
 **Completed (cont.):**
-- IDA feedback isolation — IDA sees own action buttons, ID decision shown as context
-- Airtable views — manually created (ID/IDA, ID Assistant, Admin Summary)
+- ID Assistant feedback isolation — ID Assistant sees own action buttons, ID decision shown as context
+- Airtable views — manually created (ID, ID Assistant, Admin Summary)
 - Vercel deployment — main domain working
 
 **Still remaining — Phase 5 completion (updated 2026-04-02):**
 
-*1. ✅ DONE — Airtable sync uses IDA corrections:*
-Fixed `build_airtable_row()` + `_generate_notes()` to check `feedback_map` for each finding. If IDA marked `decision = 'incorrect'`, uses `corrected_finding` as verdict and `correction_note` as notes.
+*1. ✅ DONE — Airtable sync uses ID Assistant corrections:*
+Fixed `build_airtable_row()` + `_generate_notes()` to check `feedback_map` for each finding. If ID Assistant marked `decision = 'incorrect'`, uses `corrected_finding` as verdict and `correction_note` as notes.
 
 *2. ✅ DONE — Enforcement script wiring:*
 All skills now reference their enforcement scripts:
@@ -1423,7 +1423,7 @@ Three sub-phases: code → prep → go-live. Each phase must complete before the
 | 2 | ✅ Remediation event batch fetch | — | — | Done |
 | 3 | ✅ Error message polish (sync errors, report link, confidence filter) | — | — | Done |
 | 4 | ✅ Progress check prompt in audit skill (`--local-only`) | — | — | Done |
-| 5 | Test rollback end-to-end on sandbox | Brent | 30 min | **PRE-LAUNCH — manual test** |
+| 5 | ✅ DONE — Rollback tested end-to-end on sandbox | Brent | 30 min | Tested in separate session |
 | 6 | ✅ HTML report score layout (compact, matches Vercel app) | — | — | Done |
 
 **Exit criteria:** Session grouping deployed. Rollback verified.
@@ -1437,7 +1437,7 @@ Three sub-phases: code → prep → go-live. Each phase must complete before the
 | 3 | Register same users in Supabase Auth (email+password) | Brent | 30 min | Supabase dashboard → Authentication → Users |
 | 4 | Confirm Canvas token permissions — can all IDs generate personal access tokens? | Brent | 15 min | Check with Canvas admin if unsure |
 | 5 | Confirm Claude Code access — all pilot users have Anthropic accounts/licenses | Brent | 15 min | Check org plan |
-| 6 | Pre-assign IDAs to courses via `/assign` | Brent + Claude | 30 min | Requires user list + course list |
+| 6 | Pre-assign ID Assistants to courses via `/assign` | Brent + Claude | 30 min | Requires user list + course list |
 | 7 | Prepare `.env` template + `.env.local` with Supabase keys | Claude | 15 min | Claude generates, Brent fills in secrets |
 | 8 | Distribute credentials to users (Slack DM or 1-on-1 setup) | Brent | 30 min | Each user gets: `.env` template, `.env.local`, their `IDW_TESTER_ID` |
 
@@ -1503,7 +1503,7 @@ Week 2+:  Weekly rhythm, enrichment card updates, RLHF analysis
 
 - **In-app badges only** (no email) — QA team and IDAs are logged into Vercel app to review, so notifications live there
 - **Why not email**: too many emails already; IDAs may not have ASU email for weeks
-- **IDA notifications**: badge when assigned to a new session, badge count of un-verdicted findings
+- **ID Assistant notifications**: badge when assigned to a new session, badge count of un-verdicted findings
 - **ID notifications**: badge when QA review is complete, badge when status = 'revisions_required'
 - **QA team notifications**: badge when ID submits for QA review (new item in Pending Review queue)
 
@@ -1643,10 +1643,10 @@ Phase D (repo/dir) → rename repo → update all absolute paths → commit + pu
 ## 18. Unresolved Questions (renumbered from 17)
 
 ### Q1: IDA Canvas token access (BLOCKS: who triggers recurring audits)
-- **Options**: A (no token, QA runs audits) vs B (IDA has token + Claude Code)
+- **Options**: A (no token, QA runs audits) vs B (ID Assistant has token + Claude Code)
 - **Decision needed from**: QA team + Canvas admin
 - **Documents**: `IDW-QA-IDA-access-comparison.md`, `IDW-QA-option-A-IDAs-no-canvas.mmd`, `IDW-QA-option-B-IDAs-have-canvas.mmd`
-- **Context**: IDAs are CS masters students (technically capable), but are student workers with semester tenure. Token provisioning and revocation adds admin overhead.
+- **Context**: ID Assistants are CS masters students (technically capable), but are student workers with semester tenure. Token provisioning and revocation adds admin overhead.
 - **Recommendation**: Option A for pilot, Option B post-pilot if needed
 
 ### Q2: Recurring course remediation owner (DOES NOT BLOCK pilot)
