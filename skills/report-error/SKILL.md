@@ -60,7 +60,7 @@ context = {
 
 Get plugin version:
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git rev-parse --short HEAD 2>/dev/null || echo "unknown"
+git rev-parse --short HEAD 2>/dev/null || echo "unknown"
 ```
 
 ### 3. Submit the Report

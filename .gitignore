@@ -4,6 +4,7 @@
 
 # User-specific data — per-tester, not shared
 course-config.json
+.course-name
 backups/
 staging/
 reports/

@@ -246,14 +246,14 @@ From here, the admin can jump to `/assign` to create new assignments.
 ### Plugin Version
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git log --oneline -1 && echo "---" && git describe --tags 2>/dev/null || echo "no tags"
+git log --oneline -1 && echo "---" && git describe --tags 2>/dev/null || echo "no tags"
 ```
 
 ### Migration Status
 
 Check which migrations exist:
 ```bash
-ls -la /Users/bespined/claude-plugins/IDW-QA/migrations/*.sql
+ls -la migrations/*.sql
 ```
 
 Remind admin if any new migrations need to be run.

@@ -35,7 +35,7 @@ python3 scripts/role_gate.py --check any
 Check for uncommitted changes that might conflict:
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git status --porcelain
+git status --porcelain
 ```
 
 If there are uncommitted changes, warn the admin:
@@ -52,13 +52,13 @@ If there are uncommitted changes, warn the admin:
 ### 2. Show Current Version
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git log --oneline -1
+git log --oneline -1
 ```
 
 ### 3. Pull Latest
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git pull --rebase origin main
+git pull --rebase origin main
 ```
 
 If pull fails due to conflicts:
@@ -71,13 +71,13 @@ If pull fails due to conflicts:
 After successful pull, show what changed:
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git log --oneline HEAD@{1}..HEAD
+git log --oneline HEAD@{1}..HEAD
 ```
 
 Then categorize changes:
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git diff --stat HEAD@{1}..HEAD
+git diff --stat HEAD@{1}..HEAD
 ```
 
 Present as:
@@ -117,7 +117,7 @@ If any new migration files were added:
 Check if any Python dependencies changed:
 
 ```bash
-cd /Users/bespined/claude-plugins/IDW-QA && git diff HEAD@{1}..HEAD -- requirements.txt 2>/dev/null
+git diff HEAD@{1}..HEAD -- requirements.txt 2>/dev/null
 ```
 
 If requirements.txt changed:
