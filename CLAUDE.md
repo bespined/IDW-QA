@@ -143,11 +143,12 @@ This gives users a review loop before anything touches Canvas. Skills support `-
 | Assignment status transitions | `python3 scripts/assignment_status.py` | Inline Supabase PATCH + no ownership check |
 
 **Exceptions (metadata only — no HTML body):**
-- Quick metadata edits (rename, due date, points, submission type) — use `canvas_api.py` directly.
-- Interactive content file uploads — use `deploy_interactives.py` (uploads HTML files to Canvas Files, not page body edits).
-- Quiz settings (attempts, shuffle, time limit) — Canvas object properties, not HTML.
-- Rubric creation — API object with structured criteria, not HTML.
-- Course settings (publish, nav tabs, late policy) — configuration, not content.
+These can skip staging but **still require explicit user approval before pushing**. Always confirm the change with the user first — never push metadata silently.
+- Quick metadata edits (rename, due date, points, submission type) — confirm → `canvas_api.py` directly.
+- Interactive content file uploads — confirm → `deploy_interactives.py`.
+- Quiz settings (attempts, shuffle, time limit) — confirm → direct API.
+- Rubric creation — confirm → direct API.
+- Course settings (publish, nav tabs, late policy) — confirm → direct API.
 
 **If the edit touches HTML content that a student will read, it must go through staging.** When in doubt, stage it.
 
