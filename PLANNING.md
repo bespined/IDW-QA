@@ -1508,6 +1508,41 @@ Start with `criterion_evaluator.py` (extract keyword matching to config-driven l
 
 ---
 
+### Frontend Pilot-Readiness Cleanup (PRE-LAUNCH or EARLY PILOT)
+
+**Assessment (from Codex review):** Plugin backend is pilot-ready. The Vercel review app is the main remaining risk — API routes use service key without server-side auth, session-complete has a behavior mismatch, and admin mutations bypass server routes.
+
+**Full plan:** See `codex-frontend-cleanup-plan.md` in repo root.
+
+**Non-negotiable pilot blockers (Phases 1-3):**
+
+1. **Server route authorization** — All 6 API routes use `SUPABASE_SERVICE_KEY` without verifying the caller. Anyone who can reach the Vercel URL can `curl` any route and mutate data. Every route must authenticate the caller server-side and enforce role policy before any DB write.
+   - Files: all routes in `src/app/api/`
+   - New files needed: `src/lib/server-auth.ts`, `src/lib/server-supabase.ts`
+   - Suggested helpers: `requireUser()`, `requireRole([...])`, `requireAdmin()`
+
+2. **session-complete behavior mismatch** — Route claims Col C findings are auto-approved but never actually inserts feedback rows. Database state and UI disagree. Either persist the approvals (Option A) or change the response to match reality (Option B).
+
+3. **Privileged admin mutations** — Admin page writes directly to Supabase via anon client. Should go through authenticated server routes, or RLS policies must be explicitly verified and documented.
+
+**Recommended execution order:**
+1. Phase 0: Baseline lint/typecheck output
+2. Phase 1: Build shared server auth helpers (`server-auth.ts`)
+3. Phase 2: Lock down all service-key routes with auth + role checks
+4. Phase 3: Fix session-complete persistence
+5. Phase 4: Move admin mutations behind server routes (or document RLS)
+6. Phase 5: Clean lint errors
+7. Phase 8: Manual pilot QA checklist
+
+**Deferred to post-pilot:**
+- Phase 6: Decision vocabulary cleanup (normalizeDecision already handles legacy values)
+- Phase 7: Automated regression harness (manual QA checklist sufficient for pilot)
+- Phase 9: Component refactors (FindingCard split, session page split)
+
+**Access note:** If the Vercel app is only accessible to the QA team (not publicly reachable), the auth gap is low risk for pilot. If publicly reachable, Phases 1-2 are blocking.
+
+---
+
 ### Phase 6 — Faculty Outreach, Analytics & Prioritization (ALL POST-LAUNCH)
 
 | Task | Details | Priority | When |
