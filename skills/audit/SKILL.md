@@ -536,12 +536,28 @@ Status: [READY / NOT READY]
 
 Generate a polished, shareable HTML audit report for leadership and team review.
 
-**Always generate after every audit — no exception.** At the end of every Quick Check, Deep Audit, and Guided Review, automatically run the report generator. Do not wait for the user to ask.
+**Always generate a report after every audit.** But generating a report is NOT the same as submitting findings to the review pipeline. After the audit completes, ask the user what they want to do using `AskUserQuestion`:
 
-**Generate:**
+| Label | Description |
+|---|---|
+| **Generate report (local only)** | Create the HTML report for your own review and talking points. Findings stay local — nothing goes to the review app. Use this when you're still building or fixing the course. |
+| **Generate report + submit for review** | Create the HTML report AND push findings to the review app for IDA/QA team review. Use this when the course is ready for formal review. |
+
+**Based on their choice:**
 
 ```bash
-python scripts/audit_report.py --input audit_results.json --open   # From saved results
+# Local only (progress check — no Supabase push)
+python3 scripts/audit_report.py --input audit_results.json --open --local-only
+
+# Submit for review (full push to Supabase + Vercel review app)
+python3 scripts/audit_report.py --input audit_results.json --open
+```
+
+**Never push to Supabase without the user choosing "submit for review."** The report is always useful on its own — for talking points, planning remediation, or sharing with the SME. Supabase submission is a separate, deliberate action.
+
+**Demo report:**
+
+```bash
 python scripts/audit_report.py --demo --open                        # Demo with sample data
 ```
 
@@ -623,32 +639,20 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 
 **Workflow integration:**
 1. Run `/audit` → results display in conversation + saved as `audit_results.json`
-2. **Automatically run** `python scripts/audit_report.py --input audit_results.json --open` → shareable HTML report (always — do not skip)
-3. Report local path and Supabase URL to the user
-4. **Provide the Vercel review app URL** so the ID can review findings and submit verdicts:
-   > Your findings are live at: `https://idw-review-app.vercel.app/sessions/<SESSION_ID>`
-   > Reviewers can approve, reject, or flag each finding there.
-5. **If `audit_purpose` is `self_audit`**, offer to submit for QA review:
-   > "Would you like to submit this audit for QA review? This notifies your QA lead that it's ready for their review."
-   > If yes: update `audit_sessions.session_status` from `in_progress` → `pending_qa_review` via Supabase.
-   ```bash
-   python3 -c "
-   import requests, os
-   from dotenv import load_dotenv
-   load_dotenv('.env.local')
-   url = os.getenv('SUPABASE_URL')
-   key = os.getenv('SUPABASE_SERVICE_KEY')
-   session_id = '<SESSION_ID>'
-   resp = requests.patch(
-       f'{url}/rest/v1/audit_sessions?id=eq.{session_id}',
-       headers={'apikey': key, 'Authorization': f'Bearer {key}', 'Content-Type': 'application/json', 'Prefer': 'return=representation'},
-       json={'session_status': 'pending_qa_review'},
-       timeout=15
-   )
-   print(resp.status_code)
-   "
-   ```
-6. Fix issues via `/bulk-edit` → staged → reviewed in unified preview → pushed
+2. **Ask the user** (AskUserQuestion): "Generate report (local only)" vs "Generate report + submit for review" — see HTML Report Output section above
+3. **If local only**: `python3 scripts/audit_report.py --input audit_results.json --open --local-only`
+   - Report saved to `reports/` and opened in browser
+   - NO Supabase push, NO Vercel session, NO review pipeline
+   - Tell the user: "Report saved locally. When you're ready for formal review, run another audit and choose 'Submit for review.'"
+4. **If submit for review**: `python3 scripts/audit_report.py --input audit_results.json --open`
+   - Report saved + findings pushed to Supabase + session created
+   - Provide the Vercel review app URL:
+     > Your findings are live at: `https://idw-review-app.vercel.app/sessions/<SESSION_ID>`
+   - **If `audit_purpose` is `self_audit`**, offer to submit for QA review:
+     ```bash
+     python3 scripts/audit_session_manager.py --submit --session-id <SESSION_ID>
+     ```
+5. Fix issues via `/bulk-edit` → staged → reviewed in unified preview → pushed
 
 ## Faculty Feedback Summary
 

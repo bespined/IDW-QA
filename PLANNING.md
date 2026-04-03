@@ -1446,7 +1446,7 @@ Three sub-phases: code → prep → go-live. Each phase must complete before the
 | 1 | Session grouping in Vercel (group by course, collapse rounds, score trend) | Claude + Brent | 3-4 hrs | None |
 | 2 | Remediation event batch fetch (session page loads all events, not first only) | Claude + Brent | 1 hr | None |
 | 3 | Error message polish (Vercel toasts, sync errors, "Report this error" link) | Claude + Brent | 1-2 hrs | None |
-| 4 | Progress check prompt in audit skill (AskUserQuestion before push to Supabase) | Claude | 30 min | Item 3 from Phase 5 `--local-only` ✅ done |
+| 4 | ✅ DONE — Progress check prompt in audit skill (AskUserQuestion before push to Supabase) | Claude | 30 min | `--local-only` flag + skill prompt updated |
 | 5 | Test rollback end-to-end on sandbox (stage → push → rollback → verify original restored) | Brent | 30 min | None |
 
 Items 1-3 can run in parallel. Item 4 is a quick skill prompt update. Item 5 is manual testing.
