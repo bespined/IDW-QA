@@ -109,7 +109,13 @@ This applies equally to:
 - Single-page fixes (e.g., correcting alt text on one image)
 - Any reformatting, restructuring, or content remediation
 
-**Never push page HTML directly to Canvas in a single step**, even when the fix is obvious or the user asked for the fix. Stage → show → wait → push.
+**Never push ANY HTML content directly to Canvas in a single step**, even when the fix is obvious or the user asked for the fix. Stage → show → wait → push.
+
+This rule applies to ALL HTML body content across Canvas object types:
+- **Pages** — wiki page body HTML
+- **Assignment descriptions** — the HTML in the assignment description field
+- **Quiz descriptions** — the HTML in quiz instructions/description
+- **Discussion prompts** — the HTML message body of discussion topics
 
 ## Staging Workflow
 
@@ -136,10 +142,14 @@ This gives users a review loop before anything touches Canvas. Skills support `-
 | Admin tester management | `python3 scripts/admin_actions.py` | Inline Supabase PATCH + no audit trail |
 | Assignment status transitions | `python3 scripts/assignment_status.py` | Inline Supabase PATCH + no ownership check |
 
-**Exceptions:**
-- Quick metadata edits (rename, due date, points) that don't touch HTML body content — use `canvas_api.py` directly.
-- Interactive content uploads — use `deploy_interactives.py` (uploads HTML files to Canvas Files + patches page with iframe embed, different flow than page body edits).
-- Quiz/rubric/discussion settings — these modify Canvas object properties, not page HTML. Use the Canvas API directly.
+**Exceptions (metadata only — no HTML body):**
+- Quick metadata edits (rename, due date, points, submission type) — use `canvas_api.py` directly.
+- Interactive content file uploads — use `deploy_interactives.py` (uploads HTML files to Canvas Files, not page body edits).
+- Quiz settings (attempts, shuffle, time limit) — Canvas object properties, not HTML.
+- Rubric creation — API object with structured criteria, not HTML.
+- Course settings (publish, nav tabs, late policy) — configuration, not content.
+
+**If the edit touches HTML content that a student will read, it must go through staging.** When in doubt, stage it.
 
 ## Post-Push Verification (Required)
 
