@@ -1354,6 +1354,22 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 - criterion_evaluator.py `--quick-check` and `--full-audit` should support `--no-report` flag to skip audit_report.py
 - This keeps iterative audits lightweight while still producing reports when ready for review
 
+*Skill instruction fixes needed (from audit of all 21 SKILL.md files):*
+
+Critical — blocks correct workflow:
+- **quiz**: Remove `--direct` flag that bypasses mandatory staging
+- **assignment-generator**: Add staging workflow before Canvas push (currently pushes directly)
+- **interactive-content**: Add staging before deploy (currently deploys directly)
+- **media-upload**: Replace `/canvas-push` reference (doesn't exist) with `/staging`
+- **audit**: Reword "fix on the spot" in Guided Review to clarify staging is required
+
+Important — confusion/inconsistency:
+- **assign, assignments**: Replace "IDA" with "ID Assistant" in titles and descriptions
+- **bulk-edit**: Reword "Generate fixes" to "Prepare fixes" to clarify nothing touches Canvas yet
+- **rubric-creator**: Clarify standalone mode optional inputs
+- **staging**: Align unified preview wording with CLAUDE.md
+- **audit course selection**: Remove "Pick from assignments" option — ID Assistants don't use Claude Code. IDs/Admins should see: Current course / Different course / Batch audit only.
+
 *Session status after admin override (manual for pilot):*
 - Admin changes verdict from change request → admin re-syncs to Airtable
 - Recurring: stays complete, admin re-syncs
