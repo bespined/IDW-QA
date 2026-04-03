@@ -24,14 +24,14 @@ Unified audit skill with 3 modes: Quick Check (deterministic only), Deep Audit (
 - "Quick scan" / "Fast audit" / "Deterministic check" → **Quick Check** (skip prompt)
 - "Full audit" / "Complete audit" / "Comprehensive audit" → **Deep Audit** (skip prompt)
 - "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
-- "Just check essential standards" → **Deep Audit --scope essential** (skip prompt)
+- "Just check essential standards" / "Quick readiness check" → **Quick Check** (skip prompt)
 
 ## Audit Session Creation (Mandatory)
 
 **Before any audit work**, create a session in Supabase via the enforcement script. This deterministically infers `audit_purpose` from the tester's role and counts prior sessions for `audit_round`. Never create sessions via inline Supabase calls.
 
 ```bash
-python3 scripts/audit_session_manager.py --create --course-id <COURSE_ID> --scope <all|essential|crc> --mode <quick_scan|full_audit|guided_review>
+python3 scripts/audit_session_manager.py --create --course-id <COURSE_ID> --mode <quick_scan|full_audit|guided_review>
 ```
 
 The script:
@@ -79,31 +79,15 @@ When the user asks for a general audit without specifying a mode, **always prese
 
 | Option | Label | Description |
 |---|---|---|
-| 1 | **Quick Check** | Fast structural check with AI verification — catches setup issues and obvious content gaps. Takes 1-2 minutes. Best for recurring audits and pre-checks. |
-| 2 | **Deep Audit** | Comprehensive quality review — evaluates alignment, assessment design, content quality, and instructional effectiveness in depth. Takes 10-15 minutes. |
+| 1 | **Quick Check** | Structural readiness scan — checks whether required elements exist and are set up correctly (e.g., CLOs present, rubrics attached, navigation links working, syllabus populated, due dates set). Col B criteria only. Takes 1-2 minutes. |
+| 2 | **Deep Audit** | Full quality review of all standards — everything in Quick Check plus instructional design quality, alignment depth, assessment design, content effectiveness, and accessibility. Col B + Col C criteria. Takes 10-15 minutes. |
 | 3 | **Guided Review** | Same depth as Deep Audit but walks through the course with you section by section, pausing after each to review findings and stage fixes for your approval before pushing. Best when you're actively building the course. |
 
 Only skip this prompt when the user's message clearly specifies a mode.
 
-**If the user picks Quick Check**, follow up with a scope question using `AskUserQuestion`:
+**If the user picks Quick Check**, proceed directly — no scope question. Quick Check always evaluates all 124 Col B criteria across all 25 standards + CRC readiness items. The evaluator runs in ~30 seconds regardless.
 
-| Option | Label | Description |
-|---|---|---|
-| 1 | **All standards + course readiness** | Checks all 25 design standards and course readiness items for structural issues (does it exist? is it set up correctly?) with a light AI verification pass to catch false positives. |
-| 2 | **Essential standards only** | Focus on the 7 core standards required for course launch (alignment, workload, assessments, materials, accessibility). |
-| 3 | **Course readiness** | Template setup, navigation links, syllabus content, dates, and other launch-day checks. |
-
-**If the user picks Deep Audit or Guided Review**, always run all standards — no scope question.
-
-### Scope Filter Reference (internal — do not present to user)
-
-| Scope | What's included | Triggered by |
-|---|---|---|
-| `all` (default) | All 25 standards + CRC items (173 criteria: 124B + 49C) | Default — no user prompt |
-| `essential` | 7 essential standards: 01, 02, 06, 08, 12, 22, 23 | User says "essential" or "essential standards only" |
-| `crc` | 18 CRC operational items | User says "CRC" or "operational checklist" or "readiness check" |
-
-To filter: load `config/standards.yaml`, include only criteria where the parent standard has `essential: true` (for essential scope) or criteria with `category: "crc"` (for crc scope).
+**If the user picks Deep Audit or Guided Review**, also run all standards — Deep Audit adds Col C (design quality) evaluation on top of the same Col B checks.
 
 ### Staging Requirement
 
@@ -517,7 +501,7 @@ These are add-on passes, not separate modes. Run them with: "also check image al
 
 ## CRC Items (absorbed into all modes)
 
-The 18 Course Readiness Check items that don't map to the 25 design standards are now in `standards.yaml` under `id: "crc"`. They run automatically in all modes as deterministic checks (Pass 1). Use `--scope crc` to see only these items.
+The 18 Course Readiness Check items that don't map to the 25 design standards are now in `standards.yaml` under `id: "crc"`. They run automatically in all modes as deterministic checks (Pass 1) alongside the 25 design standards.
 
 ### Scan Procedure
 

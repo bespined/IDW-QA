@@ -7,7 +7,7 @@ description: "Add, replace, or rearrange content within an existing module."
 
 > **Plugin**: ASU Canvas Course Builder
 > **Run**: `/update-module`
-> **Invokes**: quiz-generator, assignment-generator, discussion-generator, rubric-creator, interactive-content, notebooklm-podcast, notebooklm-video
+> **Invokes**: quiz, assignment-generator, discussion-generator, rubric-creator, interactive-content, media-upload
 
 ## Metric Tracking
 When this skill is invoked, immediately run this command before doing anything else:
@@ -160,10 +160,9 @@ When replacing: offer to delete the old Canvas object or keep it as a backup (un
 ```
 
 - For a new audio primer or lecture video:
-  1. Invoke `/notebooklm-podcast` or `/notebooklm-video` to generate the prompt
-  2. Guide user through NotebookLM generation
-  3. Upload new media file to Canvas
-  4. Update the embed on the target page (Prepare to Learn or Lesson)
+  1. Guide user through generating the media content (NotebookLM or other tool)
+  2. Upload new media file to Canvas via `/media-upload`
+  3. Update the embed on the target page (Prepare to Learn or Lesson)
   5. Upload new VTT captions and update the expandable transcript
 
 ### Reorder Module Items

@@ -118,13 +118,13 @@ Apply per-module content from a source document across matching pages.
 
 ### Footer Example
 ```
-User: "Add 'Edited by Brent's ID Workbench' footer to all pages"
+User: "Add 'Edited by IDW QA' footer to all pages"
 
 For each page:
 1. Fetch current body
 2. Append: <hr style="margin-top:40px;border-color:#E8E8E8">
    <p style="text-align:center;font-size:12px;color:#999;">
-   Edited by Brent's ID Workbench
+   Edited by IDW QA
    </p>
 3. Stage → Preview → Push
 ```

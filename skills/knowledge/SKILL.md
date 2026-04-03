@@ -1,3 +1,8 @@
+---
+name: knowledge
+description: "Build a local content cache and search course materials without re-fetching from Canvas."
+---
+
 # /knowledge — Course Content Cache & Search
 
 Build a local text cache of all course content (Canvas pages + uploaded files) so Claude Code can search and reference course material without re-fetching from Canvas each session.

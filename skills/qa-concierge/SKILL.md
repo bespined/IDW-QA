@@ -41,13 +41,13 @@ Use the tester role to shape the experience:
 
 | Role | What to Show | What to Emphasize |
 |---|---|---|
-| `id_assistant` | Audit + Fix queue only | "Here's your assigned course. Want to start the audit, or work through the fix queue?" |
+| `id_assistant` | Assigned course audit + fix queue only | "Here's your assigned course. Want to start the audit, or work through the fix queue?" |
 | `id` | Full options (audit, review, search, submit for QA) | Standard flow |
 | `admin` | Full options + system health link | Mention `/admin` is available |
 
 **If `id_assistant`**: skip "Audit this course" as a self-service option. Their primary workflow is auditing assigned courses and working through findings flagged by QA. Present as: "Run the assigned audit" and "Work through my fix queue."
 
-**If no tester ID configured** (role gate fails): guide through setup inline. Ask for their name and email, then ask an admin to register them via `/assign`.
+**If no tester ID configured** (role gate fails): guide through setup inline. Ask for their name and email, then tell them to contact their QA admin to be registered as a tester.
 
 ---
 
@@ -100,8 +100,11 @@ Present exactly one `AskUserQuestion` with options tailored to the tester's role
 
 | Label | Description |
 |---|---|
+| **View my assignments** | See which courses are assigned to me and their review status |
 | **Run assigned audit** | Run the quality audit on my assigned course |
 | **Work through fix queue** | Pull findings flagged for my review and fix them |
+
+If "View my assignments" is selected, seamlessly invoke `skills/assignments/SKILL.md`.
 
 Based on the user's selection, proceed to the corresponding path below.
 
@@ -157,14 +160,15 @@ Present an `AskUserQuestion`:
 
 | Label | Description |
 |---|---|
-| **Full audit** | All three checks — design standards, accessibility, and launch readiness |
-| **Accessibility only** | WCAG 2.1 AA compliance check — headings, alt text, contrast, links |
-| **Launch readiness** | Due dates, rubrics, publish state, assignment groups — is this course ready to go live? |
+| **Quick Check** | Structural readiness scan — checks whether required elements exist and are set up correctly (CLOs, rubrics, navigation, syllabus, due dates). Col B criteria only. Fast, ~1-2 minutes. |
+| **Deep Audit** | Full quality review of all standards — structural checks plus instructional design quality, alignment, assessment design, and content effectiveness. Col B + Col C criteria. ~10-15 minutes. |
+| **Guided Review** | Same depth as Deep Audit but walks through the course with you section by section, pausing after each to review findings and stage fixes. Best when actively building the course. |
 
 Then seamlessly invoke the audit skill with the selected mode. Read `skills/audit/SKILL.md` and follow its instructions.
 
-After the audit completes, always offer:
-> "The audit found [N] issues. Would you like to walk through them and fix what we can?"
+After the audit completes:
+1. **If `audit_purpose` is `self_audit`** (ID auditing their own course): offer to submit for QA review before transitioning to fixes.
+2. **Always offer**: "The audit found [N] issues. Would you like to walk through them and fix what we can?"
 
 If yes, transition to Path B.
 
@@ -178,7 +182,20 @@ Pull findings where `remediation_requested = true` for the active course and fix
 python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback
 ```
 
-Present each finding with its criterion ID, reviewer feedback, and a route to the appropriate remediation skill. After each fix, the skill records a `remediation_events` row and clears the `remediation_requested` flag.
+Present each finding with its criterion ID, reviewer feedback, and the suggested fix. Route each finding to the appropriate remediation skill based on its type:
+
+| Finding relates to... | Route To |
+|---|---|
+| Page content (headings, objectives, structure) | `skills/update-module/SKILL.md` |
+| Quiz settings or questions | `skills/quiz/SKILL.md` |
+| Rubric criteria | `skills/rubric-creator/SKILL.md` |
+| Discussion prompt | `skills/discussion-generator/SKILL.md` |
+| Assignment description or settings | `skills/assignment-generator/SKILL.md` |
+| Accessibility issues across pages | `skills/bulk-edit/SKILL.md` |
+| Syllabus content | `skills/syllabus-generator/SKILL.md` |
+| Course settings (dates, navigation, grading) | `skills/course-config/SKILL.md` |
+
+After each fix, the skill records a `remediation_events` row and clears the `remediation_requested` flag automatically via `remediation_tracker.py`.
 
 ---
 
@@ -192,12 +209,12 @@ Present the top findings grouped by severity. Then for each finding, determine w
 
 | Issue Type | Route To |
 |---|---|
+| Module content (add, replace, rearrange pages or items) | `skills/update-module/SKILL.md` — primary entry for module-level remediation |
 | Quiz settings (attempts, shuffle, feedback, points) | `skills/quiz/SKILL.md` |
 | Missing/weak rubric | `skills/rubric-creator/SKILL.md` |
 | Discussion prompt issues or settings | `skills/discussion-generator/SKILL.md` |
 | Assignment instructions or submission settings | `skills/assignment-generator/SKILL.md` |
-| Page content (headings, objectives, structure) | `skills/update-module/SKILL.md` |
-| Batch issues (alt text, branding, link text across pages) | `skills/bulk-edit/SKILL.md` |
+| Batch issues (alt text, branding, headings across pages) | `skills/bulk-edit/SKILL.md` — use for bulk accessibility and branding fixes |
 | Course settings (dates, publish, nav tabs, grading) | `skills/course-config/SKILL.md` |
 | Syllabus content (missing sections, outdated info) | `skills/syllabus-generator/SKILL.md` |
 | Interactive activity issues | `skills/interactive-content/SKILL.md` |
@@ -267,5 +284,6 @@ If the user skips the menu and just says what they want, route directly:
 | "Change due dates" / "publish the course" | `skills/course-config/SKILL.md` |
 | "Show me the modules" / "what's in the course?" | `skills/canvas-nav/SKILL.md` |
 | "Preview my changes" / "what's staged?" | `skills/staging/SKILL.md` |
+| "My assignments" / "what courses are assigned to me?" | `skills/assignments/SKILL.md` (id_assistant only) |
 | "Switch course" / "work on a different course" | Re-run Check 2 |
 | "Switch to dev" / "use sandbox" | Toggle `CANVAS_ACTIVE_INSTANCE` in `.env` |

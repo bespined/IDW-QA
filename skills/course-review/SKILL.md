@@ -18,7 +18,7 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 ## Purpose
 
-Perform a comprehensive instructional design review of a completed (or near-complete) Canvas course. This is the "expert eye" that evaluates the course holistically — not just structure and compliance (that's `/course-audit`), but **pedagogical quality, alignment coherence, and student experience**.
+Perform a comprehensive instructional design review of a completed (or near-complete) Canvas course. This is the "expert eye" that evaluates the course holistically — not just structure and compliance (that's `/audit`), but **pedagogical quality, alignment coherence, and student experience**.
 
 Use this skill:
 - After completing a course build, before launch
@@ -26,14 +26,14 @@ Use this skill:
 - As a periodic quality check on a running course
 - When preparing for formal course review (e.g., Quality Matters)
 
-## Difference from `/course-audit`
+## Difference from `/audit`
 
-| | `/course-audit` | `/course-review` |
+| | `/audit` | `/course-review` |
 |---|---|---|
-| **Focus** | Structural compliance | Pedagogical quality |
+| **Focus** | Structural compliance + standards | Pedagogical quality |
 | **Checks** | "Does every module have 7 pages?" | "Do the pages create a coherent learning journey?" |
-| **Output** | Pass/fail checklist | Scored rubric with narrative feedback |
-| **Speed** | Fast (automated checks) | Thorough (reads and evaluates content) |
+| **Output** | Pass/fail checklist with per-criterion verdicts | Scored rubric with narrative feedback |
+| **Speed** | Fast (Quick Check ~2 min, Deep Audit ~15 min) | Thorough (reads and evaluates content) |
 | **Fixes** | Can auto-fix many issues | Produces recommendations for human action |
 
 ---
@@ -120,7 +120,7 @@ The review evaluates the course across 8 dimensions, each scored 1-4:
 - Is content readable without CSS/JavaScript?
 - Are multiple means of representation provided (UDL)?
 
-**Evidence**: Run `/accessibility-audit` and review results; check media for captions.
+**Evidence**: Run `/audit` (Deep Audit mode) and review accessibility findings; check media for captions.
 
 ### Dimension 7: Scaffolding & Progression (weight: 10%)
 
@@ -311,8 +311,8 @@ After a review, the user can act on recommendations:
 
 - **Assessment issues** → `/update-module` to replace/revise
 - **Rubric issues** → `/rubric-creator` (standalone mode) to regenerate
-- **Accessibility issues** → `/accessibility-audit` + `/content-fix`
-- **Structural issues** → `/course-audit` for detailed structural checks
+- **Accessibility issues** → `/bulk-edit` for batch fixes or `/audit` to re-check
+- **Structural issues** → `/audit` (Quick Check) for structural verification
 - **Content gaps** → `/update-module` to add content
 
 ---

@@ -375,9 +375,9 @@ Groups FindingCards under a standard header. Shows:
 
 ## 6. Audit Flow (End-to-End)
 
-### Quick Check (Col B only)
+### Quick Check — Structural Readiness Scan (Col B only)
 ```
-1. User runs /audit → picks Quick Check
+1. User runs /audit → picks Quick Check (no scope sub-question, always runs all B-criteria)
 2. Claude runs: python3 scripts/criterion_evaluator.py --quick-check > audit_results.json
 3. Evaluator fetches ALL Canvas data (pages, quizzes, assignments, tabs, syllabus)
 4. Evaluates 124 B-criteria deterministically (HTML parsing, keyword matching)
@@ -390,7 +390,7 @@ Groups FindingCards under a standard header. Shows:
 
 ### Deep Audit (Col B + C)
 ```
-Steps 1-5 same as Quick Check but uses --full-audit
+Steps 1-5 same as Quick Check (structural readiness) but uses --full-audit
 6. Claude reads JSON, evaluates 49 C-criteria using enrichment cards
 7. Updates JSON with C-criteria verdicts
 8. Same report prompt → submit to Supabase
@@ -465,7 +465,7 @@ AIRTABLE_BASE_ID
 | Hardcoded Airtable field maps | Schema API discovery was unreliable on Vercel (env vars, timing). Hardcoded maps always work. |
 | `--local-only` flag | IDs iterate many times during course dev. Report generation + Supabase push wasteful for each iteration. |
 | Staging mandatory for ALL HTML | Prevents accidental Canvas pushes. Stage → preview → approve → push. No exceptions. |
-| Split scores (Readiness/Design/A11y) | Quick Check only evaluates Col B. Showing a single "overall" score misleads when design isn't evaluated. |
+| Split scores (Readiness/Design/A11y) | Quick Check is a structural readiness scan (Col B only). Showing a single "overall" score misleads when design quality isn't evaluated. |
 | ID Assistant sees Col B only | Student workers validate readiness checks. Design quality requires ID expertise. |
 | Decision history preserved | Every `finding_feedback` row kept (never deleted). Enables RLHF analysis + IDA accuracy tracking. |
 

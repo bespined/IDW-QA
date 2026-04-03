@@ -208,7 +208,7 @@ IDs **do not build courses from scratch** — they receive a pre-built ASU Canva
 |---|---|---|---|
 | **Entry** | `qa-concierge` | `/qa-concierge` | Guided entry point — 3 modes: Audit, Review & Fix, Search |
 | **Navigation** | `canvas-nav` | `/canvas-nav` | Browse the full course tree (modules → items) in conversation |
-| **QA** | `audit` | `/audit` | 3-mode audit: design standards (25 ASU), accessibility (WCAG 2.1 AA), or launch readiness (CRC) |
+| **QA** | `audit` | `/audit` | 3-mode audit: Quick Check (structural readiness, Col B), Deep Audit (all standards + design quality, Col B+C), or Guided Review (interactive with live fixes) |
 | **Review** | `course-review` | `/course-review` | Expert instructional design review of a completed course |
 | **Staging** | `staging` | `/staging` | Preview staged pages, push to Canvas with backup, or rollback |
 | **Remediation** | `update-module` | `/update-module` | Modify a single module — add, replace, rearrange, or reorder content |
