@@ -114,6 +114,7 @@ def _at_upsert(token, base_id, table, record_id, fields):
 
 
 def _at_get_field_map(token, base_id):
+    # Discover column names from the Airtable metadata API because field names include human labels (e.g. "B-04.1 Layout: Getting Started*") that we can't hardcode
     """Fetch Airtable table schema and build criterion_id -> field_name mapping."""
     import requests
     resp = requests.get(
@@ -197,6 +198,7 @@ def _find_notes_field(notes_fields, std_id):
 
 
 def _generate_notes(findings, feedback_map=None):
+    # When an IDA marked a finding as 'incorrect', prefer their correction_note over AI reasoning so Airtable reflects human judgment
     """Generate high-level notes from findings for a standard.
 
     If IDA corrected a finding, use their correction_note instead of AI reasoning.
@@ -232,6 +234,7 @@ def _generate_notes(findings, feedback_map=None):
 # ── Core ──
 
 def build_airtable_row(session, findings, crit_map, rating_fields, notes_fields, feedback_map=None):
+    # Flow: group findings by standard → map each criterion to its Airtable column via crit_map → derive standard-level rating from criteria verdicts → generate notes
     """Build Airtable field values from session + per-criterion findings."""
     fields = {}
 

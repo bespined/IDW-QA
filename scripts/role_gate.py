@@ -86,6 +86,7 @@ def _supabase_post(url, key, table, row):
 
 
 def get_current_tester():
+    # IDW_TESTER_ID in .env is the local identity anchor — maps this machine to a Supabase testers row
     """Look up the current tester by IDW_TESTER_ID. Returns dict or None."""
     tester_id = os.getenv("IDW_TESTER_ID", "").strip()
     if not tester_id:
@@ -125,6 +126,7 @@ def check_role(required_role):
     if required_role == "any":
         return True, tester, f"Authenticated as {tester['name']} ({tester['role']})"
 
+    # Admins pass every role check — they need unrestricted access for tester management, RLHF review, and debugging
     if tester["role"] == required_role or tester["role"] == "admin":
         return True, tester, f"Authenticated as {tester['name']} ({tester['role']})"
 

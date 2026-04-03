@@ -214,7 +214,15 @@ def _pages_list(slugs, limit=5):
 
 
 def evaluate_b_criterion(cid_str, text, cd):
-    """Evaluate a single B-criterion deterministically. Returns (status, evidence)."""
+    """Evaluate a single B-criterion deterministically. Returns (status, evidence).
+
+    Routing logic: dispatches on criterion ID prefix (e.g. "B-04.") to the right
+    standard block, then uses keyword matching against the criterion's natural-language
+    text to pick the specific check. This avoids a brittle numeric lookup table --
+    criteria can be reworded in standards.yaml without breaking routing as long as
+    key phrases survive. Unmatched criteria fall through to a per-standard default
+    or the global "needs AI review" fallback at the bottom.
+    """
     t = text.lower()
     link = cd["link"]
     num_mods = len(cd["content_modules"])
@@ -458,7 +466,12 @@ def evaluate_b_criterion(cid_str, text, cd):
 
 
 def evaluate_all(cd, filter_standard=None):
-    """Evaluate all criteria. Returns list of result dicts."""
+    """Evaluate all criteria. Returns list of result dicts.
+
+    B-criteria (Col B) are evaluated deterministically here via HTML/API checks.
+    C-criteria (Col C) are NOT evaluated -- they're tagged needs_ai_review=True
+    so the audit skill can hand them to Claude for subjective assessment later.
+    """
     with open(PLUGIN_ROOT / "config" / "standards.yaml") as f:
         stds = yaml.safe_load(f)
 
@@ -478,17 +491,21 @@ def evaluate_all(cd, filter_standard=None):
             reviewer_tier = crit.get("reviewer_tier", "id")
             check_type = crit.get("check_type", "ai")
 
-            # Low-confidence criteria — evaluator gives default, human should verify
+            # Criteria where the deterministic evaluator gives an optimistic default
+            # but can't truly verify -- e.g. "are videos under 10 min" or "are links
+            # functional" require browser testing or content judgment that HTML parsing
+            # alone can't provide. Flagging these as low-confidence tells the audit
+            # report (and reviewers) to treat the verdict as provisional, not definitive.
             LOW_CONFIDENCE = {
                 "B-04.7", "B-06.1", "B-13.1", "B-13.2", "B-13.3", "B-13.4",
                 "B-13.5", "B-13.6", "B-13.7", "B-13.8", "B-17.1", "B-17.2",
                 "B-22.9", "B-22.11", "B-24.1",
-                # Cross-reference / reading comprehension / quality judgment
+                # These need cross-referencing or subjective quality judgment
                 "B-04.14", "B-06.2", "B-09.1", "B-09.6", "B-13.10", "B-13.14", "B-22.5",
             }
 
             if cid_str.startswith("B-"):
-                # Deterministic evaluation
+                # B-criteria are deterministic: evaluated via HTML parsing + API data
                 status, evidence = evaluate_b_criterion(cid_str, crit_text, cd)
                 confidence = "low" if cid_str in LOW_CONFIDENCE else "high"
                 results.append({
@@ -504,7 +521,8 @@ def evaluate_all(cd, filter_standard=None):
                     "needs_ai_review": False,
                 })
             else:
-                # C-criteria: flag for AI review
+                # C-criteria require subjective judgment (e.g. alignment quality,
+                # pedagogical effectiveness) -- punt to Claude for AI evaluation
                 results.append({
                     "criterion_id": cid_str,
                     "criterion_text": crit_text,
@@ -560,7 +578,13 @@ def build_full_audit_json(cd, results, mode="full_audit"):
     """Build the COMPLETE audit JSON matching audit_report.py's expected schema.
 
     This is the format that goes directly to audit_report.py --input <file>.
-    Claude does NOT need to build this JSON — the evaluator does it.
+    Claude does NOT need to build this JSON -- the evaluator does it.
+
+    Score computation (3 independent scores + 1 composite):
+      readiness_score = % of Col B criteria Met (all standards, excluding N/A)
+      design_score    = % of Col C criteria Met (None when C not yet evaluated)
+      a11y_score      = % of Standards 22-23 B-criteria Met (WCAG subset)
+      overall_score   = avg(readiness, design) when both exist, else readiness only
     """
     from datetime import datetime
 
@@ -751,22 +775,25 @@ def build_full_audit_json(cd, results, mode="full_audit"):
     r_total = len(readiness_cats)
 
     # ── Compute split scores ──
-    # Readiness = % of Col B criteria met (excluding N/A)
+    # Three independent scores map to the report's score boxes.
+    # Readiness = Col B pass rate -- the "can this course launch?" metric
     b_results_all = [r for r in results if r["criterion_id"].startswith("B-") and r["status"] != "N/A"]
     b_met_all = sum(1 for r in b_results_all if r["status"] == "Met")
     readiness_score = round(b_met_all / len(b_results_all) * 100) if b_results_all else 0
 
-    # Design = % of Col C criteria met (excluding N/A and needs_ai_review)
+    # Design = Col C pass rate -- the "is the pedagogy sound?" metric
+    # None when C-criteria haven't been evaluated yet (Quick Check mode)
     c_results_all = [r for r in results if r["criterion_id"].startswith("C-") and r["status"] not in ("N/A", "needs_ai_review")]
     c_met_all = sum(1 for r in c_results_all if r["status"] == "Met")
     design_score = round(c_met_all / len(c_results_all) * 100) if c_results_all else None  # None = not evaluated
 
-    # A11y = % of Standards 22-23 B-criteria met (always shown since ASU-mandated)
+    # A11y = Standards 22-23 only -- carved out because ASU mandates WCAG AA separately
     a11y_results = [r for r in results if r["standard_id"] in ("22", "23") and r["criterion_id"].startswith("B-") and r["status"] != "N/A"]
     a11y_met = sum(1 for r in a11y_results if r["status"] == "Met")
     a11y_score = round(a11y_met / len(a11y_results) * 100) if a11y_results else 0
 
-    # Overall = 50/50 readiness+design when both present, readiness-only for quick check
+    # Overall = equal-weight average of readiness + design when both exist,
+    # falls back to readiness-only for Quick Check (where design_score is None)
     if design_score is not None:
         overall = round((readiness_score + design_score) / 2)
     else:
@@ -825,6 +852,17 @@ def build_full_audit_json(cd, results, mode="full_audit"):
 
 
 def main():
+    """Entry point with 4 output modes + a default human-readable table.
+
+    --quick-check : Col B only, full audit JSON. Fast "is this course ready?" pass.
+                    Feeds directly into audit_report.py for HTML/XLSX generation.
+    --full-audit  : Col B evaluated + Col C tagged for AI. The audit skill pipes
+                    this to Claude, who fills in C-criteria, then sends to report.
+    --summary     : Compact standard-level rollup (Met/Not Met counts). Used by
+                    the concierge for a quick status line.
+    --json        : Raw criterion-level results for programmatic consumption.
+    (no flag)     : Human-readable table with check/cross markers to stderr+stdout.
+    """
     parser = argparse.ArgumentParser(description="Deterministic criterion evaluator")
     parser.add_argument("--json", action="store_true", help="Output criterion-level results as JSON")
     parser.add_argument("--summary", action="store_true", help="Output standard-level summary")
@@ -839,12 +877,12 @@ def main():
     results = evaluate_all(cd, filter_standard=args.standard)
 
     if args.quick_check:
-        # Quick Check: remove C-criteria entirely, only B-criteria
+        # Quick Check: strip C-criteria so report shows B-only verdicts (no AI needed)
         b_only = [r for r in results if not r["needs_ai_review"]]
         audit_json = build_full_audit_json(cd, b_only, mode="quick_check")
         print(json.dumps(audit_json, indent=2))
     elif args.full_audit:
-        # Full Audit: B evaluated + C marked for AI review
+        # Full Audit: B deterministic + C placeholders for Claude to fill in
         audit_json = build_full_audit_json(cd, results, mode="full_audit")
         print(json.dumps(audit_json, indent=2))
     elif args.summary:
