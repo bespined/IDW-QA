@@ -14,7 +14,7 @@ Usage:
     # Check sync status
     python metrics_sync.py --status
 
-Environment variables (from .env):
+Environment variables (from .env.local — consistent with all other scripts):
     SUPABASE_URL         - Project URL (e.g., https://abcdefg.supabase.co)
     SUPABASE_ANON_KEY    - Public anon key (for DB inserts)
     SUPABASE_SERVICE_KEY - Service role key (for Storage uploads)
@@ -48,24 +48,35 @@ PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
 
 def _load_env():
-    """Load Supabase config from .env file."""
-    env_path = PLUGIN_ROOT / ".env"
-    config = {}
-    if env_path.exists():
-        for line in env_path.read_text(encoding="utf-8").splitlines():
-            line = line.strip()
-            if line and not line.startswith("#") and "=" in line:
-                key, _, value = line.partition("=")
-                config[key.strip()] = value.strip()
-    return config
+    """Load env vars from .env AND .env.local using python-dotenv (consistent with all other scripts).
+
+    Falls back to manual parsing if python-dotenv is not installed.
+    Supabase credentials live in .env.local, not .env — loading only .env misses them.
+    """
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(PLUGIN_ROOT / ".env")
+        load_dotenv(PLUGIN_ROOT / ".env.local")  # Supabase keys are here
+    except ImportError:
+        # Fallback: manual parse of both files
+        for env_file in [PLUGIN_ROOT / ".env", PLUGIN_ROOT / ".env.local"]:
+            if env_file.exists():
+                for line in env_file.read_text(encoding="utf-8").splitlines():
+                    line = line.strip()
+                    if line and not line.startswith("#") and "=" in line:
+                        key, _, value = line.partition("=")
+                        os.environ.setdefault(key.strip(), value.strip())
+
+
+# Load env vars at module init (same pattern as canvas_api.py, role_gate.py, etc.)
+_load_env()
 
 
 def _get_supabase_config():
     """Get Supabase URL and keys. Returns None if not configured."""
-    env = _load_env()
-    url = env.get("SUPABASE_URL") or os.environ.get("SUPABASE_URL", "")
-    anon_key = env.get("SUPABASE_ANON_KEY") or os.environ.get("SUPABASE_ANON_KEY", "")
-    service_key = env.get("SUPABASE_SERVICE_KEY") or os.environ.get("SUPABASE_SERVICE_KEY", "")
+    url = os.getenv("SUPABASE_URL", "")
+    anon_key = os.getenv("SUPABASE_ANON_KEY", "")
+    service_key = os.getenv("SUPABASE_SERVICE_KEY", "")
 
     if not url or not anon_key:
         return None
@@ -79,10 +90,9 @@ def _get_supabase_config():
 
 def _get_tester_id():
     """Generate an anonymized tester ID from the Canvas token."""
-    env = _load_env()
-    token = env.get("CANVAS_TOKEN", "")
+    token = os.getenv("CANVAS_TOKEN", "")
     if not token:
-        token = env.get("CANVAS_DEV_TOKEN", "unknown")
+        token = os.getenv("CANVAS_DEV_TOKEN", "unknown")
     return hashlib.sha256(token.encode()).hexdigest()[:16]
 
 
@@ -239,7 +249,6 @@ def sync_metrics(metrics_data):
 
         tester_id = _get_tester_id()
         events = metrics_data.get("events", [])
-        env = _load_env()
 
         # Partition events by course
         by_course = _partition_events_by_course(events)
@@ -302,7 +311,7 @@ def sync_metrics(metrics_data):
                 "pages_pushed": totals.get("pages_pushed", 0),
                 "pages_rolled_back": totals.get("pages_rolled_back", 0),
                 "errors": json.dumps(error_list),
-                "canvas_instance": env.get("CANVAS_ACTIVE_INSTANCE", "prod"),
+                "canvas_instance": os.getenv("CANVAS_ACTIVE_INSTANCE", "prod"),
                 "idw_version": "1.3.0",
                 "course_id": course_code,
                 "actions": actions,
@@ -516,12 +525,11 @@ def sync_audit_score(course_id, score):
                 return False
 
         # No existing row — create one with audit_score_before
-        env = _load_env()
         new_row = {
             "tester_id": tester_id,
             "timestamp": datetime.now(timezone.utc).isoformat(),
             "audit_score_before": score,
-            "canvas_instance": env.get("CANVAS_ACTIVE_INSTANCE", "prod"),
+            "canvas_instance": os.getenv("CANVAS_ACTIVE_INSTANCE", "prod"),
             "idw_version": "1.3.0",
             "course_id": course_id,
         }
