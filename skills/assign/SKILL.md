@@ -1,6 +1,6 @@
 ---
 name: assign
-description: "Assign an IDA to a course for review. Admin role required."
+description: "Assign an ID Assistant to a course for review. Admin role required."
 ---
 
 # Assign IDA to Course
@@ -72,7 +72,7 @@ If the admin has an active course in `.env`, offer it as a default:
 
 ### 3. Check for Duplicate Assignments
 
-Before creating, check if this IDA is already assigned to this course:
+Before creating, check if this ID Assistant is already assigned to this course:
 
 ```bash
 python3 -c "
@@ -91,7 +91,7 @@ print(json.dumps(existing or [], indent=2, default=str))
 ```
 
 If a non-completed assignment exists, warn:
-> **[IDA name] is already assigned to this course** (status: in_progress, assigned Mar 15). Create another assignment anyway?
+> **[ID Assistant name] is already assigned to this course** (status: in_progress, assigned Mar 15). Create another assignment anyway?
 
 ### 4. Create the Assignment
 
@@ -132,13 +132,13 @@ print(json.dumps(resp.json(), indent=2, default=str))
 
 After successful creation, display:
 
-> Assigned **[IDA name]** to **[Course name]** ([domain], course [ID]).
+> Assigned **[ID Assistant name]** to **[Course name]** ([domain], course [ID]).
 > They'll see it when they run `/assignments`.
 
 ### 6. Bulk Assignment
 
 If the admin says "assign all IDAs to this course" or provides multiple names:
-- Loop through each IDA and create separate assignments
+- Loop through each ID Assistant and create separate assignments
 - Show a summary table of all created assignments
 
 ### 7. Register New Tester

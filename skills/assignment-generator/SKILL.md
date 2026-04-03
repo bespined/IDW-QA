@@ -336,9 +336,15 @@ Use the rubric-creator skill to create the attached rubric:
 - Align criteria to the assignment's specific deliverables
 - Customize descriptors for the assignment type
 
-### Step 5: Push Assignment + Rubric to Canvas
+### Step 5: Stage, Preview, and Push Assignment
 
-**Create or update the assignment:**
+**Stage the assignment description HTML first — do NOT push directly to Canvas:**
+1. Save the assignment description HTML to `staging/assignment-{slug}.html`
+2. Run unified preview: `python3 scripts/unified_preview.py` → screenshot in conversation
+3. Wait for user approval before pushing
+4. After approval, push via `python3 scripts/push_to_canvas.py`
+
+**Canvas API for creating the assignment (after staging approval):**
 ```
 POST /api/v1/courses/:course_id/assignments
 Body: {

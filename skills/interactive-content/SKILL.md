@@ -67,14 +67,15 @@ If the user specifies "interactives for all modules," ask these once for the bat
 - **Workflow**:
   1. Define content in a Python data file (see `scripts/generator.py`)
   2. Run: `python scripts/generator.py <content_data.py> --output-dir ./output`
-  3. Upload to Canvas: `python scripts/deploy_interactives.py <content_data.py> --output-dir ./output`
-  4. Activities are embedded as iframes in Canvas pages
+  3. Stage the embed page HTML via `staging_manager.py` → preview via unified preview → get user approval
+  4. After approval: Upload to Canvas via `python scripts/deploy_interactives.py` → embed as iframe
+  5. **Do NOT deploy without staging and user approval first.**
 
 ### Path 2: Custom HTML Activity → Canvas iframe
 - **Use for**: Any activity type not covered by the 5 built-in types — custom interactions designed by Claude based on your description
 - **Output**: Self-contained HTML/CSS/JS file with ASU branding and WCAG compliance
 - **Cost**: Free
-- **Workflow**: Describe what you want → Claude generates the HTML → Upload to Canvas Files → Embed via iframe
+- **Workflow**: Describe what you want → Claude generates the HTML → Stage for preview → User approves → Upload to Canvas Files → Embed via iframe
 - **See**: Custom Activity Mode section below
 
 ### Path 3: External Embeds (Simulations, Interactive Videos)

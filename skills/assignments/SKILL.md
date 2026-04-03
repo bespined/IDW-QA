@@ -1,6 +1,6 @@
 ---
 name: assignments
-description: "View your assigned courses and their review status. IDA role required."
+description: "View your assigned courses and their review status. ID Assistant role required."
 ---
 
 # My Assignments

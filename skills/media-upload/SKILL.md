@@ -95,7 +95,7 @@ If the user wants the file embedded in a page:
 </a>
 ```
 
-Use the staging workflow: fetch current page HTML, insert the embed at the specified location, stage for preview, then push via `/canvas-push`.
+Use the staging workflow: fetch current page HTML, insert the embed at the specified location, stage via `staging_manager.py`, preview via unified preview, wait for user approval, then push via `/staging`.
 
 ### Step 5 — Verify and Report
 

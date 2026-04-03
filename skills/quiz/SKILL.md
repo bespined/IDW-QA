@@ -149,7 +149,7 @@ Summative assessment — tests applied reasoning with real-world forensic/clinic
 4. Write questions with stems/scenarios, answers, and detailed feedback
 5. Tag Bloom's level per question
 6. Verify alignment with module MLOs
-7. Stage as JSON in `staging/m{N}_{practice|graded}_quiz.json` or push directly with `--direct`
+7. Stage as JSON in `staging/m{N}_{practice|graded}_quiz.json` — all quiz changes must be staged and reviewed before pushing. Use `/staging` to preview and push after approval.
 
 ---
 

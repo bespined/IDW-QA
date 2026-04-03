@@ -61,14 +61,13 @@ Before asking about audit mode, determine which course(s) to audit. Use `AskUser
 | Option | Label | Description |
 |---|---|---|
 | 1 | **Current course** | Audit the course in `.env` (show course name for confirmation) |
-| 2 | **Pick from my assignments** | Show courses assigned to me via `/assignments` and let me choose |
-| 3 | **Batch audit** | Audit multiple courses sequentially — I'll pick which ones |
-| 4 | **Different course** | Let me provide a course URL or ID |
+| 2 | **Batch audit** | Audit multiple courses sequentially — I'll pick which ones |
+| 3 | **Different course** | Let me provide a course URL or ID |
 
 **Skip this prompt** if the user already specified a course (e.g., "audit BIO 101" or "audit course 223406").
 
 **For Batch Audit:**
-1. Show the user's assigned courses (from `tester_course_assignments`) or let them paste a list of course IDs
+1. Let the user paste a list of course IDs or URLs
 2. Confirm the list: "I'll audit these N courses sequentially: [list]. Each takes ~10 minutes for Deep Audit. Continue?"
 3. Run the audit on each course in sequence, generating separate reports and sessions for each
 4. At the end, show a summary table: Course | Score | Standards Met | Critical Issues
@@ -82,7 +81,7 @@ When the user asks for a general audit without specifying a mode, **always prese
 |---|---|---|
 | 1 | **Quick Check** | Fast structural check with AI verification — catches setup issues and obvious content gaps. Takes 1-2 minutes. Best for recurring audits and pre-checks. |
 | 2 | **Deep Audit** | Comprehensive quality review — evaluates alignment, assessment design, content quality, and instructional effectiveness in depth. Takes 10-15 minutes. |
-| 3 | **Guided Review** | Same depth as Deep Audit but walks through the course with you section by section, pausing after each to review findings and fix issues on the spot. Best when you're actively building the course. |
+| 3 | **Guided Review** | Same depth as Deep Audit but walks through the course with you section by section, pausing after each to review findings and stage fixes for your approval before pushing. Best when you're actively building the course. |
 
 Only skip this prompt when the user's message clearly specifies a mode.
 
