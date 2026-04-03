@@ -172,19 +172,30 @@ python3 scripts/criterion_evaluator.py --quick-check > audit_results.json
 
 Step 2: Show the summary (Met/Partial/Not Met counts + overall score) in conversation.
 
-Step 3: Ask the user using `AskUserQuestion`:
-> Generate HTML report and push to Supabase?
-> 1. **Yes — Generate report** (creates shareable HTML + pushes session to review app)
-> 2. **No — Just show results** (for iterative checks during course dev, no session created)
+Step 3: **STOP and ASK before generating any report.** Use `AskUserQuestion` with these options:
 
-If Yes:
+| Option | Label | Description |
+|---|---|---|
+| 1 | **Just show results** | No report, no Supabase push. Fastest — for iterative checks during course building. |
+| 2 | **Generate report (local only)** | Creates HTML report saved locally. Does NOT push to Supabase or create a review session. |
+| 3 | **Generate report + submit for review** | Creates HTML report AND pushes to Supabase. Creates a session in the review app for ID Assistant validation. |
+
+**Do NOT skip this prompt. Do NOT auto-generate reports. Do NOT push to Supabase without the user explicitly choosing option 3.**
+
+If option 1 — Just show results:
+Display the summary in conversation. Done. No commands to run.
+
+If option 2 — Local only:
+```bash
+python3 scripts/audit_report.py --input audit_results.json --local-only --open
+```
+Show the local file path. No Supabase session created.
+
+If option 3 — Submit for review:
 ```bash
 python3 scripts/audit_report.py --input audit_results.json --open
 ```
-Show the link to the HTML report and Supabase session ID.
-
-If No: just display the results in conversation. No report generated, no Supabase push. The user can run `/audit` again later and generate the report when ready.
-4. Offer: "Want me to open the report?" or "Ready to review findings?"
+Show the HTML report link and Supabase session ID.
 
 #### Deep Audit (Col B deterministic + Col C AI evaluation)
 
@@ -203,16 +214,15 @@ This produces the complete JSON with B-criteria evaluated and C-criteria marked 
    - Set `needs_ai_review` to `false`
 3. **Save the updated JSON** to `audit_results.json`
 4. **Show the summary** (Met/Partial/Not Met counts + overall score) in conversation.
-5. **Ask the user** using `AskUserQuestion`:
-   > Generate HTML report and push to Supabase?
-   > 1. **Yes — Generate report** (creates shareable HTML + pushes session to review app)
-   > 2. **No — Just show results** (for iterative checks during course dev)
+5. **STOP and ASK using `AskUserQuestion`** — same 3 options as Quick Check:
+   - **Just show results** — no report, no push
+   - **Generate report (local only)** — HTML saved locally, no Supabase
+   - **Generate report + submit for review** — HTML + Supabase push
 
-   If Yes:
-   ```bash
-   python3 scripts/audit_report.py --input audit_results.json --open
-   ```
-   If No: display results only. No report, no Supabase push.
+   **Do NOT skip this prompt. Do NOT auto-generate reports.**
+
+   If local only: `python3 scripts/audit_report.py --input audit_results.json --local-only --open`
+   If submit: `python3 scripts/audit_report.py --input audit_results.json --open`
 
 **IMPORTANT: Do NOT rebuild the JSON from scratch. Read the evaluator's output, update only the C-criteria, and pass through.** The B-criteria results, QA categories, accessibility findings, and readiness checks are all produced by the Python engine with guaranteed field names.
 
@@ -536,14 +546,9 @@ Status: [READY / NOT READY]
 
 Generate a polished, shareable HTML audit report for leadership and team review.
 
-**Always generate a report after every audit.** But generating a report is NOT the same as submitting findings to the review pipeline. After the audit completes, ask the user what they want to do using `AskUserQuestion`:
+**Do NOT auto-generate reports.** The report prompt is handled in the Quick Check and Deep Audit sections above (Step 3 / Step 5). This section documents the report commands AFTER the user has chosen.
 
-| Label | Description |
-|---|---|
-| **Generate report (local only)** | Create the HTML report for your own review and talking points. Findings stay local — nothing goes to the review app. Use this when you're still building or fixing the course. |
-| **Generate report + submit for review** | Create the HTML report AND push findings to the review app for IDA/QA team review. Use this when the course is ready for formal review. |
-
-**Based on their choice:**
+**Never push to Supabase without the user explicitly choosing "Generate report + submit for review."** The local-only report is useful for talking points, planning remediation, or sharing with the SME. Supabase submission is a separate, deliberate action.
 
 ```bash
 # Local only (progress check — no Supabase push)
@@ -552,8 +557,6 @@ python3 scripts/audit_report.py --input audit_results.json --open --local-only
 # Submit for review (full push to Supabase + Vercel review app)
 python3 scripts/audit_report.py --input audit_results.json --open
 ```
-
-**Never push to Supabase without the user choosing "submit for review."** The report is always useful on its own — for talking points, planning remediation, or sharing with the SME. Supabase submission is a separate, deliberate action.
 
 **Demo report:**
 

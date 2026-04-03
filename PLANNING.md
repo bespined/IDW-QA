@@ -1287,7 +1287,7 @@ All skills now reference their enforcement scripts:
 
 *5. ✅ DONE — Error message polish:* Sync errors show HTTP status + response. "Report error" mailto link with session context. Confidence filter added (All / Low / High).
 
-*6. ✅ DONE — Optional report generation:* Audit skill asks "Generate report?" after audit. Yes = HTML + Supabase. No = results in conversation only.
+*6. ✅ DONE — Optional report generation:* Audit skill STOPS and asks with 3 options: (1) Just show results, (2) Generate report locally, (3) Generate + submit for review. Fixed conflicting "always generate" instructions. Explicit "Do NOT auto-generate" guards added to Quick Check, Deep Audit, and HTML Report sections.
 
 *7. ✅ DONE — Confidence filter:* Session page filter for IDs/Admins: All / Low (verify) / High. Low-confidence findings flagged with red badge.
 
