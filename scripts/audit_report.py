@@ -46,9 +46,10 @@ REPORTS_DIR = PLUGIN_ROOT / "reports"
 
 def _resolve_auditor(data: dict) -> str:
     """Resolve auditor name: env var > tester lookup > data dict > fallback."""
+    # 1st: explicit env override — lets CI or admin force a name
     if os.getenv("IDW_AUDITOR_NAME"):
         return os.getenv("IDW_AUDITOR_NAME")
-    # Try looking up tester name from IDW_TESTER_ID
+    # 2nd: look up registered tester via Supabase (role_gate) using pilot tester ID
     tester_id = os.getenv("IDW_TESTER_ID", "").strip()
     if tester_id:
         try:
@@ -58,6 +59,7 @@ def _resolve_auditor(data: dict) -> str:
                 return tester["name"]
         except Exception:
             pass
+    # 3rd: use name embedded in audit data dict; last resort is generic plugin name
     return data.get("auditor") or "ID Workbench"
 
 
@@ -227,6 +229,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                 # Push one finding per criterion (granular)
                 for cr in criteria_results:
                     # Resilient field extraction — Claude may use different field names
+                    # across audit runs, so we try multiple synonyms via or-chain.
                     # Criterion question: look in criterion_text, text, description
                     crit_question = (
                         cr.get("criterion_text")
@@ -234,7 +237,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                         or cr.get("description")
                         or ""
                     )
-                    # Evidence: look in evidence, detail, reasoning, content_excerpt
+                    # Evidence: same or-chain pattern for the supporting evidence field
                     crit_evidence = (
                         cr.get("evidence")
                         or cr.get("detail")
@@ -242,11 +245,11 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                         or cr.get("content_excerpt")
                         or ""
                     )
-                    # If evidence looks like a question and question is empty, swap
+                    # Heuristic swap: if evidence contains "?" it's probably the question
                     if not crit_question and crit_evidence and "?" in crit_evidence:
                         crit_question = crit_evidence
                         crit_evidence = ""
-                    # If question looks like evidence (no "?" and > 20 chars), swap
+                    # Heuristic swap: long text without "?" is likely evidence, not a question
                     if crit_question and "?" not in crit_question and len(crit_question) > 50 and not crit_evidence:
                         crit_evidence = crit_question
                         crit_question = ""
@@ -1100,13 +1103,15 @@ def generate_report(data: dict) -> str:
     else:
         readiness_status = 'Not Evaluated'
 
-    # Use split scores from evaluator if available, else compute legacy
-    readiness_score = data.get('readiness_score')
-    design_score_val = data.get('design_score')
-    a11y_score_val = data.get('a11y_score')
+    # Prefer pre-computed scores from criterion_evaluator (new path) over legacy computation
+    readiness_score = data.get('readiness_score')       # CRC pass rate from evaluator
+    design_score_val = data.get('design_score')          # ASU standards met rate from evaluator
+    a11y_score_val = data.get('a11y_score')              # Accessibility score from evaluator
     if readiness_score is not None:
+        # New path: evaluator already computed scores, just use them
         overall_score = data.get('overall_score', readiness_score)
     else:
+        # Legacy path: weighted blend — design 40%, QA 30%, a11y 15%, readiness 15%
         overall_score = round((ds_score * 0.4 + qa_score * 0.3 + (100 if a11y_critical == 0 else max(0, 100 - a11y_critical * 25)) * 0.15 + (readiness_pass / readiness_total * 100 if readiness_total else 0) * 0.15))
 
     # Detect empty audit — all section totals are zero
