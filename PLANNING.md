@@ -1293,15 +1293,10 @@ All skills now reference their enforcement scripts:
 
 *8. Smart remediation:* Deferred — ID maintains full control via manual /bulk-edit. Element-level auto-fix risky for judgment calls (alt text, content quality).
 
-**Remaining code items (1 item):**
+**Remaining code items: NONE — all Phase 5 code complete**
 
-*9. CRITICAL — Session grouping in Vercel app:*
-Vercel shows `audit_round` badge but sessions are a flat list. IDs running 3-5 self-audits per course = 150-250 sessions. Must group by `course_id` + `audit_purpose`:
-1. Vercel sessions home: group by course, latest round expanded, prior rounds collapsed
-2. Score trend visualization (41 → 65 → 78)
-3. "Submit for QA Review" only on latest round
-4. Prior rounds view-only
-5. Audit skill: show score delta vs. prior round after completion
+*9. ✅ DONE — Session grouping in Vercel app:*
+Sessions grouped by `course_id` + `audit_purpose`. Latest round expanded, prior rounds in collapsible `<details>`. Score trend shown inline (41% → 65% → 78%). Round count displayed ("Round 3 of 5"). All existing filters (status, purpose, search, sort) respected. Build passes with zero TS errors. Commit `3fd59b5` in idw-review-app.
 
 *Session completion logic (CLARIFIED):*
 - "Mark Complete" = "I've reviewed every finding." That's the only requirement.
@@ -1403,7 +1398,7 @@ Three sub-phases: code → prep → go-live. Each phase must complete before the
 
 | # | Task | Owner | Effort | Status |
 |---|---|---|---|---|
-| 1 | Session grouping in Vercel (group by course, collapse rounds, score trend) | Claude + Brent | 3-4 hrs | **REMAINING — only code item left** |
+| 1 | ✅ DONE — Session grouping in Vercel (group by course, collapse rounds, score trend) | Claude + Brent | 3-4 hrs | Commit 3fd59b5 |
 | 2 | ✅ Remediation event batch fetch | — | — | Done |
 | 3 | ✅ Error message polish (sync errors, report link, confidence filter) | — | — | Done |
 | 4 | ✅ Progress check prompt in audit skill (`--local-only`) | — | — | Done |
