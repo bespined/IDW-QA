@@ -151,10 +151,9 @@ def create_session(course_id, scope, purpose=None, audit_mode="full_audit", dry_
         "run_date": datetime.now(timezone.utc).isoformat(),
         "audit_purpose": audit_purpose,
         "audit_round": audit_round,
-        "audit_mode": audit_mode,
-        "audit_scope": scope,
-        "session_status": "in_progress",
-        "tester_id": tester_id,
+        "status": "in_progress",
+        "auditor_id": tester["name"],
+        "plugin_version": "0.9.0",
     }
 
     if dry_run:
@@ -203,13 +202,13 @@ def submit_for_review(session_id, dry_run=False):
 
     # Verify current status
     sessions = _supabase_get(url, key, "audit_sessions", {
-        "id": f"eq.{session_id}", "select": "id,session_status,audit_purpose",
+        "id": f"eq.{session_id}", "select": "id,status,audit_purpose",
     })
     if not sessions:
         return {"ok": False, "error": f"Session {session_id} not found"}
 
     session = sessions[0]
-    current_status = session.get("session_status")
+    current_status = session.get("status")
 
     if current_status != "in_progress":
         return {"ok": False, "error": f"Cannot submit — current status is '{current_status}', expected 'in_progress'"}
@@ -223,7 +222,7 @@ def submit_for_review(session_id, dry_run=False):
             "apikey": key, "Authorization": f"Bearer {key}",
             "Content-Type": "application/json", "Prefer": "return=representation",
         },
-        json={"session_status": "pending_qa_review"},
+        json={"status": "pending_qa_review"},
         timeout=15,
     )
 
@@ -255,7 +254,7 @@ def get_session_status(session_id):
     return {
         "ok": True,
         "session_id": session_id,
-        "status": session.get("session_status"),
+        "status": session.get("status"),
         "purpose": session.get("audit_purpose"),
         "round": session.get("audit_round"),
         "total_findings": len(findings),
