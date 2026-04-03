@@ -1481,6 +1481,33 @@ Week 2+:  Weekly rhythm, enrichment card updates, RLHF analysis
 
 ---
 
+### Post-Pilot Code Cleanup Plan (in order — do NOT skip steps)
+
+**Principle: test harness first, then config, then shared clients, then enforcement, then semantics, then dead code, then monoliths. `audit_report.py` is always last.**
+
+**Step 1: Regression harness.**
+Add golden fixtures/smoke tests around `criterion_evaluator.py`, `audit_report.py`, `push_to_canvas.py`, and `metrics_sync.py`. Every later cleanup is safer if you can prove output shape and key behavior stayed stable. Without tests, refactoring is flying blind.
+
+**Step 2: Config/env consistency.**
+Normalize all direct `CANVAS_*` and env parsing so core scripts go through shared config paths. Targets: `criterion_evaluator.py`, `staging_manager.py`, `metrics_sync.py`. Removes the highest-value silent misconfiguration risk (like the `.env.local` bug we just fixed).
+
+**Step 3: Centralize Supabase access.**
+Create one shared client/helper layer. Move repeated `_get_supabase_config`, GET/POST/PATCH wrappers, and auth/header setup out of: `audit_session_manager.py`, `remediation_tracker.py`, `admin_actions.py`, `assignment_status.py`, `fetch_fix_queue.py`, `audit_report.py`. Currently each script reimplements the same HTTP helpers.
+
+**Step 4: Make "mandatory scripts" actually mandatory.**
+`push_to_canvas.py` should stop doing its own remediation tracking and ad hoc verify path. Instead use `remediation_tracker.py` and `post_write_verify.py`. This is the biggest remaining architecture drift — the enforcement scripts exist but push_to_canvas partially reimplements them.
+
+**Step 5: Normalize audit/session semantics.**
+Pick one source of truth for `audit_purpose`, round counting, `plugin_version`, and related session fields across `criterion_evaluator.py`, `audit_session_manager.py`, and `audit_report.py`. Right now those semantics can diverge (evaluator sets purpose from role, report sets version hardcoded, session manager infers purpose differently).
+
+**Step 6: Define public vs legacy vs orphaned.**
+Formally keep, integrate, or retire: `post_write_verify.py`, `build_checkpoint.py`, `template_manager.py`, `add_transcripts.py`, `upload_captions.py`. Define the public API surface for `canvas_api.py` before pruning anything — grep misses Claude-invoked functions.
+
+**Step 7: Refactor monoliths last.**
+Start with `criterion_evaluator.py` (extract keyword matching to config-driven lookup). Maybe `preflight_checks.py`. Only by extraction, not rewrite. Leave `audit_report.py` for absolute last — after tests exist. It is the riskiest file to "clean up" (2800 lines of working HTML generation + Supabase push + field mapping).
+
+---
+
 ### Phase 6 — Faculty Outreach, Analytics & Prioritization (ALL POST-LAUNCH)
 
 | Task | Details | Priority | When |
