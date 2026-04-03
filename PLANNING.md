@@ -1354,21 +1354,24 @@ These should be flagged with `confidence: low` in the evaluator output so the Fi
 - criterion_evaluator.py `--quick-check` and `--full-audit` should support `--no-report` flag to skip audit_report.py
 - This keeps iterative audits lightweight while still producing reports when ready for review
 
-*Skill instruction fixes needed (from audit of all 21 SKILL.md files):*
+*Skill instruction fixes (from audit of all 21 SKILL.md files):*
 
-Critical — blocks correct workflow:
-- **quiz**: Remove `--direct` flag that bypasses mandatory staging
-- **assignment-generator**: Add staging workflow before Canvas push (currently pushes directly)
-- **interactive-content**: Add staging before deploy (currently deploys directly)
-- **media-upload**: Replace `/canvas-push` reference (doesn't exist) with `/staging`
-- **audit**: Reword "fix on the spot" in Guided Review to clarify staging is required
+✅ DONE — Critical fixes:
+- **quiz**: Removed `--direct` flag — staging mandatory
+- **assignment-generator**: Added staging workflow before Canvas push
+- **interactive-content**: Added staging before deploy
+- **media-upload**: Replaced `/canvas-push` with `/staging`
+- **audit**: Guided Review reworded — "stage for approval" not "fix on the spot"
+- **audit course selection**: Removed "Pick from assignments" — ID Assistants don't use Claude Code
+- **audit report prompt**: 3-option AskUserQuestion (just show / local only / submit for review), explicit "Do NOT auto-generate" guards
 
-Important — confusion/inconsistency:
-- **assign, assignments**: Replace "IDA" with "ID Assistant" in titles and descriptions
-- **bulk-edit**: Reword "Generate fixes" to "Prepare fixes" to clarify nothing touches Canvas yet
+✅ DONE — Terminology:
+- **assign, assignments**: "IDA" → "ID Assistant" throughout
+
+Remaining — low priority (post-pilot):
+- **bulk-edit**: Reword "Generate fixes" to "Prepare fixes"
 - **rubric-creator**: Clarify standalone mode optional inputs
 - **staging**: Align unified preview wording with CLAUDE.md
-- **audit course selection**: Remove "Pick from assignments" option — ID Assistants don't use Claude Code. IDs/Admins should see: Current course / Different course / Batch audit only.
 
 *Session status after admin override (manual for pilot):*
 - Admin changes verdict from change request → admin re-syncs to Airtable
