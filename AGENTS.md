@@ -166,7 +166,7 @@ Then **offer a live screenshot**: "Want me to screenshot how this looks in Canva
 
 ## Quick Edits (No Skill Required)
 
-For simple one-off changes to **metadata only** (not page HTML body), Codex should handle them directly via the Canvas API without invoking a full skill workflow. Examples:
+For simple one-off changes to **metadata only** (not page HTML body), Claude should handle them directly via the Canvas API without invoking a full skill workflow. Examples:
 
 - "Rename Module 3 to 'Membrane Biology'" → `PUT /courses/:id/modules/:id` with `module[name]`
 - "Change the Module 2 quiz to 3 attempts" → `PUT /courses/:id/quizzes/:id` with `quiz[allowed_attempts]`
@@ -302,7 +302,7 @@ The Vercel review app (`idw-review-app`) has server-side API routes using the Su
 ### Google Drive (`google_drive_search`, `google_drive_fetch`)
 Search and fetch files from institutional Google shared drives for audit cross-referencing, source document comparison, and media sourcing.
 
-### Codex in Chrome (Browser Automation)
+### Claude in Chrome (Browser Automation)
 Navigate Canvas for visual QA, screenshot verification, external link validation, and embed testing.
 
 ### Canvas REST API

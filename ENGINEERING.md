@@ -471,3 +471,24 @@ AIRTABLE_BASE_ID
 3. Add to CLAUDE.md API routes table
 4. Add env vars to Vercel dashboard
 5. Build test: `npx next build`
+
+---
+
+## 10. Deprecated & Legacy Code
+
+**`deterministic_checks.py`** — Deprecated in place. Superseded by `criterion_evaluator.py` for all audit operations. File kept for reference and backward compatibility (still referenced in some docs). Do not call directly for new audits.
+
+**`preflight.py` bug (fixed):** `CANVAS_ACTIVE_INSTANCE` was reset inside the `.env` parsing loop — only retained if it happened to be the last line. Fixed by moving `active = ""` outside the loop.
+
+**`metrics_sync.py` credential source (fixed):** Was only reading `.env` (Canvas creds), missing `.env.local` (Supabase creds). Fixed to use `python-dotenv` loading both files, consistent with all other scripts.
+
+## 11. Post-Pilot Cleanup Plan
+
+See PLANNING.md for the full 7-step plan. Summary order:
+1. **Test harness** — golden fixtures before any refactoring
+2. **Config/env consistency** — shared config paths
+3. **Centralize Supabase access** — one client layer
+4. **Make mandatory scripts mandatory** — push_to_canvas.py drift
+5. **Normalize audit/session semantics** — one source of truth
+6. **Define public vs legacy** — retire orphaned scripts
+7. **Refactor monoliths last** — `audit_report.py` always last
