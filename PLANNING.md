@@ -1574,6 +1574,25 @@ Start with `criterion_evaluator.py` (extract keyword matching to config-driven l
 
 ---
 
+### Plugin Pre-Pilot Fix Plan (PRE-LAUNCH — from Codex + Claude review)
+
+**Assessment:** Deep audit of skill capabilities vs actual workflow found 6 issues: a functional URL bug, id_assistant role drift, dead CLI surface, incomplete remediation tracking, thin post-submission messaging, and an aspirational fix-queue flow. Full plan: `codex-plugin-pre-pilot-fix-plan.md`.
+
+| # | Fix | Severity | Status |
+|---|---|---|---|
+| 1 | **Fix review-app URL** — `/sessions/<id>` → `/session/<id>` in scripts + docs | Bug (functional break) | ✅ DONE |
+| 2 | **Remove `id_assistant` from Claude Code** — IDAs use Vercel only. Remove from concierge, deprecate `/assignments`, update all role tables | Blocker | ✅ DONE |
+| 3 | **Remove dead `--scope`** — `audit_session_manager.py` requires `--scope` but never uses it. Remove from CLI, function sig, docs | Cleanup | ✅ DONE |
+| 4 | **Add remediation tracking to 4 skills** — `update-module`, `syllabus-generator`, `course-config`, `media-upload` lack `remediation_tracker.py` calls | Quality | ✅ DONE |
+| 5 | **Update audit post-submission messaging** — Explain admin→IDA→remediation flow, differentiate by audit_purpose | Blocker | ✅ DONE |
+| 6 | **Flesh out concierge Path D** — Make fix-queue flow concrete (finding presentation, skill routing, finding ID passthrough, tracking step) | Quality | ✅ DONE |
+
+**Execution order:** 1 → 2 → 3 → 4 → 5 → 6 (URL bug first, then structural cleanup, then content fixes)
+
+**Out of scope:** Post-pilot monolith refactors, review-app frontend changes, session monitoring from Claude Code, automatic finding-aware skill orchestration.
+
+---
+
 ### Phase 6 — Faculty Outreach, Analytics & Prioritization (ALL POST-LAUNCH)
 
 | Task | Details | Priority | When |

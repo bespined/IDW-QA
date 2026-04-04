@@ -242,3 +242,22 @@ After applying any update to Canvas, always:
    - Modules: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/modules`
 2. **Auto-verify** by re-fetching the updated object from the Canvas API and confirming the change is reflected.
 3. **Take a screenshot**: Navigate to the Canvas URL and capture the updated item — do not make this optional. Show it to the user.
+
+---
+
+## Remediation Event Recording
+
+When this skill fixes an issue that was flagged from an audit finding, record the remediation event so the FindingCard shows the fix history. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill update-module --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /update-module (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to update content unprompted), skip this step.

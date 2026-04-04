@@ -462,3 +462,22 @@ The skill produces:
 3. Full grading breakdown with point totals
 4. All course policies
 5. Objective alignment summary for instructor reference
+
+---
+
+## Remediation Event Recording
+
+When this skill fixes a syllabus issue flagged from an audit finding, record the remediation event. **This step is required when the fix originated from the fix queue.**
+
+After successfully pushing the fix to Canvas, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill syllabus-generator --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /syllabus-generator (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., generating a new syllabus from scratch), skip this step.

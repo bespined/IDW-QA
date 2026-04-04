@@ -41,11 +41,10 @@ Use the tester role to shape the experience:
 
 | Role | What to Show | What to Emphasize |
 |---|---|---|
-| `id_assistant` | Assigned course audit + fix queue only | "Here's your assigned course. Want to start the audit, or work through the fix queue?" |
 | `id` | Full options (audit, review, search, submit for QA) | Standard flow |
 | `admin` | Full options + system health link | Mention `/admin` is available |
 
-**If `id_assistant`**: skip "Audit this course" as a self-service option. Their primary workflow is auditing assigned courses and working through findings flagged by QA. Present as: "Run the assigned audit" and "Work through my fix queue."
+**Note:** `id_assistant` (student workers) do NOT use Claude Code. They review Col B findings in the Vercel review app only. If an `id_assistant` somehow reaches the concierge, inform them: "ID Assistants review findings in the review app at https://idw-review-app.vercel.app. Contact your QA admin if you need access."
 
 **If no tester ID configured** (role gate fails): guide through setup inline. Ask for their name and email, then tell them to contact their QA admin to be registered as a tester.
 
@@ -87,24 +86,12 @@ Then greet:
 
 Present exactly one `AskUserQuestion` with options tailored to the tester's role:
 
-**For `id` and `admin` roles:**
-
 | Label | Description |
 |---|---|
 | **Audit this course** | Run a full quality check — design standards, accessibility, and launch readiness |
 | **Review & fix issues** | Walk through findings and remediate problems — quiz settings, rubrics, content, dates |
 | **Work through fix queue** | Pull findings flagged for remediation and fix them one by one |
 | **Search course content** | Find specific text, pages, or assessments across the course |
-
-**For `id_assistant` role:**
-
-| Label | Description |
-|---|---|
-| **View my assignments** | See which courses are assigned to me and their review status |
-| **Run assigned audit** | Run the quality audit on my assigned course |
-| **Work through fix queue** | Pull findings flagged for my review and fix them |
-
-If "View my assignments" is selected, seamlessly invoke `skills/assignments/SKILL.md`.
 
 Based on the user's selection, proceed to the corresponding path below.
 
@@ -176,13 +163,44 @@ If yes, transition to Path B.
 
 ## Path D: Fix Queue
 
-Pull findings where `remediation_requested = true` for the active course and fix them in order.
+Work through findings flagged for remediation, one at a time.
+
+### Step 1: Fetch the queue
 
 ```bash
 python3 scripts/fetch_fix_queue.py --course-id <COURSE_ID> --with-feedback
 ```
 
-Present each finding with its criterion ID, reviewer feedback, and the suggested fix. Route each finding to the appropriate remediation skill based on its type:
+If the queue is empty, say: "No findings are flagged for remediation. You're all caught up!"
+
+### Step 2: Present findings
+
+Show a numbered summary table first:
+
+```
+Fix Queue — [Course Name] ([N] items)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ #  | Criterion  | Location         | Issue
+ 1  | B-04.15    | Module 1 (page)  | No course tour page found
+ 2  | B-09.3     | Module 3 (quiz)  | Quiz missing feedback for wrong answers
+ 3  | B-22.1     | 12 pages         | Images missing alt text
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+```
+
+Then ask: "Which item would you like to fix first? (number, or 'all' for batch)"
+
+### Step 3: For each finding, present context and route
+
+Show the finding details before routing:
+
+- **Finding ID**: `<uuid>` (carry this through to remediation tracking)
+- **Criterion**: `B-04.15` — Course Tour Page
+- **Location**: Module 1 → Start Here section
+- **Canvas link**: `https://canvas.asu.edu/courses/.../pages/...`
+- **Reviewer feedback**: "Confirmed missing — template page exists but has no content"
+- **Recommended fix**: Create or populate the course tour page
+
+Then route to the appropriate remediation skill:
 
 | Finding relates to... | Route To |
 |---|---|
@@ -195,7 +213,23 @@ Present each finding with its criterion ID, reviewer feedback, and the suggested
 | Syllabus content | `skills/syllabus-generator/SKILL.md` |
 | Course settings (dates, navigation, grading) | `skills/course-config/SKILL.md` |
 
-After each fix, the skill records a `remediation_events` row and clears the `remediation_requested` flag automatically via `remediation_tracker.py`.
+### Step 4: After each fix, record remediation
+
+After the remediation skill pushes the fix to Canvas, **always** run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill <skill_name> --description "<WHAT_WAS_FIXED>"
+```
+
+This clears `remediation_requested` and records the event. Confirm to the user:
+> "Fixed and tracked. [N-1] items remaining in the queue."
+
+Then offer to continue: "Next item, or done for now?"
+
+### Step 5: Queue complete
+
+When all items are fixed or the user stops:
+> "Fix queue complete — [N] items remediated this session. The review app will show these as resolved."
 
 ---
 
@@ -284,6 +318,5 @@ If the user skips the menu and just says what they want, route directly:
 | "Change due dates" / "publish the course" | `skills/course-config/SKILL.md` |
 | "Show me the modules" / "what's in the course?" | `skills/canvas-nav/SKILL.md` |
 | "Preview my changes" / "what's staged?" | `skills/staging/SKILL.md` |
-| "My assignments" / "what courses are assigned to me?" | `skills/assignments/SKILL.md` (id_assistant only) |
 | "Switch course" / "work on a different course" | Re-run Check 2 |
 | "Switch to dev" / "use sandbox" | Toggle `CANVAS_ACTIVE_INSTANCE` in `.env` |

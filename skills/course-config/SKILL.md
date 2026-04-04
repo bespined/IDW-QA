@@ -345,3 +345,22 @@ Use the Google Drive MCP connector to find configuration templates, course setup
 - **Template reuse**: Search Drive for configuration templates from similar courses to pre-populate settings
 - **Policy documents**: Find departmental grading policies or late policy standards to apply consistently
 - **Config import**: Locate a previously exported `course-config.json` on Drive and import it for a new course shell
+
+---
+
+## Remediation Event Recording
+
+When this skill fixes a course settings issue flagged from an audit finding (e.g., missing due dates, wrong navigation tabs), record the remediation event. **This step is required when the fix originated from the fix queue.**
+
+After successfully applying the settings change, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill course-config --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /course-config (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., user asked to change settings unprompted), skip this step.

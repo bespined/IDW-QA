@@ -37,10 +37,10 @@ python3 scripts/audit_session_manager.py --create --course-id <COURSE_ID> --mode
 The script:
 1. Reads tester role from `role_gate.py`
 2. Infers `audit_purpose` deterministically:
-   - `id_assistant` → always `recurring`
    - `admin` → always `qa_review`
    - `id` on a course assigned to another tester → `qa_review`
    - `id` on their own course → `self_audit`
+   - Note: `id_assistant` does not use Claude Code (they review findings in the Vercel app only)
 3. Counts prior sessions → sets `audit_round`
 4. Creates `audit_sessions` row in Supabase
 5. Returns session ID + review app URL
@@ -111,7 +111,7 @@ Runs **Pass 1 (deterministic) + light AI verification**. Two steps:
 1. All deterministic checks run via `criterion_evaluator.py --quick-check` (supersedes legacy `deterministic_checks.py`)
 2. One AI verification call: Claude receives a summary of all deterministic results + raw content from flagged pages (syllabus body, module overviews, CLO text). The AI checks for obvious false positives and false negatives — pages that exist but are empty, CLOs that technically use measurable verbs but are meaningless, template placeholders that weren't caught by regex. The AI does NOT evaluate instructional quality — that's what Deep Audit does.
 
-All findings tagged `reviewer_tier: "id_assistant"`. This is what the QA team runs for recurring courses reviewed by student workers (`id_assistant` role).
+All findings tagged `reviewer_tier: "id_assistant"` (Col B). These are validated by ID Assistants in the Vercel review app after submission.
 
 ### Deep Audit (Mode 2)
 
@@ -633,12 +633,31 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 4. **If submit for review**: `python3 scripts/audit_report.py --input audit_results.json --open`
    - Report saved + findings pushed to Supabase + session created
    - Provide the Vercel review app URL:
-     > Your findings are live at: `https://idw-review-app.vercel.app/sessions/<SESSION_ID>`
-   - **If `audit_purpose` is `self_audit`**, offer to submit for QA review:
-     ```bash
-     python3 scripts/audit_session_manager.py --submit --session-id <SESSION_ID>
-     ```
-5. Fix issues via `/bulk-edit` → staged → reviewed in unified preview → pushed
+     > Your findings are live at: `https://idw-review-app.vercel.app/session/<SESSION_ID>`
+
+   **Post-submission messaging — vary by audit purpose:**
+
+   - **If `self_audit`** (ID auditing their own course):
+     > "Your findings are submitted. Next steps:"
+     > 1. "Review your findings in the review app at the link above"
+     > 2. "When ready, submit for QA review — an admin will assign an ID Assistant to validate the Col B (structural) findings"
+     > 3. "Once the ID Assistant completes their review, you can remediate any approved issues"
+     >
+     > "Want to submit for QA review now, or review the findings yourself first?"
+
+     If yes: `python3 scripts/audit_session_manager.py --submit --session-id <SESSION_ID>`
+
+   - **If `qa_review` or `recurring`** (QA team auditing a course):
+     > "Your findings are submitted. Here's what happens next:"
+     > 1. "An admin assigns an ID Assistant to this session in the review app"
+     > 2. "The ID Assistant validates all Col B findings (agree/disagree on each)"
+     > 3. "When they mark the session complete, Col C findings are auto-approved"
+     > 4. "Then you can remediate flagged issues using the fix queue"
+     >
+     > "You can monitor progress in the review app. Want to start remediating now, or wait for the IDA review?"
+
+5. **If user wants to remediate now**: Transition to fix queue (Path D in concierge) or offer `/bulk-edit` for batch fixes
+6. **If user wants to wait**: End the audit flow — they can return later via "Work through fix queue" in the concierge
 
 ## Faculty Feedback Summary
 

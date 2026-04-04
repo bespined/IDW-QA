@@ -5,10 +5,10 @@ Replaces prompt-based audit_purpose inference and session creation with script-e
 
 Usage:
     # Create a new audit session (auto-infers purpose from tester role)
-    python3 scripts/audit_session_manager.py --create --course-id 252193 --scope all
+    python3 scripts/audit_session_manager.py --create --course-id 252193
 
     # Create with explicit purpose
-    python3 scripts/audit_session_manager.py --create --course-id 252193 --scope all --purpose self_audit
+    python3 scripts/audit_session_manager.py --create --course-id 252193 --purpose self_audit
 
     # Submit session for QA review
     python3 scripts/audit_session_manager.py --submit --session-id <uuid>
@@ -17,7 +17,7 @@ Usage:
     python3 scripts/audit_session_manager.py --status --session-id <uuid>
 
     # Dry run
-    python3 scripts/audit_session_manager.py --create --course-id 252193 --scope all --dry-run
+    python3 scripts/audit_session_manager.py --create --course-id 252193 --dry-run
 """
 
 import argparse
@@ -115,7 +115,7 @@ def infer_audit_purpose(tester_role, tester_id, course_id, url, key):
     return "self_audit"
 
 
-def create_session(course_id, scope, purpose=None, audit_mode="full_audit", dry_run=False):
+def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=False):
     """Create a new audit session in Supabase.
 
     Returns session dict with id, purpose, round, status.
@@ -188,7 +188,7 @@ def create_session(course_id, scope, purpose=None, audit_mode="full_audit", dry_
         "status": "in_progress",
         "tester_role": tester["role"],
         "tester_name": tester["name"],
-        "review_url": f"https://idw-review-app.vercel.app/sessions/{session_id}",
+        "review_url": f"https://idw-review-app.vercel.app/session/{session_id}",
     }
 
 
@@ -259,7 +259,7 @@ def get_session_status(session_id):
         "round": session.get("audit_round"),
         "total_findings": len(findings),
         "remediation_requested": sum(1 for f in findings if f.get("remediation_requested")),
-        "review_url": f"https://idw-review-app.vercel.app/sessions/{session_id}",
+        "review_url": f"https://idw-review-app.vercel.app/session/{session_id}",
     }
 
 
@@ -271,7 +271,6 @@ def main():
     group.add_argument("--status", action="store_true", help="Check session status")
 
     parser.add_argument("--course-id", help="Canvas course ID")
-    parser.add_argument("--scope", help="Audit scope: all, essential, crc")
     parser.add_argument("--purpose", help="Override audit purpose: self_audit, recurring, qa_review, or auto")
     parser.add_argument("--mode", default="full_audit", help="Audit mode: quick_scan, full_audit, guided_review")
     parser.add_argument("--session-id", help="Session UUID (for --submit and --status)")
@@ -279,10 +278,10 @@ def main():
     args = parser.parse_args()
 
     if args.create:
-        if not args.course_id or not args.scope:
-            print(json.dumps({"ok": False, "error": "Provide --course-id and --scope for session creation"}))
+        if not args.course_id:
+            print(json.dumps({"ok": False, "error": "Provide --course-id for session creation"}))
             sys.exit(1)
-        result = create_session(args.course_id, args.scope, args.purpose, args.mode, args.dry_run)
+        result = create_session(args.course_id, args.purpose, args.mode, args.dry_run)
         if result["ok"]:
             print(f"✓ Session created: {result.get('session_id', 'DRY RUN')}")
             print(f"  Purpose: {result['purpose']} (round {result['round']})")

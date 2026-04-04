@@ -208,3 +208,22 @@ with open(local_path, 'wb') as f:
 | Permission denied | Check Canvas role has "Manage Files" permission |
 | Upload timeout | Retry once; if still failing, report and suggest smaller file |
 | Quota exceeded | Report remaining storage, suggest alternatives |
+
+---
+
+## Remediation Event Recording
+
+When this skill fixes a media issue flagged from an audit finding (e.g., missing captions, broken embed), record the remediation event. **This step is required when the fix originated from the fix queue.**
+
+After successfully uploading and embedding the media, run:
+
+```bash
+python3 scripts/remediation_tracker.py --record --finding-ids <FINDING_ID> --skill media-upload --description "<WHAT_WAS_FIXED>"
+```
+
+This:
+1. Records a `remediation_events` row in Supabase
+2. Clears the `remediation_requested` flag on the finding
+3. The FindingCard in Vercel will show "Remediated via /media-upload (Name, Date)"
+
+If the fix was NOT from the fix queue (e.g., uploading new media for a course build), skip this step.

@@ -1,10 +1,14 @@
 ---
 name: assignments
-description: "View your assigned courses and their review status. ID Assistant role required."
+description: "DEPRECATED — ID Assistants use the Vercel review app, not Claude Code. This skill is inactive for pilot."
 ---
 
-# My Assignments
+# My Assignments (DEPRECATED)
 
+> **Status**: DEPRECATED for pilot. ID Assistants (id_assistant role) review findings in the Vercel review app at https://idw-review-app.vercel.app, not in Claude Code. Admins can view IDA assignments via the admin page in the review app or via `/admin` skill.
+>
+> If this skill is invoked, inform the user: "ID Assistant assignments are managed in the review app. Use `/admin` to manage assignments from Claude Code."
+>
 > **Run**: `/assignments`
 
 ## Metric Tracking
