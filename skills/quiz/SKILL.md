@@ -1,6 +1,6 @@
 ---
 name: quiz
-description: "Create quizzes (practice knowledge checks or graded scenario-based) or edit existing quiz questions on Canvas."
+description: "Create quizzes, edit questions, or change quiz settings (attempts, time limit, dates, access code)."
 ---
 
 # Quiz Skill
@@ -18,15 +18,23 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 One skill for all quiz operations: generate practice knowledge checks, graded scenario-based quizzes, or edit/add/remove questions on existing quizzes.
 
-## When to Use
+## When to Use — Mode Routing
 
-- "Create a quiz for Module 3" → **Ask: practice or graded?** then generate
-- "Knowledge check for Module 5" → **Practice quiz** (Mode 1A)
-- "Graded quiz for Module 2" → **Graded quiz** (Mode 1B)
-- "Practice quizzes for all modules" → **Batch practice** (Mode 1A × N)
-- "Add questions to the midterm" → **Edit mode** (Mode 2)
-- "Change the answer on question 4" → **Edit mode**
-- "Show me the questions on the Module 2 quiz" → **View mode**
+| User says... | Mode |
+|---|---|
+| "Create a quiz for Module 3" | **Ask: practice or graded?** then Mode 1 |
+| "Knowledge check for Module 5" | **Mode 1A** (Practice) |
+| "Graded quiz for Module 2" | **Mode 1B** (Graded) |
+| "Practice quizzes for all modules" | **Mode 1A × N** (Batch) |
+| "Add questions to the midterm" | **Mode 2** (Edit Questions) |
+| "Change the answer on question 4" | **Mode 2** (Edit Questions) |
+| "Change attempts to 3" / "Set time limit to 30 min" | **Mode 3** (Edit Settings — fast-path) |
+| "Set due date on the Module 2 quiz" | **Mode 3** (Edit Settings — fast-path) |
+| "Add access code to the midterm" | **Mode 3** (Edit Settings — fast-path) |
+| "Move quiz to Exams group" | **Mode 3** (Edit Settings — fast-path) |
+| "Show me the questions on the Module 2 quiz" | **View mode** |
+
+**Fast-path rule:** If the user asks for a narrow settings change (attempts, time, dates, access code), skip the generation questionnaire and go straight to Mode 3.
 
 ---
 
@@ -60,6 +68,7 @@ Ungraded formative assessment — lets students self-check understanding before 
 | **points_possible** | 0 | |
 | **Attempts** | Unlimited (`allowed_attempts: -1`) | |
 | **Time limit** | None | |
+| **Due/availability dates** | None | Optional — set via Mode 3 if needed |
 | **Shuffle answers** | true (except T/F) | |
 | **Show correct answers** | Immediately after submission | |
 | **scoring_policy** | `keep_latest` | |
@@ -99,6 +108,8 @@ Summative assessment — tests applied reasoning with real-world forensic/clinic
 | **points_possible** | questions × pts_each | Auto-calculated |
 | **Attempts** | 2 (`allowed_attempts: 2`) | |
 | **Time limit** | None (or ~15 min if instructor prefers) | |
+| **Assignment group** | None | Optional — set via Mode 3 or at creation |
+| **Due/availability dates** | None | Optional — set via Mode 3 or at creation |
 | **Shuffle answers** | true (except T/F and ordering) | |
 | **Show correct answers** | After last attempt | |
 | **scoring_policy** | `keep_highest` | |
@@ -251,6 +262,97 @@ The `assignment_id` is returned in the quiz object as `assignment_id`.
 - Published quiz changes are live immediately — warn user
 - Practice quizzes use `quiz_type: "practice_quiz"` — they do NOT create an assignment object and do NOT appear in the gradebook
 - Graded quizzes use `quiz_type: "assignment"` — they create a linked assignment and appear in the gradebook
+
+---
+
+## Mode 3: Edit Quiz Settings
+
+For changing quiz-level settings on an existing quiz. **Skip the generation questionnaire** — go straight to the edit.
+
+### Step 1: Identify the quiz
+
+```
+GET /api/v1/courses/:course_id/quizzes?search_term=<query>&per_page=20
+```
+
+### Step 2: Display current settings
+
+Fetch the quiz and show:
+```
+GET /api/v1/courses/:course_id/quizzes/:quiz_id
+```
+
+| Setting | Current Value |
+|---|---|
+| Title | Module 2: Knowledge Check |
+| Quiz type | practice_quiz |
+| Points | 0 |
+| Allowed attempts | -1 (unlimited) |
+| Time limit | (none) |
+| Shuffle answers | true |
+| Show correct answers | Immediately |
+| Scoring policy | keep_latest |
+| One question at a time | false |
+| Can't go back | false |
+| Access code | (none) |
+| Assignment group | (N/A — practice) |
+| Due date | (not set) |
+| Available from | (not set) |
+| Available until | (not set) |
+| Published | false |
+
+### Step 3: Apply edits
+
+Direct PUT — no staging required for settings:
+```
+PUT /api/v1/courses/:course_id/quizzes/:quiz_id
+Body: {
+  "quiz": {
+    <only the fields being changed>
+  }
+}
+```
+
+Confirm with the user before pushing.
+
+**Supported settings fields:**
+
+| Field | API Parameter | Notes |
+|---|---|---|
+| Allowed attempts | `quiz[allowed_attempts]` | -1 = unlimited |
+| Time limit | `quiz[time_limit]` | Integer minutes, null = unlimited |
+| Due date | `quiz[due_at]` | ISO 8601, `-07:00` for Arizona |
+| Available from | `quiz[unlock_at]` | |
+| Available until | `quiz[lock_at]` | |
+| Assignment group | `quiz[assignment_group_id]` | Lookup: `GET /courses/:id/assignment_groups` |
+| One question at a time | `quiz[one_question_at_a_time]` | Boolean |
+| Can't go back | `quiz[cant_go_back]` | **Requires `one_question_at_a_time: true`** — Canvas returns 422 otherwise |
+| Access code | `quiz[access_code]` | String, or `""` to remove |
+| IP filter | `quiz[ip_filter]` | String, or `""` to remove |
+| Shuffle answers | `quiz[shuffle_answers]` | Boolean |
+| Show correct answers | `quiz[show_correct_answers]` | Boolean |
+| Show answers at | `quiz[show_correct_answers_at]` | ISO 8601, or null |
+| Hide answers at | `quiz[hide_correct_answers_at]` | ISO 8601, or null |
+| Scoring policy | `quiz[scoring_policy]` | keep_highest / keep_latest |
+| Published | `quiz[published]` | Boolean |
+
+**Validation:** If setting `cant_go_back: true`, you MUST also include `one_question_at_a_time: true` in the same PUT request. Warn the user if they try to set one without the other.
+
+### Step 4: Sync linked assignment (graded quizzes only)
+
+If the quiz is graded (`quiz_type: "assignment"`) and you changed `points_possible`, also update the linked assignment:
+```
+PUT /api/v1/courses/:course_id/assignments/:assignment_id
+Body: { "assignment": { "points_possible": <new_total> } }
+```
+
+Get `assignment_id` from the quiz object's `assignment_id` field.
+
+### Step 5: Verify
+
+Run `python3 scripts/post_write_verify.py --type quiz --id <quiz_id>` and display.
+
+---
 
 ## Post-Push Verification (Required)
 

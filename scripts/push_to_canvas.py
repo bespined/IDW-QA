@@ -266,9 +266,41 @@ def push_quiz(config, quiz_id, html_content, dry_run=False):
     }
 
 
+def push_discussion(config, topic_id, html_content, dry_run=False):
+    """Push a discussion message body to Canvas."""
+    import requests
+
+    canvas_api.require_course_id(config)
+    canvas_api._check_write_allowed(config, f"push_discussion({topic_id})")
+
+    if dry_run:
+        return {
+            "ok": True, "id": topic_id, "dry_run": True,
+            "canvas_url": f"https://{config['domain']}/courses/{config['course_id']}/discussion_topics/{topic_id}",
+        }
+
+    resp = requests.put(
+        f"{config['course_url']}/discussion_topics/{topic_id}",
+        headers=config["headers"],
+        json={"message": html_content},  # discussion body is "message", not "description"
+        timeout=15,
+    )
+
+    if resp.status_code != 200:
+        return {"ok": False, "error": f"HTTP {resp.status_code}: {resp.text[:200]}", "id": topic_id}
+
+    data = resp.json()
+    return {
+        "ok": True,
+        "id": topic_id,
+        "name": data.get("title"),
+        "canvas_url": f"https://{config['domain']}/courses/{config['course_id']}/discussion_topics/{topic_id}",
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description="Atomic Canvas push wrapper")
-    parser.add_argument("--type", required=True, choices=["page", "assignment", "quiz"],
+    parser.add_argument("--type", required=True, choices=["page", "assignment", "quiz", "discussion"],
                         help="Content type to push")
     parser.add_argument("--slug", help="Page slug (for --type page, single page)")
     parser.add_argument("--slugs", help="Comma-separated page slugs (for --type page, batch)")
@@ -307,7 +339,7 @@ def main():
             else:
                 print(f"✗ {slug} — {result['error']}")
 
-    elif args.type in ("assignment", "quiz"):
+    elif args.type in ("assignment", "quiz", "discussion"):
         if not args.id:
             print(json.dumps({"ok": False, "error": f"Provide --id for {args.type} push"}))
             sys.exit(1)
@@ -319,8 +351,10 @@ def main():
 
         if args.type == "assignment":
             result = push_assignment(config, args.id, html_content, dry_run=args.dry_run)
-        else:
+        elif args.type == "quiz":
             result = push_quiz(config, args.id, html_content, dry_run=args.dry_run)
+        else:
+            result = push_discussion(config, args.id, html_content, dry_run=args.dry_run)
 
         results.append(result)
         if result["ok"]:

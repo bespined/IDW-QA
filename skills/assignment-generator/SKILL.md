@@ -1,9 +1,9 @@
 ---
 name: assignment-generator
-description: "Create applied assignments with rubrics for a Canvas module."
+description: "Create or edit assignments — full generation or quick metadata edits (points, dates, groups, attempts)."
 ---
 
-# Assignment Generation Skill (Create an Artifact)
+# Assignment Skill (Create or Edit)
 
 > **Plugin**: ASU Canvas Course Builder
 > **References**: syllabus-generator/SKILL.md (for objective alignment), rubric-creator/SKILL.md (for rubric generation)
@@ -15,7 +15,24 @@ python scripts/idw_metrics.py --track skill_invoked --context '{"skill": "assign
 ```
 This records usage metrics for the pilot dashboard. Do not skip this step.
 
-## Purpose
+## When to Use — Mode Routing
+
+Route to the correct mode based on the user's request:
+
+| User says... | Mode |
+|---|---|
+| "Create an assignment for Module 4" / "Generate artifact" | **Mode 1: Create** (full generation flow) |
+| "Change points on the M3 assignment to 50" / "Set due date" | **Mode 2: Edit Metadata** (fast-path, no generation) |
+| "Fix the instructions on the Module 5 assignment" | **Mode 2: Edit Description** (staging workflow) |
+| "Move assignment to Homework group" / "Change to 3 attempts" | **Mode 2: Edit Metadata** (fast-path) |
+
+**Fast-path rule:** If the user asks for a narrow metadata change, skip the generation questionnaire entirely and go straight to Mode 2.
+
+---
+
+## Mode 1: Create Assignment
+
+### Purpose
 Generate a ~20 minute "Create an Artifact" assignment for each module. These are the primary graded assignments in each module. They serve to:
 - Require students to **apply and synthesize** module concepts (not just recall)
 - Develop professional reasoning and scientific communication skills
@@ -353,10 +370,19 @@ Body: {
     "description": "<p>...</p>",
     "points_possible": 30,
     "submission_types": ["online_text_entry", "online_upload"],
-    "published": false
+    "published": false,
+    "assignment_group_id": <id>,         // optional — lookup via GET /courses/:id/assignment_groups
+    "grading_type": "points",            // points | percent | letter_grade | pass_fail | not_graded
+    "allowed_attempts": -1,              // -1 = unlimited, or specific number
+    "due_at": "2026-03-15T23:59:00-07:00",      // optional — Arizona, no DST = always -07:00
+    "unlock_at": "2026-03-01T00:00:00-07:00",   // optional — available from
+    "lock_at": "2026-03-17T23:59:00-07:00",     // optional — available until
+    "omit_from_final_grade": false       // optional — exclude from total
   }
 }
 ```
+
+Only include optional fields when the user provides them or when `course-config.json` specifies defaults. Do not ask about every field — use sensible defaults (points grading, unlimited attempts, no dates unless specified).
 
 **Attach the rubric in the same call or separately:**
 ```
@@ -424,6 +450,90 @@ The skill produces:
 | Push fails | "The assignment push failed but your content is saved in staging/. Let's try again." | Retry |
 | Canvas API 401/403 | "Authentication issue — check your Canvas token and course permissions." | Guide re-auth |
 | Read-only mode | "Read-only mode is active. The assignment is staged locally but can't be pushed until writes are enabled." | Guide .env change |
+
+---
+
+## Mode 2: Edit Existing Assignment
+
+For editing an existing assignment's metadata or description. **Skip the full generation questionnaire** — go straight to the edit.
+
+### Step 1: Identify the assignment
+
+Find the assignment by name search or user-provided ID:
+```
+GET /api/v1/courses/:course_id/assignments?search_term=<query>&per_page=20
+```
+
+### Step 2: Display current settings
+
+Fetch the full assignment and display in a table:
+```
+GET /api/v1/courses/:course_id/assignments/:assignment_id
+```
+
+Show:
+| Field | Current Value |
+|---|---|
+| Name | Module 3: Create an Artifact — Membrane Analysis |
+| Points | 30 |
+| Grading type | points |
+| Submission types | online_text_entry, online_upload |
+| Allowed attempts | -1 (unlimited) |
+| Assignment group | Assignments (id: 12345) |
+| Due date | 2026-03-15T23:59:00-07:00 |
+| Available from | (not set) |
+| Available until | (not set) |
+| Published | false |
+| Rubric | Yes (3 criteria) |
+| Description | 2,400 chars |
+
+### Step 3: Apply edits
+
+**For metadata (points, dates, attempts, groups, grading type, submission types):**
+
+Direct PUT — no staging required:
+```
+PUT /api/v1/courses/:course_id/assignments/:assignment_id
+Body: {
+  "assignment": {
+    <only the fields being changed>
+  }
+}
+```
+
+Confirm with the user before pushing. Example: "I'll change points to 50 and set due date to March 20. Confirm?"
+
+**Supported metadata fields:**
+
+| Field | API Parameter | Notes |
+|---|---|---|
+| Points | `assignment[points_possible]` | |
+| Due date | `assignment[due_at]` | ISO 8601, `-07:00` for Arizona |
+| Available from | `assignment[unlock_at]` | |
+| Available until | `assignment[lock_at]` | |
+| Assignment group | `assignment[assignment_group_id]` | Lookup: `GET /courses/:id/assignment_groups` |
+| Allowed attempts | `assignment[allowed_attempts]` | -1 = unlimited |
+| Grading type | `assignment[grading_type]` | points / percent / letter_grade / pass_fail / not_graded |
+| Submission types | `assignment[submission_types][]` | Array: online_text_entry, online_upload, online_url, etc. |
+| Published | `assignment[published]` | |
+| Omit from grade | `assignment[omit_from_final_grade]` | |
+
+**For description (HTML body):**
+
+Route through staging workflow:
+1. Fetch current description: `GET /api/v1/courses/:id/assignments/:id` → `description` field
+2. Apply edits to the HTML
+3. Stage to `staging/assignment-{slug}.html`
+4. Preview via `python3 scripts/unified_preview.py` → screenshot
+5. After approval: `python3 scripts/push_to_canvas.py --type assignment --id <id> --html-file staging/assignment-{slug}.html`
+
+### Step 4: Verify
+
+Run `python3 scripts/post_write_verify.py --type assignment --id <assignment_id>` and display the result.
+
+Provide the Canvas link: `https://{CANVAS_DOMAIN}/courses/{COURSE_ID}/assignments/{id}`
+
+---
 
 ## Post-Push Verification (Required)
 

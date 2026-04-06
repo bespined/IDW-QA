@@ -1,9 +1,9 @@
 ---
 name: discussion-generator
-description: "Create graded discussion prompts for a Canvas module."
+description: "Create or edit graded discussions — full generation, quick metadata edits (points, dates, post-first), or prompt editing."
 ---
 
-# Discussion Board Generation Skill
+# Discussion Skill (Create or Edit)
 
 > **Plugin**: ASU Canvas Course Builder
 > **References**: syllabus-generator/SKILL.md (for objective alignment), rubric-creator/SKILL.md (for rubric generation)
@@ -15,7 +15,24 @@ python scripts/idw_metrics.py --track skill_invoked --context '{"skill": "discus
 ```
 This records usage metrics for the pilot dashboard. Do not skip this step.
 
-## Purpose
+## When to Use — Mode Routing
+
+| User says... | Mode |
+|---|---|
+| "Create a discussion for Module 3" / "Generate discussion prompt" | **Mode 1: Create** (full generation flow) |
+| "Set require_initial_post on Module 2 discussion" / "Change points" | **Mode 2: Edit Settings** (fast-path, no generation) |
+| "Set due date on the discussion" / "Move to Discussions group" | **Mode 2: Edit Settings** (fast-path) |
+| "Fix the discussion prompt for Module 4" / "Rewrite the prompt" | **Mode 3: Edit Prompt** (staging workflow) |
+
+**Fast-path rule:** If the user asks for a narrow settings change, skip the generation questionnaire and go straight to Mode 2.
+
+**Critical field boundary:** Graded discussion dates, points, and assignment group live on the **linked assignment object**, NOT the discussion topic. The discussion topic only holds: title, message, require_initial_post, discussion_type, pinned, locked, published. See Mode 2 for the correct API targets.
+
+---
+
+## Mode 1: Create Discussion
+
+### Purpose
 Generate graded discussion board activities for Canvas courses. Every content module includes a discussion to:
 - Develop argumentation and communication skills
 - Encourage peer learning through structured engagement
@@ -215,13 +232,151 @@ Before generating a discussion, verify alignment with the other assessments in t
 4. **Check the formative→summative progression**: The Knowledge Check should preview relevant concepts, but the Discussion should push students beyond what any auto-graded assessment can measure
 5. **Document alignment** in the output: list covered objectives by ID and explain how the Discussion complements the Artifact
 
-## Output
+### Step 6: Stage, Preview, and Push Discussion
+
+**Stage the discussion prompt HTML first — do NOT push directly to Canvas:**
+1. Save the prompt HTML to `staging/discussion-m{N}.html`
+2. Run unified preview: `python3 scripts/unified_preview.py` → screenshot in conversation
+3. Wait for user approval before pushing
+
+**Canvas API for creating the discussion (after staging approval):**
+```
+POST /api/v1/courses/:course_id/discussion_topics
+Body: {
+  "title": "Discussion N: [Title]",
+  "message": "<p>staged HTML content</p>",
+  "discussion_type": "threaded",
+  "require_initial_post": true,
+  "published": false,
+  "assignment": {
+    "name": "Discussion N: [Title]",
+    "points_possible": 25,
+    "due_at": "2026-03-15T23:59:00-07:00",
+    "lock_at": "2026-03-17T23:59:00-07:00",
+    "assignment_group_id": <id>,
+    "submission_types": ["discussion_topic"]
+  }
+}
+```
+
+**Important:** The nested `assignment` object creates a graded discussion. Dates, points, and assignment group go HERE — not on the topic itself. Only include date/group fields when the user provides them.
+
+**After creation:**
+1. Attach rubric using the rubric integration steps below (GET assignment_id from the created topic, then POST rubric with association)
+2. Verify via `python3 scripts/post_write_verify.py --type discussion --id <topic_id>`
+3. Provide Canvas link
+
+### Output
 The skill produces:
 1. Complete discussion prompt with scenario, requirements, and rubric reference
 2. Canvas setup configuration (points, due dates, post-first settings enabled)
 3. Objective alignment map (referencing blueprint objective IDs)
 4. Suggested grading notes for instructor
 5. 2-3 example "strong response" descriptions to help calibrate expectations
+
+---
+
+## Mode 2: Edit Discussion Settings
+
+For changing settings on an existing discussion. **Skip the generation questionnaire.**
+
+### Step 1: Identify the discussion
+```
+GET /api/v1/courses/:course_id/discussion_topics?search_term=<query>&per_page=20
+```
+
+### Step 2: Display current settings
+
+Fetch the topic and its linked assignment (if graded):
+```
+GET /api/v1/courses/:course_id/discussion_topics/:topic_id
+```
+
+If `assignment_id` exists, also fetch:
+```
+GET /api/v1/courses/:course_id/assignments/:assignment_id
+```
+
+Show combined settings:
+| Field | Current Value | Lives On |
+|---|---|---|
+| Title | Discussion 3: Debate | Topic |
+| Discussion type | threaded | Topic |
+| Require initial post | true | Topic |
+| Published | true | Topic |
+| Pinned | false | Topic |
+| Points | 25 | Assignment |
+| Due date | 2026-03-15T23:59:00-07:00 | Assignment |
+| Available from | (not set) | Assignment |
+| Available until | (not set) | Assignment |
+| Assignment group | Discussions (id: 12345) | Assignment |
+| Rubric | Yes (3 criteria) | Assignment |
+
+### Step 3: Apply edits
+
+**Topic-level settings** — PUT on the discussion topic:
+```
+PUT /api/v1/courses/:course_id/discussion_topics/:topic_id
+Body: { <only changed fields> }
+```
+
+| Field | API Parameter | Target |
+|---|---|---|
+| Title | `title` | Topic |
+| Require initial post | `require_initial_post` | Topic |
+| Discussion type | `discussion_type` | Topic (threaded / side_comment) |
+| Published | `published` | Topic |
+| Pinned | `pinned` | Topic |
+| Locked | `locked` | Topic |
+
+**Grading settings** — PUT on the linked assignment:
+```
+PUT /api/v1/courses/:course_id/assignments/:assignment_id
+Body: { "assignment": { <only changed fields> } }
+```
+
+| Field | API Parameter | Target |
+|---|---|---|
+| Points | `assignment[points_possible]` | Assignment |
+| Due date | `assignment[due_at]` | Assignment (-07:00 for AZ) |
+| Available from | `assignment[unlock_at]` | Assignment |
+| Available until | `assignment[lock_at]` | Assignment |
+| Assignment group | `assignment[assignment_group_id]` | Assignment |
+| Grading type | `assignment[grading_type]` | Assignment |
+
+**Warning:** Do NOT PUT dates or points on the discussion topic — they won't work. Always target the linked assignment for grading fields.
+
+Confirm with the user before pushing. Verify via `post_write_verify.py --type discussion --id <topic_id>`.
+
+---
+
+## Mode 3: Edit Discussion Prompt (Body)
+
+For rewriting or fixing the discussion prompt text. Uses the staging workflow.
+
+### Step 1: Fetch current prompt
+```
+GET /api/v1/courses/:course_id/discussion_topics/:topic_id
+```
+The body is in the `message` field (not `description`).
+
+### Step 2: Edit and stage
+1. Apply the requested changes to the HTML
+2. Save to `staging/discussion-{slug}.html`
+3. Run `python3 scripts/unified_preview.py` → screenshot in conversation
+4. Wait for user approval
+
+### Step 3: Push
+```bash
+python3 scripts/push_to_canvas.py --type discussion --id <topic_id> --html-file staging/discussion-{slug}.html
+```
+
+### Step 4: Verify
+```bash
+python3 scripts/post_write_verify.py --type discussion --id <topic_id>
+```
+
+---
 
 ## Error Handling
 

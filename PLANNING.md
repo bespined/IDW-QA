@@ -1593,6 +1593,71 @@ Start with `criterion_evaluator.py` (extract keyword matching to config-driven l
 
 ---
 
+### Assessment Skill Upgrade Plan (PRE-LAUNCH / EARLY PILOT)
+
+**Assessment:** The three assessment skills still have the biggest day-to-day capability gaps for remediation work. [`assignment-generator`](skills/assignment-generator/SKILL.md) is strong on content generation but weak on metadata edits. [`quiz`](skills/quiz/SKILL.md) supports question editing but not settings edits cleanly. [`discussion-generator`](skills/discussion-generator/SKILL.md) is still mostly a design/spec file rather than a concrete implemented Canvas workflow.
+
+**Architectural approach:**
+- **Metadata-only edits** should follow the existing "Quick Edits" policy: direct Canvas API calls are allowed for points, dates, attempts, assignment groups, grading settings, and similar non-HTML changes.
+- **HTML/body edits** still require staging → preview → approval → push → post-write verify.
+- Do **not** duplicate cross-course date and grading operations that belong in [`course-config`](skills/course-config/SKILL.md).
+- One Python enabler is still needed: add `--type discussion` support to [`push_to_canvas.py`](scripts/push_to_canvas.py).
+
+**Implementation rule:** Each assessment skill needs a fast-path for simple edits. If the user asks for a narrow metadata change ("change attempts to 3", "move this to Homework", "update due date"), skip the long generation questionnaire and go straight to targeted edit flow.
+
+#### Phase 1: Critical for Pilot
+
+| # | Fix | File(s) | Status |
+|---|---|---|---|
+| 1A | **Assignment: add metadata edit mode** — Support editing points, due/unlock/lock dates, assignment group, grading type, allowed attempts, and submission types on existing assignments. Also expand create flow to include these fields when provided. | `skills/assignment-generator/SKILL.md` | ✅ DONE |
+| 1B | **Quiz: add settings edit mode** — Support editing attempts, time limit, access code, one-question-at-a-time, cant-go-back, dates, and assignment group on existing quizzes. Also expand create flow to include these settings when provided. | `skills/quiz/SKILL.md` | ✅ DONE |
+| 1C | **push_to_canvas.py: add discussion type** — Add `push_discussion()` using `PUT /discussion_topics/:id` with `{"message": html_content}` and add `"discussion"` to `--type` choices. This is the enabler for discussion body staging/push. | `scripts/push_to_canvas.py` | ✅ DONE |
+| 1D | **Discussion: metadata/settings mode** — Implement narrow support for creating/updating discussion settings (title, points, dates, post-before-seeing-replies, published, graded/ungraded). Explicitly route points/dates to the linked assignment when graded. | `skills/discussion-generator/SKILL.md` | ✅ DONE |
+| 1E | **Discussion: prompt/body mode** — Implement discussion prompt creation/editing with staging, preview, push, verification, and rubric-attachment guidance. Keep this separate from metadata edits. | `skills/discussion-generator/SKILL.md` | ✅ DONE |
+
+**Acceptance criteria for every Phase 1 skill change:**
+- User can make a **simple metadata edit** without being forced through the full generation prompt.
+- User can still run the **full creation flow** when they actually want to generate a new assessment.
+- HTML content changes follow staging rules; metadata-only changes do not.
+- Skill returns the correct Canvas object link after write.
+- Post-write verification output confirms the fields the user actually changed.
+- If invoked from the fix queue, remediation tracking is still recorded after successful push.
+
+**Field-boundary rules (must stay explicit in the implementation):**
+- Assignment description HTML = staged content; assignment metadata = direct API edit
+- Quiz questions and quiz instructions/description = staged content where applicable; quiz settings = direct API edit
+- Discussion prompt/body = discussion topic `message` field via staging/push
+- Graded discussion points/dates/group = linked assignment object, not the discussion topic
+
+**Key risk notes:**
+- Graded discussion dates/points live on the underlying assignment object, not the discussion topic
+- `cant_go_back` requires `one_question_at_a_time` or Canvas returns `422`
+- `assignment_group_id` requires lookup via `GET /courses/:id/assignment_groups`
+- Arizona timezone should always be serialized as `-07:00`
+- Discussion body field is `message`, not `description`
+
+**Execution order:** 1C first, then 1A and 1B, then 1D, then 1E.
+
+#### Phase 2: Important But Not Blocking
+
+| # | Fix | File(s) |
+|---|---|---|
+| 2A | Peer reviews, group assignments, allowed file extensions | `skills/assignment-generator/SKILL.md` |
+| 2B | Essay question type and richer settings coverage for quizzes | `skills/quiz/SKILL.md` |
+| 2C | Group discussions and more advanced discussion options | `skills/discussion-generator/SKILL.md` |
+| 2D | Enhanced post-write verification (dates, groups, attempts, grading settings in verify output) | `scripts/post_write_verify.py` |
+| 2E | Clarify ownership boundaries with `course-config` so assessment skills do not duplicate batch date/group workflows | `skills/course-config/SKILL.md` + assessment skill docs |
+
+#### Phase 3: Post-Pilot
+
+- Turnitin, anonymous/moderated grading, and other advanced assignment settings
+- Classic → New Quizzes migration strategy
+- Announcements, section targeting, podcast, and other advanced discussion options
+- Cross-skill batch date operations routed to `course-config`
+- Shared helper patterns only after actual pilot usage shows repeated friction
+
+---
+
 ### Phase 6 — Faculty Outreach, Analytics & Prioritization (ALL POST-LAUNCH)
 
 | Task | Details | Priority | When |
