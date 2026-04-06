@@ -139,8 +139,8 @@ Ask: "What would you like to change?" and handle the following operations:
 Use this when the user wants to **scrap and recreate** an assessment, not just edit it. If they only want to change metadata (points, dates, attempts), route to the assessment's own skill instead.
 
 - **Knowledge Check**: Invoke `/quiz` (Mode 1) with current module objectives. Creates a new quiz and replaces the old one in the module items.
-- **Artifact**: Invoke `/assignment-generator` (Mode 1) then rubric-creator. Creates a new assignment+rubric and replaces the old one.
-- **Discussion**: Invoke `/discussion-generator` (Mode 1) then rubric-creator. Creates a new discussion topic and replaces the old one.
+- **Artifact**: Invoke `/assignment-generator` (Mode 1). The assignment skill handles rubric creation internally via rubric-creator.
+- **Discussion**: Invoke `/discussion-generator` (Mode 1). The discussion skill handles rubric creation internally via rubric-creator.
 - **Guided Practice**: Update the GP assignment description via staging workflow.
 
 When replacing: offer to delete the old Canvas object or keep it as a backup (unpublished).
