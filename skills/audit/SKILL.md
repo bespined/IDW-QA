@@ -18,6 +18,14 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 Unified audit skill with 3 modes: Quick Check (deterministic only), Deep Audit (deterministic + AI), and Guided Review (interactive with live fixes). All modes use a single check registry with scope filters.
 
+## Role Gate
+
+**ID Assistants (`id_assistant` role) do NOT use this skill.** If an `id_assistant` invokes `/audit`, stop immediately and respond:
+
+> "ID Assistants review audit findings in the Vercel review app at https://idw-review-app.vercel.app — not in Claude Code. Contact your QA admin if you need access."
+
+Do not proceed with any audit workflow for `id_assistant` users.
+
 ## When to Use
 
 - "Audit my course" / "Check my course" / "Quick scan" → **Ask which mode** (see Entry Point below)

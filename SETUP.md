@@ -66,7 +66,7 @@ This guides you through three modes:
 | `/qa-concierge` | Guided entry point (start here) |
 | `/audit` | Run a course audit directly |
 | `/staging` | Preview, push, or rollback staged content |
-| `/assignments` | View your assigned courses (ID Assistants) |
+| `/admin` | Manage testers, assignments, errors (Admin only) |
 | `/report-error` | Report a bug or wrong finding |
 | `/update-idw` | Pull latest plugin updates |
 

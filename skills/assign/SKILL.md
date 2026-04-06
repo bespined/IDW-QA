@@ -84,7 +84,7 @@ If a non-completed assignment exists, warn:
 After successful creation, display:
 
 > Assigned **[ID Assistant name]** to **[Course name]** ([domain], course [ID]).
-> They'll see it when they run `/assignments`.
+> They'll see it in the review app at https://idw-review-app.vercel.app when sessions are submitted for this course.
 
 ### 6. Bulk Assignment
 

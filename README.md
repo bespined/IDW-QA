@@ -13,7 +13,7 @@ Claude Code Plugin ──→ Supabase ──→ Vercel Review App ──→ Airt
 
 | Component | What it does | Who uses it |
 |---|---|---|
-| **Claude Code Plugin** | Audit courses, fix content, stage/push changes | IDs, ID Assistants |
+| **Claude Code Plugin** | Audit courses, fix content, stage/push changes | IDs, Admins |
 | **Vercel Review App** | Review AI findings, submit verdicts, sync to Airtable | IDs, ID Assistants, Admins |
 | **Supabase** | Stores sessions, findings, feedback, testers, assignments | All (backend) |
 | **Airtable** | Final reporting — one row per course, 25 standards | QA team, leadership |
@@ -23,7 +23,7 @@ Claude Code Plugin ──→ Supabase ──→ Vercel Review App ──→ Airt
 | Role | Who | What they do |
 |---|---|---|
 | `id` | Instructional Designers, ID Associates | Build courses, run self-audits, remediate findings |
-| `id_assistant` | Student workers | Run recurring audits, verdict Col B findings |
+| `id_assistant` | Student workers | Verdict Col B findings in Vercel review app (do not use Claude Code) |
 | `admin` | QA team leads | Assign courses, review overrides, manage testers, sync to Airtable |
 
 ## Key Features
@@ -44,7 +44,7 @@ Claude Code Plugin ──→ Supabase ──→ Vercel Review App ──→ Airt
 | **Staging** | `staging` — preview, push, rollback |
 | **Remediation** | `quiz`, `assignment-generator`, `discussion-generator`, `rubric-creator`, `interactive-content`, `update-module`, `bulk-edit`, `course-config`, `syllabus-generator`, `media-upload` |
 | **Navigation** | `canvas-nav`, `knowledge` |
-| **Role-gated** | `assignments` (ID Assistant), `assign` (Admin), `admin` (Admin) |
+| **Role-gated** | `assign` (Admin), `admin` (Admin) |
 | **Utility** | `report-error`, `update-idw` |
 
 ## Getting Started
