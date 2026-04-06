@@ -188,7 +188,7 @@ D0 uses a simplified 10-point rubric:
 - Engagement & Thoughtfulness (5 pts)
 - Completeness & Peer Interaction (5 pts)
 
-### Attaching Rubrics to Discussions (Canvas API)
+### Attaching Rubrics to Discussions
 
 Canvas discussions with grading enabled have an underlying assignment object. To attach a rubric, you must target that assignment — not the discussion topic itself.
 
@@ -198,29 +198,7 @@ GET /api/v1/courses/:course_id/discussion_topics/:topic_id
 → response includes "assignment_id": 12345
 ```
 
-**Step 2 — POST the rubric with association:**
-```
-POST /api/v1/courses/:course_id/rubrics
-Body: {
-  "rubric": {
-    "title": "Discussion Rubric — Module N",
-    "criteria": {
-      "0": { "description": "Scientific/Professional Reasoning", "points": 10,
-             "ratings": { "0": {"description":"...","points":10}, "1": {"description":"...","points":7}, ... }},
-      "1": { "description": "Peer Engagement", "points": 10, ... },
-      "2": { "description": "Evidence & Communication", "points": 5, ... }
-    }
-  },
-  "rubric_association": {
-    "association_type": "Assignment",
-    "association_id": 12345,
-    "use_for_grading": true,
-    "purpose": "grading"
-  }
-}
-```
-
-**Important**: The `criteria` and `ratings` use a dict-of-dicts format with **string keys** ("0", "1", "2"), not arrays. Each rating also uses string keys. This is a Canvas API quirk — arrays will silently fail.
+**Step 2 — Invoke rubric-creator** with the `assignment_id`. Rubric-creator owns the Canvas rubric API call (POST /rubrics with `rubric_association`). See `skills/rubric-creator/SKILL.md` for the canonical API format (dict-of-dicts with string keys). Do NOT make your own rubric API call — pass context to rubric-creator and let it handle attachment.
 
 ## Intra-Module Alignment Check
 

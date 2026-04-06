@@ -1658,6 +1658,66 @@ Start with `criterion_evaluator.py` (extract keyword matching to config-driven l
 
 ---
 
+### Adjacent Skill Refinement Plan (EARLY PILOT)
+
+**Context:** With assessment skills (assignment, quiz, discussion) now upgraded with metadata edit modes and fast-path routing, three adjacent skills need refinement to prevent boundary drift and fill gaps.
+
+#### 1. course-config — Clarify boundaries with assessment skills
+
+**File:** `skills/course-config/SKILL.md`
+
+Add a "When to Use vs When NOT to Use" section, and then rewrite the older examples in the skill so they do not contradict the new boundary:
+
+| Use course-config for... | Use the assessment skill for... |
+|---|---|
+| Set due dates across ALL modules / ALL discussions | Set due date on ONE specific assignment |
+| Create/manage assignment groups + weights | Move ONE assignment to a different group |
+| Bulk publish/unpublish an entire module | Publish ONE quiz after creation |
+| Course-level settings (nav, late policy, grading scheme) | N/A — always course-config |
+| Audit missing dates across the course | N/A — always course-config |
+
+**Rule:** Individual item metadata → item's own skill. Batch/cross-course operations → course-config.
+
+**Required cleanup in the same pass:**
+- Rewrite any single-item examples in `course-config` that overlap with assessment skill fast paths, so the skill has only one answer to "where do I edit one item?"
+- Keep `course-config` authoritative for course-wide audits, group weighting, late policy, nav, home page, and bulk scheduling patterns.
+- Add one short routing note near the top of the skill so Claude sees the boundary before reading the mode details.
+
+#### 2. rubric-creator — Add edit mode, fix serialization docs, clarify attachment ownership
+
+**Files:** `skills/rubric-creator/SKILL.md`, `skills/assignment-generator/SKILL.md`, `skills/discussion-generator/SKILL.md`
+
+| Sub-item | What |
+|---|---|
+| 2a | **Edit mode** — Fetch existing rubric → display criteria → user edits → rebuild full JSON (Canvas doesn't support partial criterion updates) → PUT entire rubric → verify |
+| 2b | **Canvas API serialization** — Add authoritative JSON example with dict-of-dicts format (string keys, not arrays). Already in assignment-generator/discussion-generator but should be canonical here. |
+| 2c | **Attachment ownership rule** — Rubric-creator owns attachment. Calling skill provides `assignment_id`, rubric-creator handles POST with `rubric_association`. Calling skill does NOT make its own rubric API call. |
+
+**Required cleanup in the same pass:**
+- Update `assignment-generator` and `discussion-generator` so they stop teaching their own competing rubric-attachment flow.
+- Leave those skills responsible for deciding **when** a rubric is needed and for passing context into `rubric-creator`, but make `rubric-creator` the sole owner of the actual Canvas attachment instructions.
+- Make `rubric-creator` the canonical documentation source for rubric serialization and association payload shape.
+
+#### 3. update-module — Sharpen boundaries, define as router not duplicator
+
+**File:** `skills/update-module/SKILL.md`
+
+| Sub-item | What |
+|---|---|
+| 3a | **Routing table** — "Change attempts on quiz" → direct to `/quiz` Mode 3 (not update-module). "Fix rubric" → direct to `/rubric-creator`. "Fix alt text on all pages" → `/bulk-edit`. "Set dates for all modules" → `/course-config`. update-module handles: page content in a module, item ordering, add/remove pages. |
+| 3b | **Replace vs edit** — "Fix the Module 3 assignment": metadata change → route to `/assignment-generator` Mode 2. Description change → same. Scrap and recreate → update-module "replace" flow. |
+| 3c | **Fix stale skill names** — `quiz-generator` → `quiz` throughout |
+| 3d | **Clarify reorder scope** — Reorder means items *within* a module, not module sequence. Module sequence reordering is a quick edit (`PUT /modules/:id` with `position`). |
+
+**Required cleanup in the same pass:**
+- Replace or rewrite the existing direct operation sections that currently teach old behavior, not just prepend a routing table.
+- Remove stale references like `/quiz-generator` and any flows that imply `update-module` should directly own rubric editing or single-item assessment metadata edits.
+- Keep `update-module` focused on module-scoped orchestration: page/body changes in a module, add/remove/replace module items, and item ordering.
+
+**No Python code changes needed.** This is a skills/docs boundary cleanup pass using existing API patterns.
+
+---
+
 ### Phase 6 — Faculty Outreach, Analytics & Prioritization (ALL POST-LAUNCH)
 
 | Task | Details | Priority | When |

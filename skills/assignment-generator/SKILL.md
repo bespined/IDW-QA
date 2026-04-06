@@ -384,36 +384,7 @@ Body: {
 
 Only include optional fields when the user provides them or when `course-config.json` specifies defaults. Do not ask about every field — use sensible defaults (points grading, unlimited attempts, no dates unless specified).
 
-**Attach the rubric in the same call or separately:**
-```
-POST /api/v1/courses/:course_id/rubrics
-Body: {
-  "rubric": {
-    "title": "Assignment Rubric — Module N",
-    "criteria": {
-      "0": {
-        "description": "Criterion 1 Name", "points": 10,
-        "ratings": {
-          "0": {"description": "Excellent", "points": 10},
-          "1": {"description": "Proficient", "points": 7},
-          "2": {"description": "Developing", "points": 4},
-          "3": {"description": "Beginning", "points": 0}
-        }
-      },
-      "1": { ... },
-      "2": { ... }
-    }
-  },
-  "rubric_association": {
-    "association_type": "Assignment",
-    "association_id": <assignment_id from POST above>,
-    "use_for_grading": true,
-    "purpose": "grading"
-  }
-}
-```
-
-**Important**: The `criteria` and `ratings` use a **dict-of-dicts format with string keys** ("0", "1", "2"), not arrays. This is a Canvas API requirement — arrays will silently fail and create a rubric with no criteria.
+**Attach the rubric:** After the assignment is created and you have the `assignment_id`, invoke the rubric-creator skill to create and attach the rubric. Pass the `assignment_id` — rubric-creator owns the Canvas rubric API call. See `skills/rubric-creator/SKILL.md` for the canonical API format (dict-of-dicts with string keys).
 
 ### Step 6: Format for Canvas
 Output includes:

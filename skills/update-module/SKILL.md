@@ -18,22 +18,33 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 ## Purpose
 
-Make targeted changes to a single module that has already been built in Canvas. This is the **post-build editing tool** — use it when:
+Make structural changes to a single module: edit page content, add/remove/replace module items, and reorder items. This is the **module-scoped editing tool** for operations that need module context.
 
-- A module needs a new or revised assessment
-- Page content needs updating (new resources, corrected content, updated media)
-- Interactive activities need to be added, replaced, or reordered
-- A rubric needs revising
-- Media (audio primer or lecture video) needs re-embedding
-- Module items need reordering
+## Scope Boundary — update-module vs Other Skills
 
-This skill operates on **one module at a time** and preserves all existing Canvas IDs (pages, assignments, quizzes, discussions) unless explicitly replacing them.
+| Use **update-module** for... | Route to **another skill** instead... |
+|---|---|
+| Edit page content (HTML body) in a module | |
+| Replace an entire assessment (delete old + create new) | |
+| Add a new page or module item | |
+| Reorder items within a module | |
+| Replace/add interactive activities | |
+| Re-embed media (audio, video) | |
+| Change quiz attempts / time limit / dates | → `/quiz` Mode 3 (settings edit) |
+| Change assignment points / dates / group | → `/assignment-generator` Mode 2 (metadata edit) |
+| Change discussion dates / require_initial_post | → `/discussion-generator` Mode 2 (settings edit) |
+| Edit a rubric (revise criteria/descriptors) | → `/rubric-creator` (edit mode) |
+| Fix issues across ALL modules (alt text, headings) | → `/bulk-edit` |
+| Set due dates for all modules at once | → `/course-config` (batch dates) |
+| Manage assignment groups / publish in bulk | → `/course-config` |
+
+**Rule:** update-module owns module-scoped structural operations (page content, item add/remove/reorder, assessment replacement). Individual assessment metadata edits go to the item's own skill. Batch operations go to bulk-edit or course-config.
 
 ## Prerequisites
 
 - Canvas API credentials configured (`.env` exists)
 - `course-config.json` exists in the working directory
-- The target module has already been created in Canvas (via `/course-build` or manually)
+- The target module has already been created in Canvas
 
 ---
 
@@ -119,29 +130,22 @@ Ask: "What would you like to change?" and handle the following operations:
 - Show a preview screenshot of the staged page and wait for explicit approval
 - Push only after the user approves
 
-### Replace an Assessment
+### Replace an Assessment (Full Replacement)
 
 ```
 /update-module → replace assessment → [KC | artifact | discussion | GP]
 ```
 
-- **Knowledge Check**: Invoke `/quiz-generator` with current module objectives. Creates a new quiz and replaces the old one in the module items.
-- **Artifact**: Invoke `/assignment-generator` then `/rubric-creator`. Creates a new assignment+rubric and replaces the old one.
-- **Discussion**: Invoke `/discussion-generator` then `/rubric-creator`. Creates a new discussion topic and replaces the old one.
-- **Guided Practice**: Update the GP assignment description.
+Use this when the user wants to **scrap and recreate** an assessment, not just edit it. If they only want to change metadata (points, dates, attempts), route to the assessment's own skill instead.
+
+- **Knowledge Check**: Invoke `/quiz` (Mode 1) with current module objectives. Creates a new quiz and replaces the old one in the module items.
+- **Artifact**: Invoke `/assignment-generator` (Mode 1) then rubric-creator. Creates a new assignment+rubric and replaces the old one.
+- **Discussion**: Invoke `/discussion-generator` (Mode 1) then rubric-creator. Creates a new discussion topic and replaces the old one.
+- **Guided Practice**: Update the GP assignment description via staging workflow.
 
 When replacing: offer to delete the old Canvas object or keep it as a backup (unpublished).
 
-### Update a Rubric
-
-```
-/update-module → update rubric → [artifact | discussion]
-```
-
-- Fetch the current rubric from Canvas
-- Show current criteria and descriptors
-- Ask what to change (add/remove criterion, revise descriptors, adjust point distribution)
-- Update via `PUT /api/v1/courses/{id}/rubrics/{rubric_id}`
+**Note:** Rubric editing (revise criteria, adjust points, rewrite descriptors) routes to `/rubric-creator` edit mode — not handled here.
 
 ### Add/Replace Interactive Activities
 
@@ -165,7 +169,7 @@ When replacing: offer to delete the old Canvas object or keep it as a backup (un
   3. Update the embed on the target page (Prepare to Learn or Lesson)
   5. Upload new VTT captions and update the expandable transcript
 
-### Reorder Module Items
+### Reorder Module Items (Within a Single Module)
 
 ```
 /update-module → reorder
@@ -174,6 +178,8 @@ When replacing: offer to delete the old Canvas object or keep it as a backup (un
 - Show current item order with position numbers
 - Ask which items to move (e.g., "move item 5 to position 3")
 - Use `PUT /api/v1/courses/{id}/modules/{module_id}/items/{item_id}` with `position` parameter
+
+**Note:** This reorders items *within* a module (pages, assignments, quizzes within Module 3). To reorder modules themselves (change Module 1, 2, 3 sequence), use a quick edit: `PUT /courses/:id/modules/:id` with `module[position]`.
 
 ### Add a New Page
 

@@ -7,7 +7,7 @@ description: "Define course objectives, assessments, grading, and policies."
 
 > **Plugin**: ASU Canvas Course Builder
 > **Trigger**: `/syllabus-generator`
-> **Referenced by**: quiz-generator, assignment-generator, discussion-generator, rubric-creator, course-build, course-audit
+> **Referenced by**: quiz, assignment-generator, discussion-generator, rubric-creator, audit
 
 ## Metric Tracking
 When this skill is invoked, immediately run this command before doing anything else:
@@ -18,7 +18,7 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 ## Purpose
 This skill serves two functions:
-1. **Source of truth**: Canonical reference for all learning objectives, assessment specifications, and grading policies. Other skills (quiz-generator, assignment-generator, discussion-generator, rubric-creator) reference this skill when verifying alignment.
+1. **Source of truth**: Canonical reference for all learning objectives, assessment specifications, and grading policies. Other skills (quiz, assignment-generator, discussion-generator, rubric-creator) reference this skill when verifying alignment.
 2. **Syllabus generator**: Produces the complete course syllabus document formatted for the Canvas Syllabus page.
 
 ---
@@ -325,14 +325,14 @@ The following 16 sections use standard ASU institutional language. They do not c
 This skill serves as the source of truth for both **assessment alignment** and **syllabus/CRC compliance**. To ensure expanding the syllabus doesn't interfere with the source-of-truth role for assessment alignment, fields are classified into two categories:
 
 ### Alignment-Critical Fields
-Referenced by quiz-generator, assignment-generator, discussion-generator, and rubric-creator when verifying assessment alignment:
+Referenced by quiz, assignment-generator, discussion-generator, and rubric-creator when verifying assessment alignment:
 
 | Field Path | Used By | Purpose |
 |---|---|---|
 | `modules[].objectives[]` (IDs, text, CLO mapping, Bloom's level) | All assessment skills | Target objectives for each assessment |
 | `clos[]` (ID, text, primary_modules) | All assessment skills | Course-level outcome verification |
 | `modules[].assessments` (type, title, points, focus) | All assessment skills | Assessment specification and scope |
-| `grading.categories` (names, weights, points) | rubric-creator, quiz-generator | Point allocation and weight validation |
+| `grading.categories` (names, weights, points) | rubric-creator, quiz | Point allocation and weight validation |
 
 **Rule**: Changes to alignment-critical fields require propagation to all referencing skills. Run the alignment check after any modification.
 

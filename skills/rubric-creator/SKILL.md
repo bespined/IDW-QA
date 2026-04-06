@@ -1,12 +1,12 @@
 ---
 name: rubric-creator
-description: "Generate analytic rubrics for Canvas assessments."
+description: "Create or edit analytic rubrics for Canvas assessments. Owns all rubric API calls including attachment."
 ---
 
-# Rubric Creation Skill
+# Rubric Skill (Create or Edit)
 
 > **Plugin**: ASU Canvas Course Builder
-> **Referenced by**: assignment-generator, discussion-generator
+> **Called by**: assignment-generator, discussion-generator (they provide `assignment_id`, this skill handles all rubric API calls)
 > **Standalone**: Yes — can be invoked directly with `/rubric-creator`
 
 ## Metric Tracking
@@ -155,6 +155,136 @@ Output in this format:
 | **[Criterion 2]** ([X] pts) | [Description] | [Description] | [Description] | [Description] |
 | **[Criterion 3]** ([X] pts) | [Description] | [Description] | [Description] | [Description] |
 ```
+
+---
+
+## Edit Existing Rubric
+
+When the user wants to fix or modify an existing rubric, skip the generation questionnaire.
+
+### Step 1: Fetch the rubric
+
+If the user provides an assignment or discussion, get the rubric from it:
+```
+GET /api/v1/courses/:course_id/assignments/:assignment_id?include[]=rubric
+```
+The `rubric` field contains the criteria array. The `rubric_settings.id` gives the rubric ID.
+
+Or fetch directly:
+```
+GET /api/v1/courses/:course_id/rubrics/:rubric_id
+```
+
+### Step 2: Display current criteria
+
+Show a table:
+| # | Criterion | Points | Exemplary | Proficient | Developing | Beginning |
+|---|---|---|---|---|---|---|
+| 1 | Conceptual Accuracy | 10 | (truncated) | (truncated) | (truncated) | (truncated) |
+| 2 | Applied Reasoning | 10 | ... | ... | ... | ... |
+| 3 | Communication | 10 | ... | ... | ... | ... |
+
+### Step 3: Get edit instructions
+
+Common operations:
+- Change criterion descriptors
+- Add/remove a criterion
+- Adjust point distribution
+- Rewrite for a different Bloom's level
+
+### Step 4: Rebuild and push
+
+Canvas does NOT support partial criterion updates — you must PUT the entire rubric:
+```
+PUT /api/v1/courses/:course_id/rubrics/:rubric_id
+Body: <full rubric JSON — see Canvas API Format below>
+```
+
+### Step 5: Verify
+```
+GET /api/v1/courses/:course_id/rubrics/:rubric_id
+```
+Confirm criteria count, total points, and attachment.
+
+---
+
+## Canvas API Format (Authoritative Reference)
+
+**This is the canonical documentation for rubric serialization.** Assignment-generator and discussion-generator defer to this section.
+
+Canvas requires rubric criteria and ratings as **dict-of-dicts with string keys**, not arrays. Arrays will silently fail and create a rubric with no criteria.
+
+### Create rubric + attach to assessment:
+```json
+POST /api/v1/courses/:course_id/rubrics
+{
+  "rubric": {
+    "title": "Assignment Rubric — Module N",
+    "criteria": {
+      "0": {
+        "description": "Conceptual Accuracy",
+        "points": 10,
+        "ratings": {
+          "0": { "description": "Exemplary", "points": 10 },
+          "1": { "description": "Proficient", "points": 7 },
+          "2": { "description": "Developing", "points": 4 },
+          "3": { "description": "Beginning", "points": 0 }
+        }
+      },
+      "1": {
+        "description": "Applied Reasoning",
+        "points": 10,
+        "ratings": {
+          "0": { "description": "Exemplary", "points": 10 },
+          "1": { "description": "Proficient", "points": 7 },
+          "2": { "description": "Developing", "points": 4 },
+          "3": { "description": "Beginning", "points": 0 }
+        }
+      }
+    }
+  },
+  "rubric_association": {
+    "association_type": "Assignment",
+    "association_id": <assignment_id>,
+    "use_for_grading": true,
+    "purpose": "grading"
+  }
+}
+```
+
+**Key rules:**
+- `criteria` keys are `"0"`, `"1"`, `"2"` — string integers, not arrays
+- `ratings` keys are also `"0"`, `"1"`, `"2"`, `"3"` — string integers
+- `association_type` is always `"Assignment"` — even for graded discussions (target the discussion's linked assignment)
+- `association_id` is the Canvas assignment ID
+- `use_for_grading: true` makes it the active grading rubric
+
+### Update existing rubric:
+```json
+PUT /api/v1/courses/:course_id/rubrics/:rubric_id
+{
+  "rubric": {
+    "title": "Updated Rubric Title",
+    "criteria": { ... same dict-of-dicts format ... }
+  }
+}
+```
+The association is preserved — no need to re-attach.
+
+---
+
+## Attachment Ownership Rule
+
+**Rubric-creator owns all rubric Canvas API calls.** When invoked by assignment-generator or discussion-generator:
+
+1. The calling skill creates the assessment (assignment or discussion) and gets back the `assignment_id`
+2. The calling skill passes the `assignment_id` and rubric requirements to rubric-creator
+3. **Rubric-creator handles the POST /rubrics call with `rubric_association`** — the calling skill does NOT make its own rubric API call
+4. Rubric-creator verifies the rubric was attached correctly
+
+This prevents competing rubric-attachment code in multiple skills.
+
+---
 
 ## Template: Assignment Rubric (30 points)
 

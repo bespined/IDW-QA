@@ -16,17 +16,32 @@ This records usage metrics for the pilot dashboard. Do not skip this step.
 
 ## Purpose
 
-One skill for all course-level configuration that isn't content: publishing items, setting due dates, configuring assignment groups with grade weighting, managing navigation tabs, setting the home page, and configuring late policies.
+One skill for all course-level and batch configuration: publishing items in bulk, setting due dates across modules, configuring assignment groups with grade weighting, managing navigation tabs, setting the home page, configuring late policies, and placing LTI tools.
+
+## Scope Boundary — course-config vs Assessment Skills
+
+| Use **course-config** for... | Use the **assessment skill** for... |
+|---|---|
+| Set due dates across ALL modules / ALL discussions | Set due date on ONE specific assignment → `/assignment-generator` Mode 2 |
+| Create/manage assignment groups + weights | Move ONE assignment to a different group → `/assignment-generator` Mode 2 |
+| Bulk publish/unpublish an entire module or type | Publish ONE quiz after creation → `/quiz` Mode 3 |
+| Course-level settings (nav, late policy, home page, grading scheme) | N/A — always course-config |
+| Audit missing dates across the course | N/A — always course-config |
+| LTI tool placement (Turnitin, Perusall, etc.) | N/A — always course-config |
+
+**Rule:** Individual item metadata → use the item's own skill (assignment-generator, quiz, discussion-generator). Batch/cross-course operations → course-config. Both use the same Canvas API endpoints — the difference is scope, not mechanism.
 
 ## When to Use
 
 - "Publish Module 3" / "Unpublish all quizzes" → **Publish mode**
-- "Set due dates for all assignments" → **Dates mode**
+- "Set due dates for all assignments" → **Dates mode** (batch)
 - "Set up assignment groups with weighting" → **Groups mode**
 - "Hide the Files tab" / "Set home page to modules" → **Settings mode**
 - "Configure late policy" / "Set up grading" → **Settings mode**
 - "Add Turnitin to Module 3" / "Place Perusall in all modules" → **LTI mode**
 - "Set up my course" → Ask which operations needed
+- "Set due date on the Module 2 quiz" → **Route to `/quiz` Mode 3** (single item, not course-config)
+- "Change points on the M3 assignment" → **Route to `/assignment-generator` Mode 2** (single item)
 
 ---
 
@@ -75,7 +90,7 @@ For "publish everything in Module N":
 ### Workflow
 
 1. **Audit mode**: "Show me what's missing dates" — scan all graded items and list those without due dates
-2. **Individual**: "Set the Module 2 quiz due date to March 15 at 11:59 PM"
+2. **Individual item**: Route to the item's own skill (`/assignment-generator` Mode 2, `/quiz` Mode 3, `/discussion-generator` Mode 2). course-config does not handle single-item date edits.
 3. **Bulk**: "Set due dates for all modules — weekly on Sundays at 11:59 PM starting Jan 13"
 4. Preview all changes before applying
 5. Apply and report
