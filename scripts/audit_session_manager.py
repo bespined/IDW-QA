@@ -92,14 +92,14 @@ def infer_audit_purpose(tester_role, tester_id, course_id, url, key):
     """Deterministically infer audit_purpose from tester role and course context.
 
     Rules:
-    - id_assistant → always 'recurring'
+    - id_assistant → REJECTED (IDAs use Vercel review app, not Claude Code)
     - admin → always 'qa_review'
     - id → check if course has assignments owned by OTHER testers
             if yes → 'qa_review' (reviewing someone else's work)
             if no → 'self_audit' (auditing own course)
     """
     if tester_role == "id_assistant":
-        return "recurring"
+        return None  # rejected — caller must handle
 
     if tester_role == "admin":
         return "qa_review"
@@ -142,6 +142,9 @@ def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=Fal
         audit_purpose = purpose
     else:
         audit_purpose = infer_audit_purpose(tester["role"], tester_id, course_id, url, key)
+
+    if audit_purpose is None:
+        return {"ok": False, "error": "ID Assistants do not create audit sessions in Claude Code. Use the Vercel review app at https://idw-review-app.vercel.app"}
 
     # Count prior sessions for round number
     audit_round = _count_prior_sessions(url, key, course_id, audit_purpose) + 1
