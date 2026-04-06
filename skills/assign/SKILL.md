@@ -1,9 +1,9 @@
 ---
 name: assign
-description: "Assign an ID Assistant to a course for review. Admin role required."
+description: "Assign an ID Assistant to a review session. Admin role required."
 ---
 
-# Assign IDA to Course
+# Assign ID Assistant to Session
 
 > **Run**: `/assign`
 
@@ -15,9 +15,9 @@ python3 scripts/idw_metrics.py --track skill_invoked --context '{"skill": "assig
 
 ## Purpose
 
-Allows admins to assign student workers (role: `id_assistant`) to courses for RLHF verdict work — reviewing Col B findings and submitting verdicts in the Vercel review app. Creates a row in `tester_course_assignments` linking a tester to a course.
+Allows admins to assign an ID Assistant to a **review session** for Col B verdict work. This mirrors the session assignment dropdown in the Vercel review app — the IDA sees the session in their dashboard and can begin verdicting findings.
 
-> **Role terminology**: In this plugin, `id_assistant` = student worker / instructional design assistant. The `id` role = QA-team instructional designer (ID Associate or full ID). The `id_assistant` role handles deterministic (Col B) findings only; the `id` role handles both Col B and Col C (qualitative) findings.
+> **Key distinction:** This skill assigns IDAs to **sessions** (specific audit runs), not to courses. The Vercel review app uses `audit_sessions.assigned_to` for this. The `tester_course_assignments` table is a separate admin tracking concept and is not part of the pilot review workflow.
 
 ## Role Gate
 
@@ -32,81 +32,107 @@ python3 scripts/role_gate.py --check admin
 
 ## Workflow
 
-### 1. Show Available ID Assistants
+### 1. Show Unassigned Sessions
 
-List all active ID Assistants:
+Query Supabase for sessions that need assignment (submitted but no IDA assigned):
+
+```bash
+python3 -c "
+import json, sys
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config, _supabase_get
+
+url, key = _get_supabase_config()
+sessions = _supabase_get(url, key, 'audit_sessions', {
+    'status': 'in.(pending_qa_review,in_progress)',
+    'assigned_to': 'is.null',
+    'order': 'run_date.desc',
+    'select': 'id,course_name,course_code,audit_purpose,audit_round,overall_score,run_date'
+})
+print(json.dumps(sessions or [], indent=2, default=str))
+"
+```
+
+Present as a numbered list:
+
+```
+Unassigned Sessions:
+ #  | Course                  | Purpose     | Round | Score | Date
+ 1  | BIO 101                 | self_audit  | 3     | 78%   | Apr 2
+ 2  | ENG 200                 | recurring   | 1     | 65%   | Apr 1
+ 3  | CHM 113                 | self_audit  | 1     | 44%   | Mar 31
+```
+
+If no unassigned sessions: "All sessions are assigned. Nothing to do."
+
+### 2. Show Available ID Assistants
 
 ```bash
 python3 scripts/admin_actions.py --list-testers
 ```
 
-Filter the output to show only `id_assistant` role testers.
+Filter to show only `id_assistant` role testers:
 
-Present as a numbered list:
 ```
-## Available IDAs
-1. Alice Chen (alice@asu.edu)
-2. Bob Smith (bob@asu.edu)
-3. Carol Martinez (carol@asu.edu)
+Available ID Assistants:
+ 1. Alice Chen (alice@asu.edu)
+ 2. Bob Smith (bob@asu.edu)
 ```
 
-### 2. Identify the Course
+### 3. Assign IDA to Session
 
-The admin must provide:
-- **Course ID** — the Canvas course ID (numeric)
-- **Course name** — display name for the assignment
-- **Canvas domain** — which Canvas instance (e.g., canvas.asu.edu)
-
-If the admin has an active course in `.env`, offer it as a default:
-> Assign to the current course (**BIO 101**, canvas.asu.edu, ID 12345)? Or specify a different course.
-
-### 3. Check for Duplicate & Create Assignment
-
-**All assignment operations MUST go through `assignment_status.py`.** This enforces ownership checks and valid state transitions.
-
-Check for existing assignments, then create:
+Ask the admin which session and which IDA, then assign:
 
 ```bash
-# Check if already assigned (read operation)
-python3 scripts/assignment_status.py --list
+python3 -c "
+import json, sys, requests
+sys.path.insert(0, 'scripts')
+from role_gate import _get_supabase_config
 
-# Create the assignment via admin_actions (audited, logged)
-python3 scripts/admin_actions.py --assign-course --tester-id <TESTER_ID> --course-id <COURSE_ID> --course-name "<COURSE_NAME>" --domain canvas.asu.edu
+url, key = _get_supabase_config()
+resp = requests.patch(
+    f'{url}/rest/v1/audit_sessions?id=eq.<SESSION_ID>',
+    headers={
+        'apikey': key,
+        'Authorization': f'Bearer {key}',
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+    },
+    json={'assigned_to': '<TESTER_ID>'},
+    timeout=15,
+)
+print(json.dumps(resp.json(), indent=2, default=str))
+"
 ```
 
-If a non-completed assignment exists, warn:
-> **[ID Assistant name] is already assigned to this course** (status: in_progress, assigned Mar 15). Create another assignment anyway?
+### 4. Confirm
 
-**Note:** If `admin_actions.py --assign-course` is not yet implemented, use `assignment_status.py` for status tracking after manual Supabase insert. The enforcement requirement is that all operations are logged and auditable.
+After successful assignment:
 
-### 5. Confirm
+> Assigned **[IDA name]** to review **[Course name]** (Round [N], [purpose]).
+> They'll see this session in the review app at https://idw-review-app.vercel.app.
 
-After successful creation, display:
+### 5. Bulk Assignment
 
-> Assigned **[ID Assistant name]** to **[Course name]** ([domain], course [ID]).
-> They'll see it in the review app at https://idw-review-app.vercel.app when sessions are submitted for this course.
+If the admin says "assign Alice to all unassigned sessions":
+- Loop through each unassigned session and assign
+- Show a summary table of all assignments made
 
-### 6. Bulk Assignment
-
-If the admin says "assign all IDAs to this course" or provides multiple names:
-- Loop through each ID Assistant and create separate assignments
-- Show a summary table of all created assignments
-
-### 7. Register New Tester
+### 6. Register New Tester
 
 If the admin wants to assign someone who isn't in the system yet:
 
 > That person isn't registered as a tester. Want me to add them?
 
-Then use role_gate.py to register:
 ```bash
-python3 scripts/role_gate.py --register --name "New Person" --email "new@asu.edu" --role id_assistant
+python3 scripts/admin_actions.py --register --name "New Person" --email "new@asu.edu" --role id_assistant
 ```
 
-After registration, proceed with the assignment.
+After registration, proceed with the session assignment.
 
 ## Error Handling
 
 - Supabase unreachable: "Can't reach the review database."
-- No active IDAs: "No active IDAs found. Register one first with `/assign` and provide their name, email, and role."
-- Invalid course ID: "Course ID must be numeric."
+- No active ID Assistants: "No active ID Assistants found. Register one first."
+- Session already assigned: "This session is already assigned to [name]. Reassign anyway?"
+- No unassigned sessions: "All sessions have been assigned."

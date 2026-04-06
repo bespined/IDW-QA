@@ -34,31 +34,16 @@ Do not proceed with any audit workflow for `id_assistant` users.
 - "Walk me through it" / "Audit with me" / "Interactive audit" / "Guided review" → **Guided Review** (skip prompt)
 - "Just check essential standards" / "Quick readiness check" → **Quick Check** (skip prompt)
 
-## Audit Session Creation (Mandatory)
+## Session Creation Timing
 
-**Before any audit work**, create a session in Supabase via the enforcement script. This deterministically infers `audit_purpose` from the tester's role and counts prior sessions for `audit_round`. Never create sessions via inline Supabase calls.
+**Do NOT create a Supabase session at the start of the audit.** Sessions are created only when the user explicitly chooses "Generate report + submit for review" at the end. The `audit_report.py` script handles session creation internally via `push_to_rlhf()` — no separate `audit_session_manager.py --create` call is needed.
 
-```bash
-python3 scripts/audit_session_manager.py --create --course-id <COURSE_ID> --mode <quick_scan|full_audit|guided_review>
-```
+**Why:** IDs run many iterative audits while building a course. Creating a session for every run floods the review app with intermediate findings that no one should review. Only the final submission should enter the pipeline.
 
-The script:
-1. Reads tester role from `role_gate.py`
-2. Infers `audit_purpose` deterministically:
-   - `admin` → always `qa_review`
-   - `id` on a course assigned to another tester → `qa_review`
-   - `id` on their own course → `self_audit`
-   - Note: `id_assistant` does not use Claude Code (they review findings in the Vercel app only)
-3. Counts prior sessions → sets `audit_round`
-4. Creates `audit_sessions` row in Supabase
-5. Returns session ID + review app URL
-
-**Use the returned `session_id`** for all subsequent operations: pushing findings via `audit_report.py`, and linking to the review app.
-
-After the audit completes, if `audit_purpose` is `self_audit`, offer to submit for QA review:
-```bash
-python3 scripts/audit_session_manager.py --submit --session-id <SESSION_ID>
-```
+The `audit_session_manager.py` script is still available for:
+- `--submit` — transition a session from `in_progress` to `pending_qa_review`
+- `--status` — check session status and finding counts
+- `--create --dry-run` — preview what purpose/round would be inferred (useful for debugging)
 
 ---
 
@@ -647,7 +632,8 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
    - NO Supabase push, NO Vercel session, NO review pipeline
    - Tell the user: "Report saved locally. When you're ready for formal review, run another audit and choose 'Submit for review.'"
 5. **If submit for review**: `python3 scripts/audit_report.py --input audit_results.json --open`
-   - Report saved + findings pushed to Supabase + session created
+   - Report saved + findings pushed to Supabase + session created (all handled by `push_to_rlhf()` inside the script)
+   - The script returns `rlhf_session_id` in its JSON output — use this as `<SESSION_ID>`
    - Provide the Vercel review app URL:
      > Your findings are live at: `https://idw-review-app.vercel.app/session/<SESSION_ID>`
 

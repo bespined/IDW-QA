@@ -223,7 +223,7 @@ IDs **do not build courses from scratch** — they receive a pre-built ASU Canva
 | **Remediation** | `media-upload` | `/media-upload` | Upload media files to Canvas and embed in pages |
 | **Knowledge** | `knowledge` | `/knowledge` | Local course content cache for search and Q&A |
 | **Deprecated** | `assignments` | `/assignments` | DEPRECATED — IDAs use Vercel review app, not Claude Code |
-| **Admin** | `assign` | `/assign` | Assign an ID Assistant to a course for review (Admin role) |
+| **Admin** | `assign` | `/assign` | Assign an ID Assistant to a review session (Admin role) |
 | **All** | `report-error` | `/report-error` | Report bugs, wrong findings, crashes (any role) |
 | **All** | `update-idw` | `/update-idw` | Pull latest plugin code, show changelog (any role) |
 | **Admin** | `admin` | `/admin` | Error queue, RLHF stats, tester management (Admin role) |
