@@ -48,15 +48,19 @@ except ImportError:
     print("requests required: pip install requests", file=sys.stderr)
     sys.exit(1)
 
+# Use shared canvas_api config to respect active prod/dev instance
+sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
+import canvas_api as _canvas_api  # noqa: E402
+
+# Load config once at module level — respects CANVAS_ACTIVE_INSTANCE
+_config = _canvas_api.get_config()
+
 
 # ── Canvas API helpers ──
 
 def _api_get(path, params=None):
-    domain = os.getenv("CANVAS_DOMAIN", "")
-    token = os.getenv("CANVAS_TOKEN", "")
-    cid = os.getenv("CANVAS_COURSE_ID", "")
-    url = f"https://{domain}/api/v1/courses/{cid}/{path}" if not path.startswith("http") else path
-    resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, params=params or {}, timeout=30)
+    url = f"{_config['course_url']}/{path}" if not path.startswith("http") else path
+    resp = requests.get(url, headers=_config["headers"], params=params or {}, timeout=30)
     if resp.status_code == 200:
         return resp.json()
     return None
@@ -64,15 +68,12 @@ def _api_get(path, params=None):
 
 def _api_get_all(path, params=None):
     """Paginated GET — returns all results."""
-    domain = os.getenv("CANVAS_DOMAIN", "")
-    token = os.getenv("CANVAS_TOKEN", "")
-    cid = os.getenv("CANVAS_COURSE_ID", "")
-    url = f"https://{domain}/api/v1/courses/{cid}/{path}"
+    url = f"{_config['course_url']}/{path}"
     all_results = []
     p = dict(params or {})
     p["per_page"] = 100
     while url:
-        resp = requests.get(url, headers={"Authorization": f"Bearer {token}"}, params=p, timeout=30)
+        resp = requests.get(url, headers=_config["headers"], params=p, timeout=30)
         if resp.status_code != 200:
             break
         all_results.extend(resp.json())
@@ -85,8 +86,8 @@ def _api_get_all(path, params=None):
 
 def collect_course_data():
     """Fetch all course data needed for evaluation. Returns a dict."""
-    domain = os.getenv("CANVAS_DOMAIN", "")
-    cid = os.getenv("CANVAS_COURSE_ID", "")
+    domain = _config["domain"]
+    cid = _config["course_id"]
     link = f"https://{domain}/courses/{cid}"
 
     print("Fetching course data...", file=sys.stderr)
