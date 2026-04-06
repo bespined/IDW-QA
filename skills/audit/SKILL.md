@@ -62,9 +62,9 @@ Before asking about audit mode, determine which course(s) to audit. Use `AskUser
 **For Batch Audit:**
 1. Let the user paste a list of course IDs or URLs
 2. Confirm the list: "I'll audit these N courses sequentially: [list]. Each takes ~10 minutes for Deep Audit. Continue?"
-3. Run the audit on each course in sequence, generating separate reports and sessions for each
+3. Run the audit on each course in sequence, saving results as `audit_results_{course_id}.json`
 4. At the end, show a summary table: Course | Score | Standards Met | Critical Issues
-5. Each course gets its own Supabase session and HTML report
+5. **Then ask the output-choice prompt once for the batch** — the user chooses: just show results, local reports for all, or upload all to the QA portal. Do not auto-upload any course without the user choosing.
 
 ## Audit Mode Selection
 
@@ -524,13 +524,13 @@ Generate a polished, shareable HTML audit report for leadership and team review.
 
 **Do NOT auto-generate reports.** The report prompt is handled in the Quick Check and Deep Audit sections above (Step 3 / Step 5). This section documents the report commands AFTER the user has chosen.
 
-**Never push to Supabase without the user explicitly choosing "Generate report + submit for review."** The local-only report is useful for talking points, planning remediation, or sharing with the SME. Supabase submission is a separate, deliberate action.
+**Never upload to Supabase without the user explicitly choosing "Upload to QA portal."** The local-only report is useful for talking points, planning remediation, or sharing with the SME. Portal upload is a separate, deliberate action.
 
 ```bash
-# Local only (progress check — no Supabase push)
+# Local only (progress check — no upload)
 python3 scripts/audit_report.py --input audit_results.json --open --local-only
 
-# Submit for review (full push to Supabase + Vercel review app)
+# Upload to QA portal (report + findings pushed to Supabase)
 python3 scripts/audit_report.py --input audit_results.json --open
 ```
 
@@ -622,44 +622,34 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 
    | Label | Description |
    |---|---|
-   | **Just show results** | I'll review the summary in conversation. No report, no Supabase. |
-   | **Generate report (local only)** | Create an HTML report I can share or reference. Nothing goes to the review app. |
-   | **Generate report + submit for review** | Create the report AND push findings to the review app for IDA/QA review. |
+   | **Just show results** | I'll review the summary in conversation. No report, no upload. |
+   | **Generate report (local only)** | Create an HTML report I can share or reference. Nothing goes to the QA portal. |
+   | **Upload to QA portal** | Create the report AND upload findings to the QA portal so I can review and correct them there. |
 
 3. **If just show results**: Done. No `audit_report.py` call. The conversation summary is sufficient.
 4. **If local only**: `python3 scripts/audit_report.py --input audit_results.json --open --local-only`
    - Report saved to `reports/` and opened in browser
-   - NO Supabase push, NO Vercel session, NO review pipeline
-   - Tell the user: "Report saved locally. When you're ready for formal review, run another audit and choose 'Submit for review.'"
-5. **If submit for review**: `python3 scripts/audit_report.py --input audit_results.json --open`
-   - Report saved + findings pushed to Supabase + session created (all handled by `push_to_rlhf()` inside the script)
+   - NO Supabase push, NO portal session, NO review pipeline
+   - Tell the user: "Report saved locally. When you're ready, run another audit and choose 'Upload to QA portal.'"
+5. **If upload to QA portal**: `python3 scripts/audit_report.py --input audit_results.json --open`
+   - Report saved + findings uploaded to Supabase + session created with status `in_progress` (all handled by `push_to_rlhf()` inside the script)
    - The script returns `rlhf_session_id` in its JSON output — use this as `<SESSION_ID>`
-   - Provide the Vercel review app URL:
-     > Your findings are live at: `https://idw-review-app.vercel.app/session/<SESSION_ID>`
+   - Provide the QA portal URL:
+     > Your findings are uploaded to the QA portal: `https://idw-review-app.vercel.app/session/<SESSION_ID>`
 
-   **Post-submission messaging — vary by audit purpose:**
+   **Post-upload messaging — the next steps happen in the portal, not in Claude Code:**
 
-   - **If `self_audit`** (ID auditing their own course):
-     > "Your findings are submitted. Next steps:"
-     > 1. "Review your findings in the review app at the link above"
-     > 2. "When ready, submit for QA review — an admin will assign an ID Assistant to validate the Col B (structural) findings"
-     > 3. "Once the ID Assistant completes their review, you can remediate any approved issues"
-     >
-     > "Want to submit for QA review now, or review the findings yourself first?"
+   > "Your findings are now in the QA portal. Here's what happens next:"
+   > 1. **You review your findings** in the portal at the link above — correct any the AI got wrong
+   > 2. **When you're satisfied**, click "Submit for QA Review" in the portal
+   > 3. **An admin assigns an ID Assistant** to validate the Col B (structural) findings
+   > 4. **The ID Assistant reviews** each Col B finding (agree/disagree/N/A)
+   > 5. **Once complete**, you can remediate flagged issues using the fix queue here in Claude Code
+   >
+   > "Want to open the portal now, or continue working in Claude Code?"
 
-     If yes: `python3 scripts/audit_session_manager.py --submit --session-id <SESSION_ID>`
-
-   - **If `qa_review` or `recurring`** (QA team auditing a course):
-     > "Your findings are submitted. Here's what happens next:"
-     > 1. "An admin assigns an ID Assistant to this session in the review app"
-     > 2. "The ID Assistant validates all Col B findings (agree/disagree on each)"
-     > 3. "When they mark the session complete, Col C findings are auto-approved"
-     > 4. "Then you can remediate flagged issues using the fix queue"
-     >
-     > "You can monitor progress in the review app. Want to start remediating now, or wait for the IDA review?"
-
-5. **If user wants to remediate now**: Transition to fix queue (Path D in concierge) or offer `/bulk-edit` for batch fixes
-6. **If user wants to wait**: End the audit flow — they can return later via "Work through fix queue" in the concierge
+6. **If user wants to remediate now**: Transition to fix queue (Path D in concierge) or offer `/bulk-edit` for batch fixes
+7. **If user wants to wait**: End the audit flow — they can return later via "Work through fix queue" in the concierge
 
 ## Faculty Feedback Summary
 

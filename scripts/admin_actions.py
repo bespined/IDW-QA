@@ -201,6 +201,84 @@ def list_testers():
     return {"ok": True, "testers": testers or []}
 
 
+def list_unassigned_sessions():
+    """List sessions that need an ID Assistant assigned."""
+    from role_gate import _supabase_get
+
+    _verify_admin()
+    url, key = _get_supabase_config()
+    if not url:
+        return {"ok": False, "error": "Supabase not configured"}
+
+    sessions = _supabase_get(url, key, "audit_sessions", {
+        "assigned_to": "is.null",
+        "status": "in.(in_progress,pending_qa_review)",
+        "order": "run_date.desc",
+        "select": "id,course_name,course_code,audit_purpose,audit_round,overall_score,run_date,status",
+    })
+    return {"ok": True, "sessions": sessions or []}
+
+
+def assign_session(session_id, tester_id, dry_run=False):
+    """Assign an ID Assistant to a review session."""
+    import requests
+    from role_gate import _supabase_get
+
+    caller_id = _verify_admin()
+    url, key = _get_supabase_config()
+    if not url:
+        return {"ok": False, "error": "Supabase not configured"}
+
+    # Verify session exists
+    sessions = _supabase_get(url, key, "audit_sessions", {
+        "id": f"eq.{session_id}", "select": "id,course_name,status,assigned_to",
+    })
+    if not sessions:
+        return {"ok": False, "error": f"Session {session_id} not found"}
+    session = sessions[0]
+
+    # Verify target is an active id_assistant
+    if tester_id:
+        testers = _supabase_get(url, key, "testers", {
+            "id": f"eq.{tester_id}", "select": "id,name,role,is_active",
+        })
+        if not testers:
+            return {"ok": False, "error": f"Tester {tester_id} not found"}
+        tester = testers[0]
+        if tester.get("role") != "id_assistant":
+            return {"ok": False, "error": f"{tester['name']} is not an ID Assistant (role: {tester['role']})"}
+        if not tester.get("is_active"):
+            return {"ok": False, "error": f"{tester['name']} is deactivated"}
+        tester_name = tester["name"]
+    else:
+        tester_name = None
+
+    if dry_run:
+        return {"ok": True, "dry_run": True, "session_id": session_id,
+                "course": session.get("course_name"), "assigned_to": tester_name}
+
+    resp = requests.patch(
+        f"{url}/rest/v1/audit_sessions?id=eq.{session_id}",
+        headers={
+            "apikey": key, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json", "Prefer": "return=representation",
+        },
+        json={"assigned_to": tester_id or None},
+        timeout=15,
+    )
+
+    if resp.status_code not in (200, 204):
+        return {"ok": False, "error": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+
+    _log_audit("assign_session", caller_id, {
+        "session_id": session_id, "course": session.get("course_name"),
+        "assigned_to": tester_id, "assigned_name": tester_name,
+    })
+
+    return {"ok": True, "session_id": session_id, "course": session.get("course_name"),
+            "assigned_to": tester_name}
+
+
 def main():
     parser = argparse.ArgumentParser(description="Audited admin operations")
     group = parser.add_mutually_exclusive_group(required=True)
@@ -208,12 +286,15 @@ def main():
     group.add_argument("--deactivate", action="store_true")
     group.add_argument("--change-role", action="store_true")
     group.add_argument("--list-testers", action="store_true")
+    group.add_argument("--list-unassigned", action="store_true", help="List sessions needing ID Assistant assignment")
+    group.add_argument("--assign-session", action="store_true", help="Assign ID Assistant to a review session")
 
     parser.add_argument("--name", help="Tester name (for --register)")
     parser.add_argument("--email", help="Tester email (for --register)")
     parser.add_argument("--role", help="Role (for --register)")
-    parser.add_argument("--tester-id", help="Tester UUID (for --deactivate, --change-role)")
+    parser.add_argument("--tester-id", help="Tester UUID (for --deactivate, --change-role, --assign-session)")
     parser.add_argument("--new-role", help="New role (for --change-role)")
+    parser.add_argument("--session-id", help="Session UUID (for --assign-session)")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
 
@@ -256,6 +337,31 @@ def main():
             for t in result["testers"]:
                 active = "✓" if t.get("is_active") else "✗"
                 print(f"  {active} {t.get('name', '?')} | {t.get('email', '?')} | {t.get('role', '?')}")
+        else:
+            print(f"✗ {result['error']}")
+
+    elif args.list_unassigned:
+        result = list_unassigned_sessions()
+        if result["ok"]:
+            sessions = result["sessions"]
+            if not sessions:
+                print("All sessions are assigned. Nothing to do.")
+            else:
+                print(f"Unassigned Sessions ({len(sessions)}):")
+                for s in sessions:
+                    score = f"{s.get('overall_score')}%" if s.get('overall_score') is not None else "—"
+                    date = (s.get('run_date') or '')[:10]
+                    print(f"  {s.get('course_name', '?')} | {s.get('audit_purpose', '?')} | Round {s.get('audit_round', '?')} | {score} | {date} | {s['id'][:8]}...")
+        else:
+            print(f"✗ {result['error']}")
+
+    elif args.assign_session:
+        if not args.session_id or not args.tester_id:
+            print(json.dumps({"ok": False, "error": "Provide --session-id and --tester-id"}))
+            sys.exit(1)
+        result = assign_session(args.session_id, args.tester_id, args.dry_run)
+        if result["ok"]:
+            print(f"✓ Assigned {result.get('assigned_to', 'N/A')} to session for {result.get('course', 'N/A')}")
         else:
             print(f"✗ {result['error']}")
 

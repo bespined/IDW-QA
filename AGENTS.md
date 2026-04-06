@@ -83,11 +83,11 @@ When any skill needs module objectives, CLOs, course structure, assessment archi
 ## RLHF Feedback Loop
 
 After an audit completes, the user chooses what to do with the results:
-1. **Show results only** — summary in conversation, no report, no Supabase push
-2. **Generate report (local only)** — HTML report saved to `reports/`, nothing pushed to Supabase
-3. **Generate report + submit for review** — HTML report saved AND findings pushed to Supabase, creating a review session
+1. **Just show results** — summary in conversation, no report, no upload
+2. **Generate report (local only)** — HTML report saved to `reports/`, nothing uploaded
+3. **Upload to QA portal** — HTML report saved AND findings uploaded to Supabase for the ID to review and correct in the QA portal
 
-Only option 3 enters the RLHF pipeline. The review app then collects:
+Only option 3 enters the RLHF pipeline. After upload, the ID reviews findings in the portal and clicks "Submit for QA Review" when ready — that step happens in the portal, not in Claude Code. The review app then collects:
 - **Agree** — AI got it right
 - **Disagree** — AI was wrong; reviewer provides corrected verdict + explanation
 - **N/A** — requires external tool (Ally, readability)

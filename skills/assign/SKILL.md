@@ -34,23 +34,10 @@ python3 scripts/role_gate.py --check admin
 
 ### 1. Show Unassigned Sessions
 
-Query Supabase for sessions that need assignment (submitted but no IDA assigned):
+List sessions that need an ID Assistant assigned:
 
 ```bash
-python3 -c "
-import json, sys
-sys.path.insert(0, 'scripts')
-from role_gate import _get_supabase_config, _supabase_get
-
-url, key = _get_supabase_config()
-sessions = _supabase_get(url, key, 'audit_sessions', {
-    'status': 'in.(pending_qa_review,in_progress)',
-    'assigned_to': 'is.null',
-    'order': 'run_date.desc',
-    'select': 'id,course_name,course_code,audit_purpose,audit_round,overall_score,run_date'
-})
-print(json.dumps(sessions or [], indent=2, default=str))
-"
+python3 scripts/admin_actions.py --list-unassigned
 ```
 
 Present as a numbered list:
@@ -81,29 +68,13 @@ Available ID Assistants:
 
 ### 3. Assign IDA to Session
 
-Ask the admin which session and which IDA, then assign:
+Ask the admin which session and which IDA, then assign via the enforcement script:
 
 ```bash
-python3 -c "
-import json, sys, requests
-sys.path.insert(0, 'scripts')
-from role_gate import _get_supabase_config
-
-url, key = _get_supabase_config()
-resp = requests.patch(
-    f'{url}/rest/v1/audit_sessions?id=eq.<SESSION_ID>',
-    headers={
-        'apikey': key,
-        'Authorization': f'Bearer {key}',
-        'Content-Type': 'application/json',
-        'Prefer': 'return=representation',
-    },
-    json={'assigned_to': '<TESTER_ID>'},
-    timeout=15,
-)
-print(json.dumps(resp.json(), indent=2, default=str))
-"
+python3 scripts/admin_actions.py --assign-session --session-id <SESSION_ID> --tester-id <TESTER_ID>
 ```
+
+The script validates: session exists, tester is an active `id_assistant`, and logs the assignment to the admin audit trail.
 
 ### 4. Confirm
 
