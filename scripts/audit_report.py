@@ -2716,9 +2716,9 @@ def main():
     parser.add_argument('--demo', action='store_true', help='Generate demo report with sample data')
     parser.add_argument('--open', action='store_true', help='Open in browser/app after generating')
     parser.add_argument('--output', type=str, help='Custom output path')
-    parser.add_argument('--xlsx', action='store_true', help='Generate XLSX report in QA Initiate format')
-    parser.add_argument('--xlsx-output', type=str, help='Custom XLSX output path')
-    parser.add_argument('--faculty', action='store_true', help='Generate plain-text faculty summary instead of HTML/XLSX report')
+    parser.add_argument('--xlsx', action='store_true', help='[DEPRECATED] XLSX report — not part of pilot workflow. Use HTML instead.')
+    parser.add_argument('--xlsx-output', type=str, help='[DEPRECATED] Custom XLSX output path')
+    parser.add_argument('--faculty', action='store_true', help='Generate plain-text faculty summary')
     parser.add_argument('--local-only', action='store_true', help='Generate report locally without pushing findings to Supabase (for progress checks)')
     args = parser.parse_args()
 
@@ -2761,6 +2761,10 @@ def main():
         return
 
     if args.xlsx:
+        # DEPRECATED: XLSX mode is not part of the pilot workflow.
+        # HTML report + Airtable sync is the standard path. XLSX kept for backward compat.
+        import warnings
+        warnings.warn("--xlsx is deprecated and not part of the pilot workflow. Use HTML report instead.", DeprecationWarning)
         # XLSX mode — save directly to reports/{course}/ (same as HTML).
         # Only use custom path if explicitly provided via --xlsx-output.
         archive_path = _build_report_path("xlsx", data)

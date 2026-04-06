@@ -633,12 +633,20 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 
 **Workflow integration:**
 1. Run `/audit` → results display in conversation + saved as `audit_results.json`
-2. **Ask the user** (AskUserQuestion): "Generate report (local only)" vs "Generate report + submit for review" — see HTML Report Output section above
-3. **If local only**: `python3 scripts/audit_report.py --input audit_results.json --open --local-only`
+2. **Ask the user** (AskUserQuestion) with 3 options — this prompt is MANDATORY after every audit:
+
+   | Label | Description |
+   |---|---|
+   | **Just show results** | I'll review the summary in conversation. No report, no Supabase. |
+   | **Generate report (local only)** | Create an HTML report I can share or reference. Nothing goes to the review app. |
+   | **Generate report + submit for review** | Create the report AND push findings to the review app for IDA/QA review. |
+
+3. **If just show results**: Done. No `audit_report.py` call. The conversation summary is sufficient.
+4. **If local only**: `python3 scripts/audit_report.py --input audit_results.json --open --local-only`
    - Report saved to `reports/` and opened in browser
    - NO Supabase push, NO Vercel session, NO review pipeline
    - Tell the user: "Report saved locally. When you're ready for formal review, run another audit and choose 'Submit for review.'"
-4. **If submit for review**: `python3 scripts/audit_report.py --input audit_results.json --open`
+5. **If submit for review**: `python3 scripts/audit_report.py --input audit_results.json --open`
    - Report saved + findings pushed to Supabase + session created
    - Provide the Vercel review app URL:
      > Your findings are live at: `https://idw-review-app.vercel.app/session/<SESSION_ID>`
@@ -682,57 +690,9 @@ If the user says yes, generate using `audit_report.generate_faculty_summary(data
 
 The ID reviews the summary before sending to faculty. AI never contacts faculty directly.
 
-## XLSX Report Output (QA Initiate Format)
+## XLSX Report Output (DEPRECATED)
 
-Generate a standards-aligned XLSX audit report using the QA Initiate template for formal deliverables.
-
-**When to use:** "Generate an Excel audit report", "I need a QA form", "audit for my lead in Excel"
-
-**Generate:**
-
-```bash
-python scripts/audit_report.py --input audit_results.json --xlsx              # XLSX only
-python scripts/audit_report.py --input audit_results.json --xlsx --open       # Generate and open
-python scripts/audit_report.py --demo --xlsx                                   # Demo with sample data
-python scripts/audit_report.py --demo --xlsx --xlsx-output my_report.xlsx     # Custom output path
-```
-
-**Output file:** Auto-archived at `reports/{COURSE-CODE_TERM}/{COURSE-CODE_TERM_YYYY-MM-DD_HH-MM_AI-Audit}.xlsx`
-
-**Sheets:**
-1. **QA Initiate** — 25 standards with 3-state status, evidence, confidence, coverage, Canvas links
-2. **Dashboard** — Summary charts, overall score, confidence distribution, top action items
-3. **External Links** — Inventory of all external links with review status
-
-**Columns (QA Initiate sheet):**
-
-| Column | Content |
-|---|---|
-| A | Standard status formula (Meets / Partially Meets / Does Not Meet) |
-| B | Status: Met / Partially Met / Not Met (dropdown) |
-| C | Measurable criteria and expectations |
-| D | Reviewer notes / evidence |
-| E | Recommendations |
-| F | Confidence (High / Medium / Low) |
-| G | Coverage (e.g., "8/12 modules") |
-| H | Scope (Course-wide / Module-level / Assessment-level) |
-| I | Evidence source (Canvas / External / Mixed) |
-| J | Canvas deep link |
-
-**Confidence tiers:**
-- **High** — Deterministic check passed or explicit evidence found and verified
-- **Medium** — Evidence found but ambiguous or incomplete
-- **Low** — Insufficient evidence; manual review recommended
-
-**Audit scope policy:**
-> This audit evaluates content within Canvas. External links are listed but not reviewed unless external scanning is enabled. "Met" requires evidence across all relevant modules. "Partially Met" indicates evidence in some modules.
-
-**Dashboard features:**
-- Overall score (weighted: 40% standards, 30% QA, 15% accessibility, 15% readiness)
-- Bar charts for Design Standards and QA Categories
-- Pie chart for Confidence Distribution
-- Course Readiness status with category checkmarks
-- Top Action Items table (Not Met + Low Confidence + QA Fail items)
+XLSX report generation exists in `audit_report.py --xlsx` but is **not part of the pilot workflow**. The HTML report is the primary deliverable. Airtable serves as the structured data output. Do not offer XLSX generation during audits unless the user explicitly asks for an Excel file.
 
 ## Read-Only Mode
 
@@ -814,7 +774,7 @@ I found 6 CLOs. Let me check each one...
    - **Due date missing**: Prompt for date and update via API
    After each fix, re-check that specific criterion and show the updated status.
 
-7. **At the end**, produce the same HTML/XLSX report as Mode 1, but with annotations:
+7. **At the end**, present the same 3-choice output prompt as Quick Check and Deep Audit (show results only / local report / submit for review). If the user chooses a report, produce it with annotations:
    - Items reviewed live show a "Reviewed with ID ✓" badge
    - Items the ID accepted as-is show "Accepted" status
    - Items fixed during walkthrough show "Fixed during review" with before/after

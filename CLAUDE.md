@@ -70,7 +70,7 @@ SUPABASE_ANON_KEY=<anon public key>
 SUPABASE_SERVICE_KEY=<service role key>
 ```
 
-**SECURITY**: Never display or transmit Supabase keys. These are loaded by `audit_report.py` to push findings to the RLHF review system.
+**SECURITY**: Never display or transmit Supabase keys. These are loaded by `audit_report.py` when the user chooses to submit findings for review.
 
 ### Multi-Instance Support
 
@@ -82,17 +82,17 @@ When any skill needs module objectives, CLOs, course structure, assessment archi
 
 ## RLHF Feedback Loop
 
-Every audit run automatically:
-1. Pushes findings to Supabase (`audit_sessions` + `audit_findings` tables)
-2. Uploads HTML + XLSX reports to `rlhf-reports` storage bucket
-3. Returns a link to the IDW Review App where IDs approve/reject/flag findings
+After an audit completes, the user chooses what to do with the results:
+1. **Show results only** — summary in conversation, no report, no Supabase push
+2. **Generate report (local only)** — HTML report saved to `reports/`, nothing pushed to Supabase
+3. **Generate report + submit for review** — HTML report saved AND findings pushed to Supabase, creating a review session
 
-The review app collects:
-- **Approved** — AI got it right
-- **Rejected** — AI was wrong; ID provides corrected verdict + explanation
-- **False Positive** — AI flagged something that wasn't actually an issue
+Only option 3 enters the RLHF pipeline. The review app then collects:
+- **Agree** — AI got it right
+- **Disagree** — AI was wrong; reviewer provides corrected verdict + explanation
+- **N/A** — requires external tool (Ally, readability)
 
-This feedback refines the audit skill prompts over time. The dashboard at `/dashboard` shows agreement rates by standard and reviewer activity.
+This feedback refines the audit prompts over time. The dashboard at `/dashboard` shows agreement rates by standard and reviewer activity.
 
 ## Page Content Edits — Staging Always Required
 
@@ -237,7 +237,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `canvas_api.py` | Shared API utilities (auth, pagination, upload, pages, folders, multi-instance) |
 | `setup_env.py` | Setup validation helper (test, validate, list courses, verify course) |
 | `course_navigator.py` | Fetch and display full course tree (modules → items), cached with 5-min TTL |
-| `audit_report.py` | Generate HTML or XLSX audit reports + push findings to Supabase RLHF |
+| `audit_report.py` | Generate HTML audit reports. `--local-only` skips Supabase push. Without flag, pushes findings to Supabase for review. |
 | `audit_pages.py` | Audit all pages for accessibility issues |
 | `alignment_graph.py` | CLO→MLO→Material→Assessment alignment analysis |
 | `preflight_checks.py` | Lightweight content-type validation |
