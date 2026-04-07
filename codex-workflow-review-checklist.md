@@ -1,5 +1,7 @@
 # Codex Workflow Review Checklist
 
+> **Type: Evergreen reference.** Not a plan — a structured checklist for tracing any workflow end-to-end. Use `codex-canonical-workflow-spec.md` as the source of truth for intended behavior.
+
 This checklist is for learning the system by reviewing one workflow at a time.
 
 Use it when you want to understand:

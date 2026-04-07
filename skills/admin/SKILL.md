@@ -37,7 +37,7 @@ Present the admin menu using `AskUserQuestion`:
 > 1. **Error Queue** — View and manage bug reports
 > 2. **RLHF Stats** — Agreement rates and reviewer activity
 > 3. **Manage Testers** — Add, deactivate, or list testers
-> 4. **Course Assignments** — View all IDA assignments across courses
+> 4. **Session Assignments** — View and manage IDA session assignments
 > 5. **System Health** — Plugin version, migration status, config check
 
 ---

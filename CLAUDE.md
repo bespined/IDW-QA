@@ -308,7 +308,7 @@ The Vercel review app (`idw-review-app`) has server-side API routes. All routes 
 |---|---|---|---|
 | `/api/admin/testers` | POST | admin | Create tester |
 | `/api/admin/testers/[id]` | PATCH, DELETE | admin | Update/delete tester |
-| `/api/admin/assignments` | POST | admin | Create course assignments |
+| `/api/admin/assignments` | POST | admin | Create course assignments (legacy — session assignment is primary) |
 | `/api/admin/assignments/[id]` | DELETE | admin | Remove assignment |
 | `/api/admin/errors/[id]` | PATCH | admin | Resolve error report |
 | `/api/session-assign` | GET, POST | admin | List IDAs / assign to session (supports bulk: `session_ids` array) |

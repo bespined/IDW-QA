@@ -2,7 +2,7 @@
 
 **Review Date**: 2026-04-07
 **Projects**: IDW-QA (plugin) + idw-review-app (Vercel)
-**Status**: Triaged — ready for execution
+**Status**: Phases 1–3 complete. Phase 4 and deferred items are **post-pilot backlog** — not pre-pilot blockers.
 
 ---
 
@@ -81,9 +81,14 @@
 
 ### 3.3 ~~Add Input Validation (Review App)~~ DONE
 - [x] Created `src/lib/server/validation.ts` — `parseJsonBody()`, `isParseError()`, `isValidEmail()`, `isValidUUID()`
-- [x] Wrapped `req.json()` with safe parser in 4 routes: `admin/testers`, `session-assign`, `sync-airtable`, `change-requests` (POST + PATCH)
+- [x] **All write routes** now use `parseJsonBody()` — 0 raw `req.json()` calls remain:
+  - `admin/testers` (POST), `admin/testers/[id]` (PATCH), `admin/assignments` (POST)
+  - `session-assign` (POST), `session-complete` (POST), `session-transition` (POST)
+  - `sync-airtable` (POST), `change-requests` (POST + PATCH)
+  - `findings/remediation` (PATCH), `remediation-events` (POST)
 - [x] Added email format validation to `admin/testers` route
-- [x] No new dependency (zod skipped — lightweight helpers sufficient for 4 routes)
+- [x] **Fixed sync-airtable authorization gap** — non-admin users (`id` and `id_assistant`) now get session ownership check (`auditor_id` or `assigned_to`). Previously only IDAs were checked; IDs could sync any session.
+- [x] No new dependency (zod skipped — lightweight helpers sufficient)
 - Verified: `tsc --noEmit` clean, `next build` clean
 
 ### 3.4 Standardize Auth Patterns (Review App) — DEFERRED
@@ -101,7 +106,9 @@
 
 ---
 
-## Phase 4: Low Priority (Backlog)
+## Phase 4: Post-Pilot Backlog
+
+> These items are documented for future reference but are **not pre-pilot blockers**. None affect pilot functionality, security, or correctness.
 
 ### 4.1 Cleanup & Housekeeping
 - [ ] Archive or integrate orphaned codex docs (`codex-vibe-coding-like-an-swe.md`, etc.)
@@ -143,4 +150,4 @@ These are things that are working well — don't touch:
 | 1. Critical | 2 (1.3 deferred) | 1 hour | **1.2 done** |
 | 2. High | 5 | 4-6 hours | **All done** (2.1–2.5) |
 | 3. Medium | 6 | 8-12 hours | **3.1/3.2, 3.3, 3.5 done** — 3.4, 3.6 deferred |
-| 4. Low | 3 | 6-10 hours | Not started |
+| 4. Post-pilot backlog | 3 | 6-10 hours | Documented, not pre-pilot |

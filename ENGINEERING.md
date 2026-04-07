@@ -36,7 +36,7 @@ Both the Vercel admin UI and the CLI (`admin_actions.py --register`) now fully o
 | AI Engine | Claude Code (Claude Opus 4.6) | Runs audit skills, evaluates C-criteria, orchestrates workflows |
 | Deterministic Engine | Python 3.9+ (`criterion_evaluator.py`) | Evaluates all B-criteria consistently |
 | Backend / DB | Supabase (PostgreSQL + Auth + Storage) | Source of truth for sessions, findings, feedback, events |
-| Frontend | Next.js 14 + Tailwind (Vercel) | Review app for verdicts, admin, change requests |
+| Frontend | Next.js 16 + React 19 + Tailwind 4 (Vercel) | Review app for verdicts, admin, change requests |
 | Reporting | Python (`audit_report.py`) | HTML/XLSX reports with per-criterion detail |
 | Analytics Output | Airtable | One row per course, faculty-facing, filterable by school/program |
 | Course Data | Canvas LMS REST API | Read course structure, pages, assignments, quizzes |
@@ -183,7 +183,7 @@ role        TEXT            -- 'id' | 'id_assistant' | 'admin'
 is_active   BOOLEAN
 ```
 
-**`tester_course_assignments`** — ID Assistants assigned to courses
+**`tester_course_assignments`** — Admin tracking (not the primary pilot review path — session assignment via `audit_sessions.assigned_to` is the active workflow)
 ```sql
 id          UUID PRIMARY KEY
 tester_id   UUID → testers
@@ -253,7 +253,7 @@ Actor fields (`requested_by`, `resolved_by`, `remediated_by`, `submitted_by`, `a
 |---|---|---|---|
 | `/api/admin/testers` | POST | admin | Create tester |
 | `/api/admin/testers/[id]` | PATCH, DELETE | admin | Update/delete tester |
-| `/api/admin/assignments` | POST | admin | Create course assignments |
+| `/api/admin/assignments` | POST | admin | Create course assignments (legacy — session assignment is primary) |
 | `/api/admin/assignments/[id]` | DELETE | admin | Remove assignment |
 | `/api/admin/errors/[id]` | PATCH | admin | Resolve error report |
 | `/api/session-assign` | GET, POST | admin | List IDAs / assign to session |

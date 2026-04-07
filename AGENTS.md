@@ -56,9 +56,24 @@ CANVAS_DEV_COURSE_ID=<dev course ID>
 
 # Active instance: "prod" or "dev" (default: prod)
 CANVAS_ACTIVE_INSTANCE=prod
+
+# Tester identity (for role-gated skills)
+# Required for id and admin roles. ID Assistants don't need this.
+# Get this UUID from the Vercel admin UI (primary) or admin_actions.py --register (secondary).
+IDW_TESTER_ID=<tester UUID from admin>
 ```
 
 **SECURITY**: Never display, log, or transmit the `CANVAS_TOKEN` or `CANVAS_DEV_TOKEN` values. If the user asks you to show it, remind them it is stored in `.env` and should not be shared.
+
+### Pilot Onboarding
+
+Testers are created in the **Vercel admin UI** (primary path) or via **Claude Code admin skill** (secondary path for technical admins). Both create the same `testers` row in Supabase.
+
+- **ID Assistants** (`id_assistant`): Only need QA portal access. No Claude Code setup required.
+- **IDs** (`id`): Need QA portal access + `IDW_TESTER_ID` in plugin `.env` for Claude Code.
+- **Admins** (`admin`): Need QA portal access + `IDW_TESTER_ID` in plugin `.env` for Claude Code.
+
+The Vercel admin UI provisions both the tester row and sends a login invite email. The UUID is shown after creation with a copy button.
 
 ### Supabase Credentials (`.env.local` at plugin root)
 
@@ -82,12 +97,20 @@ When any skill needs module objectives, CLOs, course structure, assessment archi
 
 ## RLHF Feedback Loop
 
-After an audit completes, the user chooses what to do with the results:
+After an audit completes, the user chooses what to do with the results. **The available options depend on whether portal upload is possible** — check `role_gate.can_upload_to_portal()`:
+
+**When portal upload is available** (Supabase configured + `IDW_TESTER_ID` set):
 1. **Just show results** — summary in conversation, no report, no upload
 2. **Generate report (local only)** — HTML report saved to `reports/`, nothing uploaded
 3. **Upload to QA portal** — HTML report saved AND findings uploaded to Supabase for the ID to review and correct in the QA portal
 
-Only option 3 enters the RLHF pipeline. After upload, the ID reviews findings in the portal and clicks "Submit for QA Review" when ready — that step happens in the portal, not in Claude Code. The review app then collects:
+**When portal upload is unavailable** (missing Supabase config or tester identity):
+1. **Just show results** — summary in conversation
+2. **Generate report (saved locally)** — HTML report saved to `reports/`
+
+With a note: "Portal upload unavailable — requires Supabase credentials and tester identity. Run /setup to enable."
+
+Only option 3 (when available) enters the RLHF pipeline. Upload is a **portal handoff**, not final QA submission — the ID reviews and corrects findings in the portal, then clicks "Submit for QA Review" there. The review app then collects:
 - **Agree** — AI got it right
 - **Disagree** — AI was wrong; reviewer provides corrected verdict + explanation
 - **N/A** — requires external tool (Ally, readability)
@@ -269,6 +292,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `audit_session_manager.py` | **Audit session lifecycle** — deterministic purpose inference, round counting, session status transitions |
 | `remediation_tracker.py` | **Centralized remediation events** — records events + clears flags atomically (replaces all inline Supabase POSTs) |
 | `admin_actions.py` | **Audited admin operations** — tester registration, deactivation, role changes with audit log |
+| `supabase_client.py` | Centralized Supabase config + PostgREST helpers (GET/POST/PATCH/upload). All scripts import from here. |
 | `assignment_status.py` | **DEPRECATED** — course-level assignment status. Pilot uses session-based assignment via review app. |
 
 ## Migrations
@@ -287,15 +311,22 @@ All migrations are in `<plugin_root>/migrations/`. Run in order in the Supabase 
 
 ## Review App API Routes
 
-The Vercel review app (`idw-review-app`) has server-side API routes using the Supabase service key:
+The Vercel review app (`idw-review-app`) has server-side API routes. All routes authenticate callers via SSR cookie auth (`src/lib/server/route-auth.ts`) and use the service key for DB writes (`src/lib/server/supabase-admin.ts`). Actor fields are derived server-side from auth.
 
-| Route | Method | Purpose |
-|---|---|---|
-| `/api/findings/remediation` | PATCH | Toggle `remediation_requested` on audit_findings (bypasses RLS) |
-| `/api/remediation-events` | GET, POST | Fetch or record remediation events for a finding |
-| `/api/session-complete` | POST | Mark session complete — Col C auto-approves, Col B → pending_qa_review |
-| `/api/sync-airtable` | POST | Trigger Airtable sync for a session (admin only) |
-| `/api/session-assign` | GET, POST | List available ID Assistants (GET) or assign one to a session (POST) |
+| Route | Method | Required Role | Purpose |
+|---|---|---|---|
+| `/api/admin/testers` | POST | admin | Create tester (+ provision login invite) |
+| `/api/admin/testers/[id]` | PATCH, DELETE | admin | Update/delete tester |
+| `/api/admin/assignments` | POST | admin | Create course assignments (legacy — session assignment is primary) |
+| `/api/admin/assignments/[id]` | DELETE | admin | Remove assignment |
+| `/api/admin/errors/[id]` | PATCH | admin | Resolve error report |
+| `/api/session-assign` | GET, POST | admin | List IDAs / assign to session (supports bulk: `session_ids` array) |
+| `/api/session-complete` | POST | id only | Mark session complete — Col C auto-approves, Col B → pending_qa_review |
+| `/api/session-transition` | POST | varies | Admin: approve/revisions/undo. IDA: complete/revisions/reopen |
+| `/api/change-requests` | GET, POST, PATCH | varies | GET: admin (global) or auth+session_id; POST: admin/IDA; PATCH: admin |
+| `/api/sync-airtable` | POST | any auth (owner/assigned check) | Trigger Airtable sync for a session |
+| `/api/findings/remediation` | PATCH | id or admin | Toggle `remediation_requested` on a finding |
+| `/api/remediation-events` | GET, POST | GET: any auth; POST: id/admin | Fetch or record remediation events |
 
 ## MCP Connectors
 

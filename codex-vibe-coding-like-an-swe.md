@@ -1,5 +1,7 @@
 # Vibe Coding Like An SWE
 
+> **Type: Evergreen reference.** Not a plan — a checklist for engineering judgment when building with AI tools.
+
 ## Purpose
 
 Use this checklist when building features with Claude, Codex, or any AI coding tool so you keep product momentum without skipping core engineering judgment.

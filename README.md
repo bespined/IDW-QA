@@ -24,7 +24,7 @@ Claude Code Plugin ──→ Supabase ──→ Vercel Review App ──→ Airt
 |---|---|---|
 | `id` | Instructional Designers, ID Associates | Build courses, run self-audits, remediate findings |
 | `id_assistant` | Student workers | Verdict Col B findings in Vercel review app (do not use Claude Code) |
-| `admin` | QA team leads | Assign courses, review overrides, manage testers, sync to Airtable |
+| `admin` | QA team leads | Assign sessions to IDAs, review overrides, manage testers, sync to Airtable |
 
 ## Key Features
 

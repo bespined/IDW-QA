@@ -1,5 +1,7 @@
 # Codex Account Onboarding Plan
 
+> **Status: Completed** (April 2026). All phases implemented — Vercel admin UI provisions login + UUID, Claude Code admin path works, role-specific messaging is live. See `codex-canonical-workflow-spec.md` for the current onboarding contract.
+
 This plan makes the Vercel review app the primary account-creation surface for pilot admins while preserving the plugin's UUID-based identity model for Claude Code users.
 
 It also keeps a sanctioned Claude Code admin path for technical admins who prefer to provision accounts from the plugin.
