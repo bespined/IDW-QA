@@ -280,7 +280,7 @@ def _build_txt_report_path():
                     course_code = f"{m.group(1)}-{m.group(2)}"
             course_code = course_code or "UNKNOWN"
             term = term or "No-Term"
-        except Exception:
+        except (json.JSONDecodeError, KeyError, OSError):
             pass
     folder_name = f"{course_code}_{term}".replace(" ", "-")
     timestamp = _dt.now().strftime("%Y-%m-%d_%H-%M")

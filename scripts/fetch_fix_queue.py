@@ -28,38 +28,8 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv(PLUGIN_ROOT / ".env")
-    load_dotenv(PLUGIN_ROOT / ".env.local")
-except ImportError:
-    pass
-
-
-def _get_supabase_config():
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    if not url or not key:
-        return None, None
-    return url, key
-
-
-def _supabase_get(url, key, table, params=None):
-    import requests
-    resp = requests.get(
-        f"{url}/rest/v1/{table}",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-        params=params or {},
-        timeout=30,
-    )
-    if resp.status_code == 200:
-        return resp.json()
-    _log.error("GET %s failed: %s %s", table, resp.status_code, resp.text[:200])
-    return None
+sys.path.insert(0, os.path.dirname(__file__))
+import supabase_client
 
 
 def fetch_fix_queue(course_id=None, session_id=None, with_feedback=False):
@@ -67,8 +37,7 @@ def fetch_fix_queue(course_id=None, session_id=None, with_feedback=False):
 
     Returns list of dicts with finding + session info, sorted by standard_id.
     """
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"error": "Supabase credentials not configured."}
 
     # Build query params
@@ -84,7 +53,7 @@ def fetch_fix_queue(course_id=None, session_id=None, with_feedback=False):
     if session_id:
         params["session_id"] = f"eq.{session_id}"
 
-    findings = _supabase_get(url, key, "audit_findings", params)
+    findings = supabase_client.get("audit_findings", params=params, timeout=30)
     if findings is None:
         return {"error": "Failed to fetch fix queue."}
 
@@ -99,7 +68,7 @@ def fetch_fix_queue(course_id=None, session_id=None, with_feedback=False):
             "finding_id": f"in.({','.join(finding_ids)})",
             "order": "reviewed_at.desc",
         }
-        feedback = _supabase_get(url, key, "finding_feedback", feedback_params) or []
+        feedback = supabase_client.get("finding_feedback", params=feedback_params) or []
 
         # Group by finding_id (take latest)
         fb_map = {}

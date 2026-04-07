@@ -29,16 +29,13 @@ VALID_ROLES = ("id", "id_assistant", "admin")
 AUDIT_LOG = PLUGIN_ROOT / "logs" / "admin_audit.jsonl"
 
 
+import supabase_client
+
+
 def _get_supabase_config():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(PLUGIN_ROOT / ".env")
-        load_dotenv(PLUGIN_ROOT / ".env.local", override=True)
-    except ImportError:
-        pass
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    return (url, key) if url and key else (None, None)
+    """Thin wrapper — delegates to supabase_client but keeps (url, key) tuple
+    signature for the Auth Admin calls in this file that need raw credentials."""
+    return supabase_client.get_config_safe()
 
 
 def _verify_admin():

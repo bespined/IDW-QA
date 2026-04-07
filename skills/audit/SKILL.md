@@ -186,7 +186,13 @@ python3 scripts/criterion_evaluator.py --quick-check --purpose qa_review > audit
 
 Step 2: Show the summary (Met/Partial/Not Met counts + overall score) in conversation.
 
-Step 3: **STOP and ASK before generating any report.** Use `AskUserQuestion` with these options:
+Step 3: **STOP and ASK before generating any report.** First, detect local-only context:
+
+```bash
+python3 -c "from role_gate import can_upload_to_portal; print('full' if can_upload_to_portal() else 'local')"
+```
+
+If **full** (portal upload available), use `AskUserQuestion` with 3 options:
 
 | Option | Label | Description |
 |---|---|---|
@@ -194,7 +200,16 @@ Step 3: **STOP and ASK before generating any report.** Use `AskUserQuestion` wit
 | 2 | **Generate report (local only)** | Creates HTML report saved locally. Does NOT push to Supabase or create a review session. |
 | 3 | **Upload to QA portal** | Creates HTML report AND uploads findings to the QA portal. The ID reviews and corrects findings there, then clicks "Submit for QA Review" in the portal when ready. |
 
-**Do NOT skip this prompt. Do NOT auto-generate reports. Do NOT push to Supabase without the user explicitly choosing option 3.**
+If **local** (portal upload unavailable — missing Supabase config or tester identity), use `AskUserQuestion` with 2 options only — do NOT show the portal option:
+
+| Option | Label | Description |
+|---|---|---|
+| 1 | **Just show results** | No report. Review the summary in conversation. |
+| 2 | **Generate report (saved locally)** | Creates HTML report saved to `reports/`. |
+
+Below the 2-option prompt, show: "Portal upload unavailable — requires Supabase credentials and tester identity. Run /setup to enable."
+
+**Do NOT skip this prompt. Do NOT auto-generate reports. Do NOT push to Supabase without the user explicitly choosing option 3 (when available).**
 
 If option 1 — Just show results:
 Display the summary in conversation. Done. No commands to run.
@@ -656,13 +671,24 @@ Audit reports are standalone deliverables — NOT staging files. They save direc
 
 **Workflow integration:**
 1. Run `/audit` → results display in conversation + saved as `audit_results.json`
-2. **Ask the user** (AskUserQuestion) with 3 options — this prompt is MANDATORY after every audit:
+2. **Ask the user** (AskUserQuestion) — this prompt is MANDATORY after every audit. Detect local-only context first (`python3 -c "from role_gate import can_upload_to_portal; print('full' if can_upload_to_portal() else 'local')"`).
+
+   **If portal upload available (full)** — show 3 options:
 
    | Label | Description |
    |---|---|
    | **Just show results** | I'll review the summary in conversation. No report, no upload. |
    | **Generate report (local only)** | Create an HTML report I can share or reference. Nothing goes to the QA portal. |
    | **Upload to QA portal** | Create the report AND upload findings to the QA portal so I can review and correct them there. |
+
+   **If portal upload unavailable (local)** — show 2 options only (no portal option):
+
+   | Label | Description |
+   |---|---|
+   | **Just show results** | Review the summary in conversation. |
+   | **Generate report (saved locally)** | Create an HTML report saved to `reports/`. |
+
+   Below the 2-option prompt, show: "Portal upload unavailable — requires Supabase credentials and tester identity. Run /setup to enable."
 
 3. **If just show results**: Done. No `audit_report.py` call. The conversation summary is sufficient.
 4. **If local only**: `python3 scripts/audit_report.py --input audit_results.json --open --local-only`

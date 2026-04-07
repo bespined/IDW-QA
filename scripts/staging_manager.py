@@ -87,7 +87,7 @@ def _get_course_name():
                 if name:
                     cache_path.write_text(name, encoding="utf-8")
                     return name
-        except Exception:
+        except (ImportError, OSError, ValueError):
             pass
         return f"course-{course_id}"
 
@@ -189,7 +189,7 @@ def _run_preflight(slug, html_content):
                             o.get("text", "") for o in mod.get("objectives", [])
                         ]
                         break
-        except Exception as e:
+        except (json.JSONDecodeError, KeyError, OSError) as e:
             _log.debug(f"Could not load course-config.json for preflight: {e}")
 
     issues = check_page(html_content, context=context)
@@ -330,7 +330,7 @@ def main():
         if issues_path.exists():
             try:
                 result["preflight"] = json.loads(issues_path.read_text(encoding="utf-8"))
-            except Exception:
+            except (json.JSONDecodeError, OSError):
                 pass
         print(json.dumps(result))
 

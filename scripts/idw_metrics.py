@@ -76,7 +76,7 @@ def track(event_type, count=1, context=None):
                     if _line.startswith("CANVAS_COURSE_ID="):
                         context["course_id"] = _line.split("=", 1)[1].strip()
                         break
-        except Exception:
+        except OSError:
             pass
 
     event = {
@@ -103,7 +103,7 @@ def track(event_type, count=1, context=None):
             from metrics_sync import sync_metrics, is_configured
             if is_configured():
                 sync_metrics(get_summary())
-        except Exception:
+        except (ImportError, OSError, ValueError):
             pass  # Never block on sync failure
 
 

@@ -198,8 +198,8 @@ def friendly_error(response):
             friendly += f" — {detail}"
         elif "message" in body:
             friendly += f" — {body['message']}"
-    except Exception:
-        pass
+    except (ValueError, KeyError):
+        pass  # response body wasn't JSON or had unexpected shape
     return friendly
 
 
@@ -238,7 +238,7 @@ def _request_with_retry(method, url, headers, max_retries=MAX_RETRIES, **kwargs)
             try:
                 from idw_metrics import track
                 track("api_call", context={"status_code": resp.status_code})
-            except Exception:
+            except ImportError:
                 pass
             return resp
 
@@ -265,7 +265,7 @@ def _request_with_retry(method, url, headers, max_retries=MAX_RETRIES, **kwargs)
         try:
             from idw_metrics import track
             track("error_occurred", context={"script": "canvas_api.py", "error_type": "http_error", "status_code": resp.status_code})
-        except Exception:
+        except ImportError:
             pass
         return resp
 
@@ -275,7 +275,7 @@ def _request_with_retry(method, url, headers, max_retries=MAX_RETRIES, **kwargs)
         try:
             from idw_metrics import track
             track("error_occurred", context={"script": "canvas_api.py", "error_type": "http_error", "status_code": resp.status_code})
-        except Exception:
+        except ImportError:
             pass
     return resp
 
@@ -562,7 +562,7 @@ def delete_page(config, page_slug):
         from backup_manager import save_backup
         save_backup(config.get("course_id", "unknown"), page_slug, body, "PRE-DELETE BACKUP")
         _log.info("Backed up page '%s' before deletion", page_slug)
-    except Exception as e:
+    except (ImportError, OSError) as e:
         _log.warning("Could not backup page '%s' before delete: %s", page_slug, e)
 
     # Delete

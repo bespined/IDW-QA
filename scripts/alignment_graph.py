@@ -394,8 +394,8 @@ def extract_assessments(config, course_config, tree):
             topic_id = (a.get("discussion_topic") or {}).get("id")
             if topic_id:
                 rubric_map[topic_id] = has_rubric
-    except Exception:
-        pass  # Graceful fallback — rubric_map stays empty, has_rubric defaults to False
+    except (KeyError, TypeError, ValueError) as e:
+        _log.debug("Rubric map build skipped (non-fatal): %s", e)
 
     # Build a lookup of declared assessment info from course-config
     declared = {}
@@ -797,7 +797,8 @@ def query_graph(graph, query_type):
         prog = graph.get("coverage", {}).get("blooms_progression", None)
         if not blooms:
             return "No Bloom's data available."
-        lines = [f"Bloom's Progression ({'\u2713 Non-decreasing' if prog else '\u26a0 Not progressive'}):"]
+        prog_label = '\u2713 Non-decreasing' if prog else '\u26a0 Not progressive'
+        lines = [f"Bloom's Progression ({prog_label}):"]
         level_names = {v: k for k, v in BLOOMS_LEVELS.items()}
         for mod in sorted(blooms.keys(), key=lambda x: int(x) if str(x).isdigit() else x):
             avg = blooms[mod]
@@ -879,7 +880,7 @@ def build_graph(config, course_config):
             "assessments": len(assessments),
             "gaps": sum(len(v) for v in graph["gaps"].values() if isinstance(v, list)),
         })
-    except Exception:
+    except ImportError:
         pass
 
     return graph
@@ -1068,7 +1069,8 @@ def main():
             clo_cov = coverage.get("clo_assessment_coverage", {})
             avg_cov = sum(clo_cov.values()) / len(clo_cov) * 100 if clo_cov else 0
             print(f"  Avg CLO Coverage: {avg_cov:.0f}%")
-            print(f"  Bloom's Progression: {'\u2713' if coverage.get('blooms_progression') else '\u26a0 Not progressive'}")
+            bloom_label = '\u2713' if coverage.get('blooms_progression') else '\u26a0 Not progressive'
+            print(f"  Bloom's Progression: {bloom_label}")
         gaps = graph.get("gaps", {})
         total_gaps = sum(len(v) for v in gaps.values() if isinstance(v, list))
         print(f"  Gaps: {total_gaps}")

@@ -241,7 +241,7 @@ def _strip_html(html):
     try:
         parser.feed(html)
         return parser.get_text()
-    except Exception:
+    except (ValueError, AssertionError):
         return re.sub(r"<[^>]+>", " ", html)
 
 
@@ -310,7 +310,7 @@ def check_page(html: str, context: dict = None) -> list:
     hp = _HeadingParser()
     try:
         hp.feed(html)
-    except Exception:
+    except (ValueError, AssertionError):
         pass
 
     headings = hp.headings
@@ -343,7 +343,7 @@ def check_page(html: str, context: dict = None) -> list:
     ip = _ImgParser()
     try:
         ip.feed(html)
-    except Exception:
+    except (ValueError, AssertionError):
         pass
 
     for idx, img in enumerate(ip.images):
@@ -374,7 +374,7 @@ def check_page(html: str, context: dict = None) -> list:
     lp = _LinkParser()
     try:
         lp.feed(html)
-    except Exception:
+    except (ValueError, AssertionError):
         pass
 
     for link in lp.links:
@@ -400,7 +400,7 @@ def check_page(html: str, context: dict = None) -> list:
     vp = _VideoEmbedParser()
     try:
         vp.feed(html)
-    except Exception:
+    except (ValueError, AssertionError):
         pass
 
     if vp.video_embeds and not vp.has_transcript_placeholder():
@@ -1013,7 +1013,7 @@ def main():
             try:
                 cfg = json.loads(Path(args.config).read_text(encoding="utf-8"))
                 context["clos"] = [c.get("text", "") for c in cfg.get("clos", [])]
-            except Exception:
+            except (json.JSONDecodeError, KeyError, OSError):
                 pass
 
         issues = check_page(html, context=context)

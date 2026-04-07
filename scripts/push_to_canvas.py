@@ -44,36 +44,14 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-
-def _get_supabase_config():
-    """Load Supabase config from .env + .env.local."""
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(PLUGIN_ROOT / ".env")
-        load_dotenv(PLUGIN_ROOT / ".env.local", override=True)
-    except ImportError:
-        pass
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    if not url or not key:
-        return None, None
-    return url, key
+import supabase_client
 
 
 def _record_remediation_events(finding_ids, skill, description, tester_id):
     """Record remediation events and clear remediation_requested flags."""
-    import requests
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         _log.warning("Supabase not configured — skipping remediation event recording")
         return 0
-
-    headers = {
-        "apikey": key,
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "Prefer": "return=representation",
-    }
 
     recorded = 0
     for fid in finding_ids:
@@ -82,29 +60,19 @@ def _record_remediation_events(finding_ids, skill, description, tester_id):
             continue
 
         # Record event
-        resp = requests.post(
-            f"{url}/rest/v1/remediation_events",
-            headers=headers,
-            json={
-                "finding_id": fid,
-                "remediated_by": tester_id,
-                "skill_used": skill,
-                "description": description,
-            },
-            timeout=15,
-        )
-        if resp.status_code in (200, 201):
+        result = supabase_client.post("remediation_events", {
+            "finding_id": fid,
+            "remediated_by": tester_id,
+            "skill_used": skill,
+            "description": description,
+        }, timeout=15)
+        if result:
             recorded += 1
         else:
-            _log.error("Failed to record remediation event for %s: %s", fid, resp.status_code)
+            _log.error("Failed to record remediation event for %s", fid)
 
         # Clear remediation_requested flag
-        requests.patch(
-            f"{url}/rest/v1/audit_findings?id=eq.{fid}",
-            headers=headers,
-            json={"remediation_requested": False},
-            timeout=15,
-        )
+        supabase_client.patch("audit_findings", fid, {"remediation_requested": False})
 
     return recorded
 

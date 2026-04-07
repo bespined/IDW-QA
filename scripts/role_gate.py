@@ -27,62 +27,19 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-# Load .env and .env.local
-try:
-    from dotenv import load_dotenv
-    load_dotenv(PLUGIN_ROOT / ".env")
-    load_dotenv(PLUGIN_ROOT / ".env.local")
-except ImportError:
-    pass
+import supabase_client
 
 
-def _get_supabase_config():
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    if not url or not key:
-        return None, None
-    return url, key
+def can_upload_to_portal():
+    """Return True only when portal upload can succeed.
 
-
-def _supabase_get(url, key, table, params=None):
-    """GET from a Supabase table with optional query params."""
-    import requests
-    headers = {
-        "apikey": key,
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-    }
-    resp = requests.get(
-        f"{url}/rest/v1/{table}",
-        headers=headers,
-        params=params or {},
-        timeout=15,
-    )
-    if resp.status_code == 200:
-        return resp.json()
-    _log.error("Supabase GET %s failed: %s %s", table, resp.status_code, resp.text[:200])
-    return None
-
-
-def _supabase_post(url, key, table, row):
-    """POST a single row to a Supabase table."""
-    import requests
-    resp = requests.post(
-        f"{url}/rest/v1/{table}",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        },
-        json=row,
-        timeout=15,
-    )
-    if resp.status_code in (200, 201):
-        data = resp.json()
-        return data[0] if isinstance(data, list) and data else data
-    _log.error("Supabase POST %s failed: %s %s", table, resp.status_code, resp.text[:200])
-    return None
+    Requires both Supabase configured AND IDW_TESTER_ID set. Used by the
+    audit skill to decide whether to show the 3-option or 2-option output
+    prompt. This is NOT a role stub — it returns a boolean, not an identity.
+    All protected skills still call check_role() normally.
+    """
+    tester_id = os.getenv("IDW_TESTER_ID", "").strip()
+    return bool(tester_id) and supabase_client.is_configured()
 
 
 def get_current_tester():
@@ -92,11 +49,10 @@ def get_current_tester():
     if not tester_id:
         return None
 
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return None
 
-    rows = _supabase_get(url, key, "testers", {"id": f"eq.{tester_id}", "is_active": "eq.true"})
+    rows = supabase_client.get("testers", params={"id": f"eq.{tester_id}", "is_active": "eq.true"})
     if rows and len(rows) > 0:
         return rows[0]
     return None
@@ -115,8 +71,7 @@ def check_role(required_role):
     if not tester_id:
         return False, None, "IDW_TESTER_ID not set in .env. Add your tester ID to use this skill."
 
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return False, None, "Supabase credentials not configured. Check .env.local for SUPABASE_URL and SUPABASE_SERVICE_KEY."
 
     tester = get_current_tester()
@@ -135,15 +90,14 @@ def check_role(required_role):
 
 def register_tester(name, email, role):
     """Register a new tester. Caller must be admin (not enforced here — enforce in skill)."""
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return None, "Supabase credentials not configured."
 
     row = {"name": name, "role": role}
     if email:
         row["email"] = email
 
-    result = _supabase_post(url, key, "testers", row)
+    result = supabase_client.post("testers", row)
     if result:
         return result, f"Registered {name} as {role} (ID: {result.get('id', '?')})"
     return None, "Failed to register tester — check Supabase logs."

@@ -20,6 +20,9 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
+# Link validator (lazy import to avoid circular deps)
+_link_validation_result = None  # module-level cache, set by collect_course_data
+
 try:
     from idw_logger import get_logger
     _log = get_logger("criterion_evaluator")
@@ -52,15 +55,24 @@ except ImportError:
 sys.path.insert(0, str(PLUGIN_ROOT / "scripts"))
 import canvas_api as _canvas_api  # noqa: E402
 
-# Load config once at module level — respects CANVAS_ACTIVE_INSTANCE
-_config = _canvas_api.get_config()
+# Lazy-loaded config — only resolved on first API call, not at import time.
+# This lets the module import without crashing if .env is missing.
+_config = None
+
+
+def _get_config():
+    global _config
+    if _config is None:
+        _config = _canvas_api.get_config()
+    return _config
 
 
 # ── Canvas API helpers ──
 
 def _api_get(path, params=None):
-    url = f"{_config['course_url']}/{path}" if not path.startswith("http") else path
-    resp = requests.get(url, headers=_config["headers"], params=params or {}, timeout=30)
+    cfg = _get_config()
+    url = f"{cfg['course_url']}/{path}" if not path.startswith("http") else path
+    resp = requests.get(url, headers=cfg["headers"], params=params or {}, timeout=30)
     if resp.status_code == 200:
         return resp.json()
     return None
@@ -68,12 +80,13 @@ def _api_get(path, params=None):
 
 def _api_get_all(path, params=None):
     """Paginated GET — returns all results."""
-    url = f"{_config['course_url']}/{path}"
+    cfg = _get_config()
+    url = f"{cfg['course_url']}/{path}"
     all_results = []
     p = dict(params or {})
     p["per_page"] = 100
     while url:
-        resp = requests.get(url, headers=_config["headers"], params=p, timeout=30)
+        resp = requests.get(url, headers=cfg["headers"], params=p, timeout=30)
         if resp.status_code != 200:
             break
         all_results.extend(resp.json())
@@ -86,8 +99,9 @@ def _api_get_all(path, params=None):
 
 def collect_course_data():
     """Fetch all course data needed for evaluation. Returns a dict."""
-    domain = _config["domain"]
-    cid = _config["course_id"]
+    cfg = _get_config()
+    domain = cfg["domain"]
+    cid = cfg["course_id"]
     link = f"https://{domain}/courses/{cid}"
 
     print("Fetching course data...", file=sys.stderr)
@@ -98,7 +112,8 @@ def collect_course_data():
     quizzes = _api_get_all("quizzes")
     assignments = _api_get_all("assignments")
     discussions = _api_get_all("discussion_topics")
-    tabs = [t.get("label") for t in (_api_get("tabs") or []) if t.get("visibility") == "public"]
+    # Filter tabs: must be public AND not hidden (hidden tabs are admin-hidden from students)
+    tabs = [t.get("label") for t in (_api_get("tabs") or []) if t.get("visibility") == "public" and not t.get("hidden", False)]
     agroups = _api_get_all("assignment_groups")
     syllabus = course.get("syllabus_body", "") or ""
 
@@ -215,6 +230,7 @@ def collect_course_data():
             for pd in page_data.values()
         ),
         "pages_with_objectives": [s for s, pd in page_data.items() if pd["has_objectives"]],
+        "link_validation": _link_validation_result,  # None if skipped, dict if ran
     }
 
 
@@ -286,6 +302,20 @@ def _build_affected_pages(cid_str, status, cd):
                 "issue_summary": "No rubric attached",
                 "issue_count": 1,
             })
+
+    # Link validator results — B-13.3, B-13.4, B-13.5
+    lv = cd.get("link_validation")
+    if lv and lv.get("status") == "completed" and cid_str in ("B-13.3", "B-13.4", "B-13.5"):
+        try:
+            from link_validator import build_affected_pages
+            lv_pages = build_affected_pages(
+                lv["results"].get("issues", []),
+                link,
+                cd.get("pages"),
+            )
+            pages.extend(lv_pages.get(cid_str, []))
+        except ImportError:
+            _log.warning("link_validator.py not available — skipping affected_pages for %s", cid_str)
 
     return pages
 
@@ -531,9 +561,36 @@ def evaluate_b_criterion(cid_str, text, cd):
         if "video" in t and ("play" in t or "functionality" in t):
             return ("Met", "Videos functional")
         if "url" in t or ("link" in t and "work" in t):
+            # B-13.3: Use Canvas link validator results when available
+            lv = cd.get("link_validation")
+            if lv and lv.get("status") == "completed":
+                r = lv["results"]
+                if r["summary"]["broken_links"] > 0:
+                    return ("Not Met", f'{r["summary"]["broken_links"]} broken link(s) found via Canvas link validator')
+                elif r["summary"]["review"] > 0:
+                    return ("Partially Met", f'{r["summary"]["review"]} link(s) unreachable — manual review needed')
+                else:
+                    return ("Met", "All links validated by Canvas link validator")
             return ("Met", "Links functional (spot check recommended)")
         if "document" in t and ("open" in t or "download" in t):
+            # B-13.4: Use link validator for unpublished item detection
+            lv = cd.get("link_validation")
+            if lv and lv.get("status") == "completed":
+                r = lv["results"]
+                unpub = [i for i in r.get("broken_links", []) if i.get("reason") == "unpublished_item"]
+                if unpub:
+                    return ("Not Met", f'{len(unpub)} document(s) link to unpublished items — not visible to students')
+                return ("Met", "All linked documents visible in student view (Canvas link validator)")
             return ("Met", "Documents accessible")
+        if ("image" in t or "media" in t) and ("display" in t or "appear" in t) and "size" not in t:
+            # B-13.5: Use link validator for broken image detection
+            lv = cd.get("link_validation")
+            if lv and lv.get("status") == "completed":
+                r = lv["results"]
+                if r["summary"]["broken_images"] > 0:
+                    return ("Not Met", f'{r["summary"]["broken_images"]} broken image(s) found via Canvas link validator')
+                return ("Met", "All images verified by Canvas link validator")
+            return ("Met", "Images display correctly (spot check recommended)")
         if "image" in t and "size" in t:
             return ("Met", "Images sized properly")
         if "typo" in t:
@@ -671,6 +728,13 @@ def evaluate_all(cd, filter_standard=None):
                 "B-04.14", "B-06.2", "B-09.1", "B-09.6", "B-13.10", "B-13.14", "B-22.5",
             }
 
+            # When Canvas link validator ran successfully, B-13.3/4/5 are no longer
+            # low-confidence or unverifiable — the validator provides ground truth.
+            _lv = cd.get("link_validation")
+            _lv_completed = _lv and _lv.get("status") == "completed"
+            if _lv_completed:
+                LOW_CONFIDENCE -= {"B-13.3", "B-13.4", "B-13.5"}
+
             # Hybrid Quick Check targets: B-criteria where AI should re-verify
             # the deterministic result using page content. Excludes manual_entry
             # criteria (B-22.9, B-22.11) which require external tools, not AI.
@@ -685,6 +749,9 @@ def evaluate_all(cd, filter_standard=None):
                 "B-22.5",                        # descriptive link text — needs semantic check
                 "B-24.1",                        # mobile/offline access — needs content scan
             }
+            # When Canvas link validator ran, B-13.3/4/5 have ground truth — no AI needed
+            if _lv_completed:
+                ALWAYS_VERIFY -= {"B-13.3"}
             # VERIFY_WHEN_WEAK: flag only when deterministic result is Not Met,
             # Partially Met, or needs_review — skip when clearly Met with evidence.
             VERIFY_WHEN_WEAK = {
@@ -801,7 +868,7 @@ def build_full_audit_json(cd, results, mode="full_audit", purpose_override=None)
             tester = get_current_tester()
             if tester and tester.get("name"):
                 auditor = tester["name"]
-        except Exception:
+        except (ImportError, ValueError):
             pass
 
     # Determine audit_purpose.
@@ -822,7 +889,7 @@ def build_full_audit_json(cd, results, mode="full_audit", purpose_override=None)
                 tester = get_current_tester()
                 if tester and tester.get("role") == "admin":
                     audit_purpose = "recurring"
-            except Exception:
+            except (ImportError, ValueError):
                 pass
 
     # Group results by standard
@@ -1030,6 +1097,35 @@ def build_full_audit_json(cd, results, mode="full_audit", purpose_override=None)
     # Legacy scores for backward compat with report sections
     qa_score = round(qa_pass / len(qa_items) * 100) if qa_items else 0
 
+    # Link validation summary for the audit JSON
+    lv = cd.get("link_validation")
+    lv_summary = None
+    if lv and lv.get("status") == "completed":
+        r = lv["results"]
+        lv_summary = {
+            "status": "completed",
+            "total_issues": r["summary"]["total"],
+            "broken_links": r["summary"]["broken_links"],
+            "broken_images": r["summary"]["broken_images"],
+            "review_items": r["summary"]["review"],
+            "ignored": r["summary"]["ignored"],
+            "link_status": r["link_status"],
+            "image_status": r["image_status"],
+            "issues": [
+                {
+                    "url": i["url"],
+                    "reason": i["reason"],
+                    "category": i["category"],
+                    "severity": i["severity"],
+                    "source_name": i["source_name"],
+                    "source_type": i["source_type"],
+                }
+                for i in r["issues"] if i["severity"] != "ignore"
+            ],
+        }
+    elif lv:
+        lv_summary = {"status": lv.get("status", "skipped"), "error": lv.get("error")}
+
     course_obj = cd["course"]
     return {
         "course": {
@@ -1041,7 +1137,8 @@ def build_full_audit_json(cd, results, mode="full_audit", purpose_override=None)
         },
         "audit_date": datetime.now().isoformat(),
         "auditor": auditor,
-        "plugin_version": "1.3.0",
+        "plugin_version": "1.4.0",
+        "link_validation": lv_summary,
         "audit_mode": mode.replace("_", " "),
         "audit_purpose": audit_purpose,
         "overall_score": overall,
@@ -1098,7 +1195,27 @@ def main():
     parser.add_argument("--full-audit", action="store_true", help="Output COMPLETE audit JSON for audit_report.py (Deep Audit — B evaluated, C marked for AI)")
     parser.add_argument("--quick-check", action="store_true", help="Output COMPLETE audit JSON — Col B only, no C-criteria (Quick Check mode)")
     parser.add_argument("--purpose", choices=["self_audit", "recurring", "qa_review"], help="Explicit audit_purpose — overrides role-based inference")
+    parser.add_argument("--skip-link-validation", action="store_true", help="Skip Canvas link validator (B-13.3/4/5 remain AI-verified)")
     args = parser.parse_args()
+
+    # Run Canvas link validator unless skipped
+    global _link_validation_result
+    if not args.skip_link_validation:
+        try:
+            from link_validator import run_validation
+            cid = os.environ.get("CANVAS_COURSE_ID")
+            if cid:
+                print("Running Canvas link validator...", file=sys.stderr)
+                _link_validation_result = run_validation(course_id=cid)
+                if _link_validation_result.get("status") == "completed":
+                    s = _link_validation_result["results"]["summary"]
+                    print(f"Link validation complete: {s['broken_links']} broken links, {s['broken_images']} broken images, {s['review']} review, {s['ignored']} ignored", file=sys.stderr)
+                else:
+                    print(f"Link validation: {_link_validation_result.get('status', 'unknown')} — {_link_validation_result.get('error', '')}", file=sys.stderr)
+        except ImportError:
+            print("link_validator.py not found — skipping link validation", file=sys.stderr)
+        except Exception as e:
+            print(f"Link validation error: {e} — continuing without", file=sys.stderr)
 
     cd = collect_course_data()
     print(f"Course: {cd['course_name']} | Pages: {len(cd['pages'])} | Images: {cd['imgs_total']}", file=sys.stderr)

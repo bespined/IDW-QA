@@ -38,49 +38,26 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-
-def _get_supabase_config():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(PLUGIN_ROOT / ".env")
-        load_dotenv(PLUGIN_ROOT / ".env.local", override=True)
-    except ImportError:
-        pass
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    if not url or not key:
-        return None, None
-    return url, key
+import supabase_client
 
 
-def _supabase_get(url, key, table, params=None):
-    import requests
-    resp = requests.get(
-        f"{url}/rest/v1/{table}",
-        headers={"apikey": key, "Authorization": f"Bearer {key}"},
-        params=params or {},
-        timeout=15,
-    )
-    return resp.json() if resp.status_code == 200 else None
-
-
-def _get_tester_info(url, key, tester_id):
+def _get_tester_info(tester_id):
     """Fetch tester role and active status."""
-    data = _supabase_get(url, key, "testers", {"id": f"eq.{tester_id}", "select": "id,role,is_active,name"})
+    data = supabase_client.get("testers", params={"id": f"eq.{tester_id}", "select": "id,role,is_active,name"})
     return data[0] if data else None
 
 
-def _get_course_assignments(url, key, course_id):
+def _get_course_assignments(course_id):
     """Get all tester assignments for a course."""
-    return _supabase_get(url, key, "tester_course_assignments", {
+    return supabase_client.get("tester_course_assignments", params={
         "course_id": f"eq.{course_id}",
         "select": "id,tester_id,status",
     }) or []
 
 
-def _count_prior_sessions(url, key, course_id, purpose):
+def _count_prior_sessions(course_id, purpose):
     """Count prior audit sessions for round numbering."""
-    data = _supabase_get(url, key, "audit_sessions", {
+    data = supabase_client.get("audit_sessions", params={
         "course_id": f"eq.{course_id}",
         "audit_purpose": f"eq.{purpose}",
         "select": "id",
@@ -88,7 +65,7 @@ def _count_prior_sessions(url, key, course_id, purpose):
     return len(data) if data else 0
 
 
-def infer_audit_purpose(tester_role, tester_id, course_id, url, key):
+def infer_audit_purpose(tester_role, tester_id, course_id):
     """Deterministically infer audit_purpose from tester role and course context.
 
     Rules:
@@ -105,7 +82,7 @@ def infer_audit_purpose(tester_role, tester_id, course_id, url, key):
         return "qa_review"
 
     if tester_role == "id":
-        assignments = _get_course_assignments(url, key, course_id)
+        assignments = _get_course_assignments(course_id)
         other_assignees = [a for a in assignments if a.get("tester_id") != tester_id]
         if other_assignees:
             return "qa_review"
@@ -120,10 +97,7 @@ def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=Fal
 
     Returns session dict with id, purpose, round, status.
     """
-    import requests
-
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured — check .env.local"}
 
     tester_id = os.getenv("IDW_TESTER_ID", "")
@@ -131,7 +105,7 @@ def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=Fal
         return {"ok": False, "error": "IDW_TESTER_ID not set in .env"}
 
     # Get tester info
-    tester = _get_tester_info(url, key, tester_id)
+    tester = _get_tester_info(tester_id)
     if not tester:
         return {"ok": False, "error": f"Tester {tester_id} not found in Supabase"}
     if not tester.get("is_active"):
@@ -141,13 +115,13 @@ def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=Fal
     if purpose and purpose != "auto":
         audit_purpose = purpose
     else:
-        audit_purpose = infer_audit_purpose(tester["role"], tester_id, course_id, url, key)
+        audit_purpose = infer_audit_purpose(tester["role"], tester_id, course_id)
 
     if audit_purpose is None:
         return {"ok": False, "error": "ID Assistants do not create audit sessions in Claude Code. Use the Vercel review app at https://idw-review-app.vercel.app"}
 
     # Count prior sessions for round number
-    audit_round = _count_prior_sessions(url, key, course_id, audit_purpose) + 1
+    audit_round = _count_prior_sessions(course_id, audit_purpose) + 1
 
     session_row = {
         "course_id": str(course_id),
@@ -167,21 +141,11 @@ def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=Fal
             "tester_role": tester["role"], "tester_name": tester["name"],
         }
 
-    resp = requests.post(
-        f"{url}/rest/v1/audit_sessions",
-        headers={
-            "apikey": key, "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json", "Prefer": "return=representation",
-        },
-        json=session_row,
-        timeout=15,
-    )
+    result = supabase_client.post("audit_sessions", session_row, timeout=15)
+    if not result:
+        return {"ok": False, "error": "Failed to create audit session — check Supabase logs"}
 
-    if resp.status_code not in (200, 201):
-        return {"ok": False, "error": f"HTTP {resp.status_code}: {resp.text[:200]}"}
-
-    data = resp.json()
-    session_id = data[0]["id"] if isinstance(data, list) else data.get("id")
+    session_id = result["id"] if isinstance(result, dict) else result[0]["id"]
 
     return {
         "ok": True,
@@ -197,14 +161,11 @@ def create_session(course_id, purpose=None, audit_mode="full_audit", dry_run=Fal
 
 def submit_for_review(session_id, dry_run=False):
     """Transition session from in_progress → pending_qa_review."""
-    import requests
-
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured"}
 
     # Verify current status
-    sessions = _supabase_get(url, key, "audit_sessions", {
+    sessions = supabase_client.get("audit_sessions", params={
         "id": f"eq.{session_id}", "select": "id,status,audit_purpose",
     })
     if not sessions:
@@ -219,28 +180,18 @@ def submit_for_review(session_id, dry_run=False):
     if dry_run:
         return {"ok": True, "dry_run": True, "session_id": session_id, "new_status": "pending_qa_review"}
 
-    resp = requests.patch(
-        f"{url}/rest/v1/audit_sessions?id=eq.{session_id}",
-        headers={
-            "apikey": key, "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json", "Prefer": "return=representation",
-        },
-        json={"status": "pending_qa_review"},
-        timeout=15,
-    )
-
-    if resp.status_code in (200, 204):
+    ok = supabase_client.patch("audit_sessions", session_id, {"status": "pending_qa_review"})
+    if ok:
         return {"ok": True, "session_id": session_id, "new_status": "pending_qa_review"}
-    return {"ok": False, "error": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+    return {"ok": False, "error": "Failed to update session status — check Supabase logs"}
 
 
 def get_session_status(session_id):
     """Get current session status and summary."""
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured"}
 
-    sessions = _supabase_get(url, key, "audit_sessions", {
+    sessions = supabase_client.get("audit_sessions", params={
         "id": f"eq.{session_id}",
     })
     if not sessions:
@@ -249,7 +200,7 @@ def get_session_status(session_id):
     session = sessions[0]
 
     # Count findings
-    findings = _supabase_get(url, key, "audit_findings", {
+    findings = supabase_client.get("audit_findings", params={
         "session_id": f"eq.{session_id}",
         "select": "id,status,remediation_requested",
     }) or []

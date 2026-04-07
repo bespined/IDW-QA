@@ -602,7 +602,7 @@ def check_heading_hierarchy(graph, course_data):
         parser = _HeadingParser()
         try:
             parser.feed(body)
-        except Exception:
+        except (ValueError, AssertionError):
             continue
         headings = parser.headings
         for i in range(1, len(headings)):
@@ -634,7 +634,7 @@ def _check_alt_text(graph, course_data):
         parser = _ImgAltParser()
         try:
             parser.feed(body)
-        except Exception:
+        except (ValueError, AssertionError):
             continue
         for img in parser.images:
             # Skip decorative images (role="presentation" or alt="")
@@ -661,7 +661,7 @@ def _check_link_text(graph, course_data):
         parser = _LinkTextParser()
         try:
             parser.feed(body)
-        except Exception:
+        except (ValueError, AssertionError):
             continue
         for link in parser.links:
             text = link.get("text", "").strip()
@@ -702,7 +702,7 @@ def _strip_html(html):
     try:
         parser.feed(html)
         return parser.get_text()
-    except Exception:
+    except (ValueError, AssertionError):
         return re.sub(r"<[^>]+>", " ", html)
 
 

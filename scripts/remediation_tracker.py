@@ -38,33 +38,16 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-
-def _get_supabase_config():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(PLUGIN_ROOT / ".env")
-        load_dotenv(PLUGIN_ROOT / ".env.local", override=True)
-    except ImportError:
-        pass
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    if not url or not key:
-        return None, None
-    return url, key
+import supabase_client
 
 
-def _validate_finding_exists(url, key, finding_id):
+def _validate_finding_exists(finding_id):
     """Check that a finding exists in Supabase before recording an event."""
-    import requests
-    resp = requests.get(
-        f"{url}/rest/v1/audit_findings?id=eq.{finding_id}&select=id,criterion_id,remediation_requested",
-        headers={"apikey": key, "Authorization": f"Bearer {key}"},
-        timeout=10,
-    )
-    if resp.status_code == 200:
-        data = resp.json()
-        return data[0] if data else None
-    return None
+    data = supabase_client.get("audit_findings", params={
+        "id": f"eq.{finding_id}",
+        "select": "id,criterion_id,remediation_requested",
+    }, timeout=10)
+    return data[0] if data else None
 
 
 def record_events(finding_ids, skill, description, tester_id=None, dry_run=False):
@@ -72,22 +55,12 @@ def record_events(finding_ids, skill, description, tester_id=None, dry_run=False
 
     Returns dict with counts of recorded events and cleared flags.
     """
-    import requests
-
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured — check .env.local"}
 
     tester_id = tester_id or os.getenv("IDW_TESTER_ID", "")
     if not tester_id:
         _log.warning("No IDW_TESTER_ID set — remediation events will have empty remediated_by")
-
-    headers = {
-        "apikey": key,
-        "Authorization": f"Bearer {key}",
-        "Content-Type": "application/json",
-        "Prefer": "return=representation",
-    }
 
     recorded = 0
     cleared = 0
@@ -100,7 +73,7 @@ def record_events(finding_ids, skill, description, tester_id=None, dry_run=False
             continue
 
         # Validate finding exists
-        finding = _validate_finding_exists(url, key, fid)
+        finding = _validate_finding_exists(fid)
         if not finding:
             skipped.append({"id": fid, "reason": "Finding not found in Supabase"})
             _log.warning("Finding %s not found — skipping", fid)
@@ -113,34 +86,23 @@ def record_events(finding_ids, skill, description, tester_id=None, dry_run=False
             continue
 
         # Record remediation event
-        resp = requests.post(
-            f"{url}/rest/v1/remediation_events",
-            headers=headers,
-            json={
-                "finding_id": fid,
-                "remediated_by": tester_id,
-                "skill_used": skill,
-                "description": description,
-            },
-            timeout=15,
-        )
+        result = supabase_client.post("remediation_events", {
+            "finding_id": fid,
+            "remediated_by": tester_id,
+            "skill_used": skill,
+            "description": description,
+        }, timeout=15)
 
-        if resp.status_code in (200, 201):
+        if result:
             recorded += 1
             _log.info("Recorded event for %s", fid)
         else:
-            errors.append({"id": fid, "error": f"HTTP {resp.status_code}"})
-            _log.error("Failed to record event for %s: %s", fid, resp.status_code)
+            errors.append({"id": fid, "error": "POST failed"})
+            _log.error("Failed to record event for %s", fid)
             continue
 
         # Clear remediation_requested flag
-        clear_resp = requests.patch(
-            f"{url}/rest/v1/audit_findings?id=eq.{fid}",
-            headers=headers,
-            json={"remediation_requested": False},
-            timeout=15,
-        )
-        if clear_resp.status_code in (200, 204):
+        if supabase_client.patch("audit_findings", fid, {"remediation_requested": False}):
             cleared += 1
 
     return {

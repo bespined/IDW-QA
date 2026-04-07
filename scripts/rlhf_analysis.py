@@ -31,38 +31,8 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv(PLUGIN_ROOT / ".env")
-    load_dotenv(PLUGIN_ROOT / ".env.local")
-except ImportError:
-    pass
-
-
-def _get_supabase_config():
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    if not url or not key:
-        return None, None
-    return url, key
-
-
-def _supabase_get(url, key, table, params=None):
-    import requests
-    resp = requests.get(
-        f"{url}/rest/v1/{table}",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-        params=params or {},
-        timeout=30,
-    )
-    if resp.status_code == 200:
-        return resp.json()
-    _log.error("GET %s failed: %s %s", table, resp.status_code, resp.text[:200])
-    return None
+sys.path.insert(0, os.path.dirname(__file__))
+import supabase_client
 
 
 def _normalize_decision(decision):
@@ -80,12 +50,11 @@ def _normalize_decision(decision):
 
 def _fetch_all_feedback():
     """Fetch all feedback with joined finding data."""
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         print(json.dumps({"error": "Supabase credentials not configured."}))
         sys.exit(1)
 
-    feedback = _supabase_get(url, key, "finding_feedback", {
+    feedback = supabase_client.get("finding_feedback", params={
         "select": "id,finding_id,reviewer_name,reviewer_tier,decision,corrected_finding,correction_note,reviewed_at,audit_findings(standard_id,finding_type,criterion_id,category,ai_verdict,session_id)",
         "order": "reviewed_at.desc",
     })

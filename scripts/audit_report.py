@@ -57,77 +57,14 @@ def _resolve_auditor(data: dict) -> str:
             tester = get_current_tester()
             if tester and tester.get("name"):
                 return tester["name"]
-        except Exception:
+        except (ImportError, ValueError):
             pass
     # 3rd: use name embedded in audit data dict; last resort is generic plugin name
     return data.get("auditor") or "ID Workbench"
 
 
 # ── RLHF Supabase Integration ──────────────────────────────────────
-def _get_supabase_config():
-    """Load Supabase credentials from .env / .env.local."""
-    url = os.getenv("SUPABASE_URL", "")
-    service_key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    return url, service_key
-
-
-def _supabase_post(url, key, table, rows):
-    """POST rows to a Supabase table. Returns inserted rows or None."""
-    import requests
-    resp = requests.post(
-        f"{url}/rest/v1/{table}",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        },
-        json=rows,
-        timeout=30,
-    )
-    if resp.status_code in (200, 201):
-        return resp.json()
-    _log.warning("Supabase POST to %s failed: %s %s", table, resp.status_code, resp.text[:200])
-    return None
-
-
-def _supabase_patch(url, key, table, row_id, updates):
-    """PATCH a single row in a Supabase table by id."""
-    import requests
-    resp = requests.patch(
-        f"{url}/rest/v1/{table}?id=eq.{row_id}",
-        headers={
-            "apikey": key,
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-        },
-        json=updates,
-        timeout=15,
-    )
-    if resp.status_code not in (200, 204):
-        _log.warning("Supabase PATCH %s/%s failed: %s", table, row_id, resp.status_code)
-
-
-def _supabase_upload_file(url, key, bucket, path_in_bucket, local_path):
-    """Upload a file to Supabase Storage. Returns public URL or None."""
-    import requests
-    content_type = "text/html" if local_path.endswith(".html") else "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    with open(local_path, "rb") as f:
-        resp = requests.post(
-            f"{url}/storage/v1/object/{bucket}/{path_in_bucket}",
-            headers={
-                "apikey": key,
-                "Authorization": f"Bearer {key}",
-                "Content-Type": content_type,
-                "x-upsert": "true",
-            },
-            data=f,
-            timeout=60,
-        )
-    if resp.status_code in (200, 201):
-        return f"{url}/storage/v1/object/public/{bucket}/{path_in_bucket}"
-    _log.warning("Supabase upload %s failed: %s %s", path_in_bucket, resp.status_code, resp.text[:200])
-    return None
+import supabase_client
 
 
 def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
@@ -138,8 +75,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
     Non-blocking — failures are logged but never raise.
     """
     data = _normalize_audit_data(data)
-    sb_url, sb_key = _get_supabase_config()
-    if not sb_url or not sb_key:
+    if not supabase_client.is_configured():
         _log.info("Supabase not configured — skipping RLHF push")
         return None
 
@@ -193,7 +129,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             "status": data.get("audit_status", "in_progress"),
             "plugin_version": data.get("plugin_version", "0.3.0"),
         }
-        inserted = _supabase_post(sb_url, sb_key, "audit_sessions", [session_row])
+        inserted = supabase_client.post("audit_sessions", [session_row])
         if not inserted:
             _log.warning("Failed to create audit session in Supabase")
             return None
@@ -203,21 +139,22 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
         # 2. Upload report files to rlhf-reports bucket
         course_code = session_row["course_code"] or "unknown"
         if html_path and os.path.exists(html_path):
-            html_url = _supabase_upload_file(
-                sb_url, sb_key, "rlhf-reports",
+            html_url = supabase_client.upload_file(
+                "rlhf-reports",
                 f"{course_code}/{session_id}/report.html", html_path
             )
             if html_url:
-                _supabase_patch(sb_url, sb_key, "audit_sessions", session_id,
-                                {"report_html_url": html_url})
+                supabase_client.patch("audit_sessions", session_id,
+                                      {"report_html_url": html_url})
         if xlsx_path and os.path.exists(xlsx_path):
-            xlsx_url = _supabase_upload_file(
-                sb_url, sb_key, "rlhf-reports",
-                f"{course_code}/{session_id}/report.xlsx", xlsx_path
+            xlsx_url = supabase_client.upload_file(
+                "rlhf-reports",
+                f"{course_code}/{session_id}/report.xlsx", xlsx_path,
+                content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             )
             if xlsx_url:
-                _supabase_patch(sb_url, sb_key, "audit_sessions", session_id,
-                                {"report_xlsx_url": xlsx_url})
+                supabase_client.patch("audit_sessions", session_id,
+                                      {"report_xlsx_url": xlsx_url})
 
         # 3. Insert findings from all sections
         findings_rows = []
@@ -353,14 +290,14 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
             total_inserted = 0
             for i in range(0, len(findings_rows), batch_size):
                 batch = findings_rows[i:i + batch_size]
-                result = _supabase_post(sb_url, sb_key, "audit_findings", batch)
+                result = supabase_client.post("audit_findings", batch)
                 if result:
                     total_inserted += len(result)
             _log.info("RLHF findings pushed: %d/%d", total_inserted, len(findings_rows))
 
         return session_id
 
-    except Exception as e:
+    except (ValueError, KeyError, OSError) as e:
         _log.warning("RLHF push failed (non-blocking): %s", e)
         return None
 
@@ -415,7 +352,7 @@ def _get_course_info(data: dict = None):
             name = course_title or course_code
             if name:
                 return name, term or "No-Term", course_title
-        except Exception:
+        except (json.JSONDecodeError, KeyError, OSError):
             pass
 
     # 3. Try Canvas API via .env course_id
@@ -430,7 +367,7 @@ def _get_course_info(data: dict = None):
             term = api_info.get("term", "")
             if name:
                 return name, term or "No-Term", name
-    except Exception:
+    except (ImportError, OSError, ValueError):
         pass
 
     import logging as _logging
@@ -471,7 +408,7 @@ def _fetch_course_from_canvas(course_id: str) -> dict:
             if isinstance(term_data, dict):
                 result["term"] = term_data.get("name", "")
         return result
-    except Exception:
+    except (ImportError, OSError, ValueError):
         return result
 
 
@@ -1326,6 +1263,29 @@ def generate_report(data: dict) -> str:
           <td>{_escape(item.get("fix", ""))}</td>
         </tr>''')
 
+    # ── Link & Media Health Section ──
+    lv_data = data.get('link_validation')
+    lv_rows_html = []
+    if lv_data and lv_data.get('status') == 'completed':
+        for issue in lv_data.get('issues', []):
+            sev = issue.get('severity', 'review')
+            sev_label = 'FAIL' if sev == 'fail' else 'REVIEW'
+            cat = issue.get('category', '').replace('_', ' ').title()
+            reason = _escape(issue.get('reason', ''))
+            url_text = _escape(issue.get('url', ''))[:80]
+            source = _escape(issue.get('source_name', ''))
+            source_type = _escape(issue.get('source_type', ''))
+            bg = '#fde8ec' if sev == 'fail' else '#fff8e1'
+            color = '#c62828' if sev == 'fail' else '#b5540a'
+            lv_rows_html.append(f'''
+            <tr>
+              <td><span class="finding-badge" style="background:{bg};color:{color}">{sev_label}</span></td>
+              <td>{cat}</td>
+              <td><code style="font-size:11px">{url_text}</code></td>
+              <td>{reason}</td>
+              <td>{source} <em style="color:#6a7883">({source_type})</em></td>
+            </tr>''')
+
     # ── Readiness Section ──
     readiness_html = []
     for cat in readiness_cats:
@@ -1859,6 +1819,29 @@ def generate_report(data: dict) -> str:
       </div>
     </div>
 
+    <!-- Link & Media Health Section -->
+    {''.join([f"""
+    <div class="report-section" id="section-link-health">
+      <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
+        <div>
+          <h2>Link &amp; Media Health</h2>
+          <div class="section-subtitle">Canvas link validator results — {lv_data.get('broken_links', 0)} broken links, {lv_data.get('broken_images', 0)} broken images, {lv_data.get('review_items', 0)} review items</div>
+        </div>
+        <span class="section-toggle">▾</span>
+      </div>
+      <div class="section-body">
+        <table class="report-table">
+          <thead>
+            <tr><th>Severity</th><th>Category</th><th>URL</th><th>Reason</th><th>Source Page</th></tr>
+          </thead>
+          <tbody>
+            {''.join(lv_rows_html) if lv_rows_html else '<tr><td colspan="5" style="text-align:center;color:#6a7883">All links and images validated — no issues found</td></tr>'}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    """] if lv_data and lv_data.get('status') == 'completed' else [])}
+
     <!-- Readiness Section -->
     <div class="report-section" id="section-readiness">
       <div class="section-header" onclick="this.parentElement.classList.toggle('collapsed')">
@@ -2174,7 +2157,7 @@ def generate_xlsx_report(data: dict, output_path: str) -> dict:
                 _log.info("Formula recalculation complete")
             else:
                 _log.warning(f"Recalc warning: {result.stderr[:200]}")
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             _log.warning(f"Recalc skipped: {e}")
 
     return {
@@ -2820,7 +2803,7 @@ def main():
             try:
                 import shutil
                 shutil.copy2(xlsx_path, str(archive_path))
-            except Exception as e:
+            except OSError as e:
                 _log.warning(f"Could not save archive copy: {e}")
 
         result["archive_path"] = str(archive_path)
@@ -2830,8 +2813,8 @@ def main():
             from metrics_sync import upload_report as _upload, is_configured
             if is_configured():
                 _upload(str(archive_path))
-        except Exception:
-            pass
+        except (ImportError, OSError, ValueError) as _e:
+            _log.debug("Non-blocking upload skipped: %s", _e)
 
         # Sync audit score from XLSX results (non-blocking)
         try:
@@ -2845,8 +2828,8 @@ def main():
                         from metrics_sync import sync_audit_score, is_configured as _is_cfg
                         if _is_cfg():
                             sync_audit_score(_cid, _xlsx_score)
-        except Exception:
-            pass
+        except (ImportError, OSError, ValueError) as _e:
+            _log.debug("Non-blocking XLSX score sync skipped: %s", _e)
 
         # Push RLHF findings for XLSX-only mode
         if getattr(args, 'local_only', False):
@@ -2855,8 +2838,8 @@ def main():
             try:
                 rlhf_sid = push_to_rlhf(data, xlsx_path=str(archive_path))
                 result["rlhf_session_id"] = rlhf_sid
-            except Exception:
-                pass
+            except (ImportError, OSError, ValueError) as _e:
+                _log.debug("Non-blocking XLSX RLHF push skipped: %s", _e)
 
         print(json.dumps(result))
 
@@ -2888,8 +2871,8 @@ def main():
             from metrics_sync import upload_report as _upload, is_configured
             if is_configured():
                 remote_url = _upload(str(archive_path))
-        except Exception:
-            pass  # Never block on upload failure
+        except (ImportError, OSError, ValueError) as _e:
+            _log.debug("Non-blocking HTML upload skipped: %s", _e)
 
         # 4. Sync audit score to Supabase (non-blocking)
         try:
@@ -2903,8 +2886,8 @@ def main():
                     from metrics_sync import sync_audit_score, is_configured as _is_cfg
                     if _is_cfg():
                         sync_audit_score(_course_id, _audit_score)
-        except Exception:
-            pass  # Never block on score sync
+        except (ImportError, OSError, ValueError) as _e:
+            _log.debug("Non-blocking score sync skipped: %s", _e)
 
         # 5. Push structured findings to RLHF Supabase (non-blocking)
         #    Skip if --local-only (progress check, not a formal submission)
@@ -2914,8 +2897,8 @@ def main():
         else:
             try:
                 rlhf_session_id = push_to_rlhf(data, html_path=str(archive_path))
-            except Exception:
-                pass  # Never block on RLHF push
+            except (ImportError, OSError, ValueError) as _e:
+                _log.debug("Non-blocking RLHF push skipped: %s", _e)
 
         result = {
             "ok": True,

@@ -6,7 +6,18 @@ Get up and running in 10 minutes.
 
 - [Claude Code](https://claude.ai/code) installed (CLI, desktop app, or IDE extension)
 - Canvas personal access token (Canvas → Account → Settings → New Access Token)
-- Your tester credentials (provided by your admin)
+- Your tester credentials (provided by your admin) — optional for local-only audits
+
+## Minimum Requirements by Use Case
+
+| Use case | `.env` needed | `.env.local` needed |
+|---|---|---|
+| Quick Check (local) | `CANVAS_TOKEN`, `CANVAS_DOMAIN`, `CANVAS_COURSE_ID` | Not required |
+| Deep Audit (local) | Same as Quick Check | Not required |
+| Upload to QA portal | Same + `IDW_TESTER_ID` | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_KEY` |
+| Airtable sync | Same as portal | Same + `AIRTABLE_TOKEN`, `AIRTABLE_BASE_ID`, `AIRTABLE_TABLE_ID` |
+
+You can run audits with just Canvas credentials — the audit skill detects missing Supabase config and offers local-only output options. Portal upload requires full credentials.
 
 ## 1. Clone the Plugin
 

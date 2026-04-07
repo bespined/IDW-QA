@@ -165,11 +165,22 @@ Claude Code supports:
 
 ### Output choice is mandatory
 
-After an audit completes, the user chooses one of:
+After an audit completes, the user chooses from a context-dependent prompt.
+
+**When portal upload is available** (`role_gate.can_upload_to_portal()` returns `True`), present 3 options:
 
 1. **Just show results**
 2. **Generate report (local only)**
 3. **Upload to QA portal**
+
+**When portal upload is unavailable** (`role_gate.can_upload_to_portal()` returns `False`), present 2 options only:
+
+1. **Just show results**
+2. **Generate report (saved locally)**
+
+With a note: "Portal upload unavailable — requires Supabase credentials and tester identity. Run /setup to enable."
+
+Portal upload requires both Supabase configuration (`SUPABASE_URL` + `SUPABASE_SERVICE_KEY` in `.env.local`) and tester identity (`IDW_TESTER_ID` in `.env`). If either is missing, the upload option is not shown. This conditional prompt is a specified behavior, not drift — presenting the upload option when it cannot succeed leads to confusing errors. The 2-option prompt is a deliberate reduction.
 
 This choice must happen before any report generation or Supabase upload.
 
