@@ -28,11 +28,15 @@ Claude Code Plugin ──→ Supabase ──→ Vercel Review App ──→ Airt
 
 ## Key Features
 
-- **3-mode audit**: Quick Check (deterministic only), Deep Audit (deterministic + AI), Guided Review (interactive walkthrough)
+- **Hybrid Quick Check**: Deterministic evaluator (106 B-criteria) + targeted AI verification for 12 criteria where regex can't reliably determine the result. `needs_ai_verification` flag drives the AI pass.
+- **3-mode audit**: Quick Check (hybrid deterministic + AI), Deep Audit (all standards + AI), Guided Review (interactive walkthrough)
 - **173 criteria**: 124 Col B (deterministic/existence checks) + 49 Col C (qualitative/judgment)
+- **Granular finding statuses**: `Met`, `Not Met`, `Partially Met`, `not_applicable`, `needs_review`, `manual_entry` — no more overloaded N/A
+- **Structured per-page evidence**: Findings include `affected_pages` with direct Canvas URLs and issue summaries, not just generic module links
 - **Staging workflow**: All HTML content changes go through stage → preview → approve → push. Nothing touches Canvas without user approval.
 - **Enforcement scripts**: Critical operations (push, verify, session creation, remediation tracking, admin actions) go through Python scripts that enforce backup, verification, and audit trails.
 - **RLHF feedback loop**: IDA verdicts feed back into the system — when the AI is wrong, corrections improve future audits via enrichment card updates.
+- **Full onboarding**: Both Vercel admin UI and Claude Code CLI can fully provision testers (tester row + login invite + UUID handoff).
 - **Rollback**: Every push creates a backup. If something goes wrong, rollback restores the original content.
 
 ## 21 Skills
@@ -57,13 +61,26 @@ See [SETUP.md](SETUP.md) for installation and first-time setup.
 |---|---|
 | `SETUP.md` | First-time setup guide (10 minutes) |
 | `CLAUDE.md` | Plugin instructions — Claude reads this every session |
+| `ENGINEERING.md` | Technical architecture, data model, enforcement scripts |
 | `PLANNING.md` | System design, data model, workflows, implementation phases |
+| `TROUBLESHOOTING.md` | Common issues and fixes |
 | `config/standards.yaml` | 25 ASU standards with 173 criteria |
 | `config/standards_enrichment.yaml` | Enriched criteria with examples and research |
+| `codex-canonical-workflow-spec.md` | Intended end-to-end pilot workflow spec |
+| `archives/plans/` | Completed implementation plans (8 plans archived) |
+
+## Migrations
+
+Run in order in the Supabase SQL Editor:
+
+| Migration | Purpose |
+|---|---|
+| `001` – `008` | Phase 2 schema, roles, dashboard views, RLS, remediation events, session assignment, change requests |
+| `009_affected_pages.sql` | JSONB column for structured per-page evidence on `audit_findings` |
 
 ## Version
 
-**v1.0.0** — Pilot release
+**v1.3.0** — Hybrid Quick Check, account onboarding, QA coordinator review fixes
 
 ## License
 

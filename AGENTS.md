@@ -258,7 +258,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `fetch_fix_queue.py` | Query Supabase for findings where remediation_requested=true |
 | `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, reviewer, criterion, trends |
 | `airtable_sync.py` | Sync approved findings to Airtable SCOUT ULTRA format (one row per course, 25 standards) |
-| `criterion_evaluator.py` | Deterministic criterion evaluator — evaluates all B-criteria, produces complete audit JSON. `--quick-check` for Col B only, `--full-audit` for B+C with AI flags |
+| `criterion_evaluator.py` | Hybrid criterion evaluator — evaluates all B-criteria deterministically, flags weak results with `needs_ai_verification` for AI re-check. `--quick-check` for Col B only, `--full-audit` for B+C with AI flags, `--purpose` to stamp audit metadata |
 | `deterministic_checks.py` | Legacy deterministic checks (superseded by `criterion_evaluator.py` — do not call directly) |
 | `build_checkpoint.py` | Save/restore audit progress checkpoints for long-running audits |
 | `metrics_sync.py` | Sync usage metrics to Supabase for admin dashboard |

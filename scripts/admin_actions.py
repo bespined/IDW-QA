@@ -75,9 +75,13 @@ def _log_audit(action, caller_id, details):
 
 
 def register_tester(name, email, role, dry_run=False):
-    """Register a new tester."""
+    """Register a new tester. Email is required — it's used for QA portal login."""
     import requests
 
+    if not name or not name.strip():
+        return {"ok": False, "error": "Name is required"}
+    if not email or not email.strip():
+        return {"ok": False, "error": "Email is required — it's used for QA portal login"}
     if role not in VALID_ROLES:
         return {"ok": False, "error": f"Invalid role '{role}'. Must be one of: {', '.join(VALID_ROLES)}"}
 
@@ -105,9 +109,53 @@ def register_tester(name, email, role, dry_run=False):
     data = resp.json()
     tester_id = data[0]["id"] if isinstance(data, list) else data.get("id")
 
-    _log_audit("register_tester", caller_id, {"new_tester_id": tester_id, "name": name, "email": email, "role": role})
+    # Provision Supabase Auth — invite user by email (same as Vercel route)
+    invite_status = "failed"
+    invite_error = None
+    trimmed_email = email.strip().lower()
 
-    return {"ok": True, "tester_id": tester_id, "name": name, "email": email, "role": role}
+    try:
+        # Check if auth user already exists
+        auth_list_resp = requests.get(
+            f"{url}/auth/v1/admin/users",
+            headers={"apikey": key, "Authorization": f"Bearer {key}"},
+            timeout=15,
+        )
+        existing_auth = False
+        if auth_list_resp.status_code == 200:
+            users = auth_list_resp.json().get("users", [])
+            existing_auth = any(u.get("email", "").lower() == trimmed_email for u in users)
+
+        if existing_auth:
+            invite_status = "existing"
+        else:
+            invite_resp = requests.post(
+                f"{url}/auth/v1/invite",
+                headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"},
+                json={"email": trimmed_email},
+                timeout=15,
+            )
+            if invite_resp.status_code in (200, 201):
+                invite_status = "sent"
+            else:
+                invite_error = f"HTTP {invite_resp.status_code}: {invite_resp.text[:200]}"
+                invite_status = "failed"
+    except Exception as e:
+        invite_error = str(e)
+        invite_status = "failed"
+
+    # If invite failed, rollback the tester row — don't leave half-provisioned accounts
+    if invite_status == "failed":
+        requests.delete(
+            f"{url}/rest/v1/testers?id=eq.{tester_id}",
+            headers={"apikey": key, "Authorization": f"Bearer {key}"},
+            timeout=15,
+        )
+        return {"ok": False, "error": f"Tester row created but invite failed — rolled back. {invite_error or ''}".strip()}
+
+    _log_audit("register_tester", caller_id, {"new_tester_id": tester_id, "name": name, "email": email, "role": role, "invite_status": invite_status})
+
+    return {"ok": True, "tester_id": tester_id, "name": name, "email": email, "role": role, "invite_status": invite_status}
 
 
 def deactivate_tester(tester_id, dry_run=False):
@@ -305,9 +353,19 @@ def main():
         result = register_tester(args.name, args.email, args.role, args.dry_run)
         if result["ok"]:
             tid = result.get("tester_id", "DRY RUN")
-            print(f"✓ Registered {args.name} as {args.role} (ID: {tid})")
+            role = result.get("role", args.role)
+            inv = result.get("invite_status", "")
+            print(f"✓ Registered {args.name} as {role} (ID: {tid})")
             if not args.dry_run:
-                print(f"  They need: IDW_TESTER_ID={tid} in their .env")
+                if inv == "sent":
+                    print(f"  ✓ Login invite sent to {args.email}")
+                elif inv == "existing":
+                    print(f"  ✓ Auth user already exists for {args.email} — can log in immediately")
+                if role in ("id", "admin"):
+                    print(f"\n  Claude Code setup (add to plugin .env):")
+                    print(f"  IDW_TESTER_ID={tid}")
+                else:
+                    print(f"\n  This user only needs the QA portal — no Claude Code setup required.")
         else:
             print(f"✗ {result['error']}")
 

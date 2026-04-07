@@ -56,9 +56,24 @@ CANVAS_DEV_COURSE_ID=<dev course ID>
 
 # Active instance: "prod" or "dev" (default: prod)
 CANVAS_ACTIVE_INSTANCE=prod
+
+# Tester identity (for role-gated skills)
+# Required for id and admin roles. ID Assistants don't need this.
+# Get this UUID from the Vercel admin UI (primary) or admin_actions.py --register (secondary).
+IDW_TESTER_ID=<tester UUID from admin>
 ```
 
 **SECURITY**: Never display, log, or transmit the `CANVAS_TOKEN` or `CANVAS_DEV_TOKEN` values. If the user asks you to show it, remind them it is stored in `.env` and should not be shared.
+
+### Pilot Onboarding
+
+Testers are created in the **Vercel admin UI** (primary path) or via **Claude Code admin skill** (secondary path for technical admins). Both create the same `testers` row in Supabase.
+
+- **ID Assistants** (`id_assistant`): Only need QA portal access. No Claude Code setup required.
+- **IDs** (`id`): Need QA portal access + `IDW_TESTER_ID` in plugin `.env` for Claude Code.
+- **Admins** (`admin`): Need QA portal access + `IDW_TESTER_ID` in plugin `.env` for Claude Code.
+
+The Vercel admin UI provisions both the tester row and sends a login invite email. The UUID is shown after creation with a copy button.
 
 ### Supabase Credentials (`.env.local` at plugin root)
 
@@ -258,7 +273,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `fetch_fix_queue.py` | Query Supabase for findings where remediation_requested=true |
 | `rlhf_analysis.py` | Aggregate finding_feedback: agreement rate by standard, reviewer, criterion, trends |
 | `airtable_sync.py` | Sync approved findings to Airtable SCOUT ULTRA format (one row per course, 25 standards) |
-| `criterion_evaluator.py` | Deterministic criterion evaluator — evaluates all B-criteria, produces complete audit JSON. `--quick-check` for Col B only, `--full-audit` for B+C with AI flags |
+| `criterion_evaluator.py` | Hybrid criterion evaluator — evaluates all B-criteria deterministically, flags weak results with `needs_ai_verification` for AI re-check. `--quick-check` for Col B only, `--full-audit` for B+C with AI flags, `--purpose` to stamp audit metadata |
 | `deterministic_checks.py` | Legacy deterministic checks (superseded by `criterion_evaluator.py` — do not call directly) |
 | `build_checkpoint.py` | Save/restore audit progress checkpoints for long-running audits |
 | `metrics_sync.py` | Sync usage metrics to Supabase for admin dashboard |

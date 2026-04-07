@@ -187,16 +187,30 @@ python3 scripts/admin_actions.py --list-testers
 
 ### Register New Tester
 
-**All tester management MUST go through `admin_actions.py`.** This enforces admin role verification and writes to the audit log.
+**Primary path**: Create testers in the Vercel admin UI at the QA portal — it provisions both the tester row and the login invite in one step.
+
+**Secondary path (Claude Code)**: For technical admins who prefer the CLI. All tester management MUST go through `admin_actions.py` — this enforces admin role verification and writes to the audit log.
 
 ```bash
 python3 scripts/admin_actions.py --register --name "<NAME>" --email "<EMAIL>" --role <ROLE>
 ```
 
-After registration, show the new tester's ID so the admin can share it:
+**Email is required** — it's used for QA portal login. The script will reject registration without an email.
 
+After registration, show role-specific next steps:
+
+**For `id` or `admin`:**
 > Registered **[name]** as **[role]**. Their tester ID is: `<uuid>`
-> They need to add `IDW_TESTER_ID=<uuid>` to their `.env` file.
+> Login invite sent to **[email]** (or auth user already exists).
+>
+> Claude Code setup (add to plugin `.env`):
+> `IDW_TESTER_ID=<uuid>`
+
+**For `id_assistant`:**
+> Registered **[name]** as **id_assistant**. This user only needs the QA portal — no Claude Code setup required.
+> Login invite sent to **[email]** (or auth user already exists).
+
+**If registration fails:** The script rolls back the tester row if the login invite fails — no half-provisioned accounts are left behind.
 
 ### Deactivate Tester
 

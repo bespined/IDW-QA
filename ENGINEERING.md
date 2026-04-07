@@ -6,6 +6,27 @@
 
 ---
 
+## Recent Changes (v1.3.0)
+
+### Hybrid Quick Check
+The deterministic evaluator (`criterion_evaluator.py`) now outputs a `needs_ai_verification` boolean on criteria where the deterministic result may be unreliable. The `ALWAYS_VERIFY` set (12 criteria) is always flagged; the `VERIFY_WHEN_WEAK` set (5 criteria) is flagged only when the deterministic result is Not Met or Partially Met. The audit SKILL.md instructs the AI verification pass to re-evaluate only flagged criteria.
+
+### Granular Finding Statuses
+The old overloaded `N/A` status is replaced by three distinct values:
+- `not_applicable` — criterion doesn't apply (no proctoring, no slide decks)
+- `needs_review` — evaluator can't determine, requires human judgment
+- `manual_entry` — requires external tool (Ally score, readability)
+
+Both the HTML report and the Vercel review app render these distinctly (gray / purple / blue).
+
+### Structured Per-Page Evidence
+Findings include an `affected_pages` JSONB array with `{slug, title, url, issue_summary, issue_count}` per affected Canvas page. The standard-level `canvas_link` now points to the first affected page instead of generic `/modules`. Migration `009_affected_pages.sql` adds the column.
+
+### Account Onboarding
+Both the Vercel admin UI and the CLI (`admin_actions.py --register`) now fully onboard testers: create tester row + send Supabase Auth invite. If the invite fails, the tester row is rolled back. The admin UI shows role-specific messaging and a UUID copy button.
+
+---
+
 ## 1. System Architecture
 
 ### Tech Stack

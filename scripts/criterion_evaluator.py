@@ -1041,7 +1041,7 @@ def build_full_audit_json(cd, results, mode="full_audit", purpose_override=None)
         },
         "audit_date": datetime.now().isoformat(),
         "auditor": auditor,
-        "plugin_version": "0.6.0",
+        "plugin_version": "1.3.0",
         "audit_mode": mode.replace("_", " "),
         "audit_purpose": audit_purpose,
         "overall_score": overall,

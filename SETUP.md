@@ -27,6 +27,8 @@ CANVAS_COURSE_ID=<your first course ID from the URL>
 IDW_TESTER_ID=<your tester UUID — provided by admin>
 ```
 
+**To get your tester UUID:** Your admin creates your account in the QA portal (Vercel admin UI). After creation, the admin copies your UUID and shares it with you. Only `id` and `admin` roles need this — `id_assistant` users only use the QA portal and don't need Claude Code setup.
+
 **To find your course ID:** Open any course in Canvas. The number in the URL is the course ID:
 `https://canvas.asu.edu/courses/123456` → course ID is `123456`
 
