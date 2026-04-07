@@ -140,7 +140,7 @@ This gives users a review loop before anything touches Canvas. Skills support `-
 | Create/submit audit sessions | `python3 scripts/audit_session_manager.py` | Inline Supabase POST + purpose inference |
 | Record remediation events | `python3 scripts/remediation_tracker.py` | Inline Supabase POST + flag clearing |
 | Admin tester management | `python3 scripts/admin_actions.py` | Inline Supabase PATCH + no audit trail |
-| Assignment status transitions | `python3 scripts/assignment_status.py` | Inline Supabase PATCH + no ownership check |
+| Session assignment (admin) | `python3 scripts/admin_actions.py --assign-session` | Inline Supabase PATCH + no validation |
 
 **Exceptions (metadata only — no HTML body):**
 These can skip staging but **still require explicit user approval before pushing**. Always confirm the change with the user first — never push metadata silently.
@@ -269,7 +269,7 @@ All scripts are in `<plugin_root>/scripts/` and load credentials from `.env` aut
 | `audit_session_manager.py` | **Audit session lifecycle** — deterministic purpose inference, round counting, session status transitions |
 | `remediation_tracker.py` | **Centralized remediation events** — records events + clears flags atomically (replaces all inline Supabase POSTs) |
 | `admin_actions.py` | **Audited admin operations** — tester registration, deactivation, role changes with audit log |
-| `assignment_status.py` | **Assignment status transitions** — ownership check + valid state machine enforcement |
+| `assignment_status.py` | **DEPRECATED** — course-level assignment status. Pilot uses session-based assignment via review app. |
 
 ## Migrations
 
@@ -296,7 +296,7 @@ The Vercel review app (`idw-review-app`) has server-side API routes. All routes 
 | `/api/admin/assignments` | POST | admin | Create course assignments |
 | `/api/admin/assignments/[id]` | DELETE | admin | Remove assignment |
 | `/api/admin/errors/[id]` | PATCH | admin | Resolve error report |
-| `/api/session-assign` | GET, POST | admin | List IDAs / assign to session |
+| `/api/session-assign` | GET, POST | admin | List IDAs / assign to session (supports bulk: `session_ids` array) |
 | `/api/change-requests` | GET, POST, PATCH | varies | GET: admin (global) or auth+session_id; POST: admin/IDA; PATCH: admin |
 | `/api/sync-airtable` | POST | any auth | Trigger Airtable sync (IDA: must be assigned + session complete) |
 | `/api/findings/remediation` | PATCH | id or admin | Toggle `remediation_requested` on a finding |
