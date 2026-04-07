@@ -774,7 +774,7 @@ def summarize(results):
     return standards
 
 
-def build_full_audit_json(cd, results, mode="full_audit"):
+def build_full_audit_json(cd, results, mode="full_audit", purpose_override=None):
     """Build the COMPLETE audit JSON matching audit_report.py's expected schema.
 
     This is the format that goes directly to audit_report.py --input <file>.
@@ -804,16 +804,26 @@ def build_full_audit_json(cd, results, mode="full_audit"):
         except Exception:
             pass
 
-    # Determine audit_purpose from role
-    audit_purpose = "self_audit"
-    if tester_id:
-        try:
-            from role_gate import get_current_tester
-            tester = get_current_tester()
-            if tester and tester.get("role") == "admin":
-                audit_purpose = "recurring"
-        except Exception:
-            pass
+    # Determine audit_purpose.
+    # The intended path is explicit --purpose from the caller (SKILL.md rules):
+    #   ID + single course  → self_audit
+    #   Admin + batch       → recurring
+    #   Admin/QA + targeted → qa_review
+    # The fallback below only fires if --purpose was omitted. It defaults
+    # admin users to "recurring" (most common admin use case) and everyone
+    # else to "self_audit". This is defensive — callers should pass --purpose.
+    if purpose_override:
+        audit_purpose = purpose_override
+    else:
+        audit_purpose = "self_audit"
+        if tester_id:
+            try:
+                from role_gate import get_current_tester
+                tester = get_current_tester()
+                if tester and tester.get("role") == "admin":
+                    audit_purpose = "recurring"
+            except Exception:
+                pass
 
     # Group results by standard
     by_std = defaultdict(list)
@@ -1087,6 +1097,7 @@ def main():
     parser.add_argument("--standard", help="Evaluate a single standard (e.g., 04)")
     parser.add_argument("--full-audit", action="store_true", help="Output COMPLETE audit JSON for audit_report.py (Deep Audit — B evaluated, C marked for AI)")
     parser.add_argument("--quick-check", action="store_true", help="Output COMPLETE audit JSON — Col B only, no C-criteria (Quick Check mode)")
+    parser.add_argument("--purpose", choices=["self_audit", "recurring", "qa_review"], help="Explicit audit_purpose — overrides role-based inference")
     args = parser.parse_args()
 
     cd = collect_course_data()
@@ -1097,11 +1108,11 @@ def main():
     if args.quick_check:
         # Quick Check: strip C-criteria so report shows B-only verdicts (no AI needed)
         b_only = [r for r in results if not r["needs_ai_review"]]
-        audit_json = build_full_audit_json(cd, b_only, mode="quick_check")
+        audit_json = build_full_audit_json(cd, b_only, mode="quick_check", purpose_override=args.purpose)
         print(json.dumps(audit_json, indent=2))
     elif args.full_audit:
         # Full Audit: B deterministic + C placeholders for Claude to fill in
-        audit_json = build_full_audit_json(cd, results, mode="full_audit")
+        audit_json = build_full_audit_json(cd, results, mode="full_audit", purpose_override=args.purpose)
         print(json.dumps(audit_json, indent=2))
     elif args.summary:
         summary = summarize(results)

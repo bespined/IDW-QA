@@ -36,7 +36,7 @@ Do not proceed with any audit workflow for `id_assistant` users.
 
 ## Session Creation Timing
 
-**Do NOT create a Supabase session at the start of the audit.** Sessions are created only when the user explicitly chooses "Generate report + submit for review" at the end. The `audit_report.py` script handles session creation internally via `push_to_rlhf()` — no separate `audit_session_manager.py --create` call is needed.
+**Do NOT create a Supabase session at the start of the audit.** Sessions are created only when the user explicitly chooses "Upload to QA portal" at the end. The `audit_report.py` script handles session creation internally via `push_to_rlhf()` — no separate `audit_session_manager.py --create` call is needed.
 
 **Why:** IDs run many iterative audits while building a course. Creating a session for every run floods the review app with intermediate findings that no one should review. Only the final submission should enter the pipeline.
 
@@ -60,7 +60,7 @@ Before asking about audit mode, determine which course(s) to audit. Use `AskUser
 **Skip this prompt** if the user already specified a course (e.g., "audit BIO 101" or "audit course 223406").
 
 **For Batch Audit:**
-1. Let the user paste a list of course IDs or URLs
+1. Let the user paste a list of course IDs or Canvas URLs — **one per line**. Optional labels/names are allowed alongside each ID (e.g., `223406 LAW 517 Torts`), but the numeric course ID or full Canvas URL is what matters. Parse the course ID from each line.
 2. Confirm the list: "I'll audit these N courses sequentially: [list]. Each takes ~10 minutes for Deep Audit. Continue?"
 3. Run the audit on each course in sequence, saving results as `audit_results_{course_id}.json`
 4. At the end, show a summary table: Course | Score | Standards Met | Critical Issues
@@ -154,15 +154,34 @@ QA Categories: 14 Pass, 3 Warn, 2 Fail
 Detailed findings below...
 ```
 
+### Audit Purpose Stamping
+
+When running the evaluator, **always pass `--purpose`** to stamp the correct metadata. Use this rule set:
+
+| Scenario | `--purpose` value |
+|---|---|
+| **ID auditing their own course** (single course, ID role) | `self_audit` |
+| **Admin running a batch audit** (multiple courses, admin role) | `recurring` |
+| **Admin/QA reviewing a specific course** (single course, admin role, targeted review) | `qa_review` |
+
+If unsure, default to `self_audit` for IDs and `recurring` for admins.
+
 ### Scan Procedure
 
 **CRITICAL: The Python evaluator produces the audit JSON. Claude does NOT build JSON from scratch.**
 
 #### Quick Check (Col B only — no AI evaluation)
 
-Step 1: Run the evaluator:
+Step 1: Run the evaluator with the correct `--purpose`:
 ```bash
-python3 scripts/criterion_evaluator.py --quick-check > audit_results.json
+# ID auditing own course:
+python3 scripts/criterion_evaluator.py --quick-check --purpose self_audit > audit_results.json
+
+# Admin batch audit:
+python3 scripts/criterion_evaluator.py --quick-check --purpose recurring > audit_results.json
+
+# Admin/QA targeted review:
+python3 scripts/criterion_evaluator.py --quick-check --purpose qa_review > audit_results.json
 ```
 
 Step 2: Show the summary (Met/Partial/Not Met counts + overall score) in conversation.
@@ -173,7 +192,7 @@ Step 3: **STOP and ASK before generating any report.** Use `AskUserQuestion` wit
 |---|---|---|
 | 1 | **Just show results** | No report, no Supabase push. Fastest — for iterative checks during course building. |
 | 2 | **Generate report (local only)** | Creates HTML report saved locally. Does NOT push to Supabase or create a review session. |
-| 3 | **Generate report + submit for review** | Creates HTML report AND pushes to Supabase. Creates a session in the review app for ID Assistant validation. |
+| 3 | **Upload to QA portal** | Creates HTML report AND uploads findings to the QA portal. The ID reviews and corrects findings there, then clicks "Submit for QA Review" in the portal when ready. |
 
 **Do NOT skip this prompt. Do NOT auto-generate reports. Do NOT push to Supabase without the user explicitly choosing option 3.**
 
@@ -195,7 +214,7 @@ Show the HTML report link and Supabase session ID.
 #### Deep Audit (Col B deterministic + Col C AI evaluation)
 
 ```bash
-python3 scripts/criterion_evaluator.py --full-audit > audit_results.json
+python3 scripts/criterion_evaluator.py --full-audit --purpose <self_audit|recurring|qa_review> > audit_results.json
 ```
 
 This produces the complete JSON with B-criteria evaluated and C-criteria marked `needs_ai_review`. Then:
@@ -212,7 +231,7 @@ This produces the complete JSON with B-criteria evaluated and C-criteria marked 
 5. **STOP and ASK using `AskUserQuestion`** — same 3 options as Quick Check:
    - **Just show results** — no report, no push
    - **Generate report (local only)** — HTML saved locally, no Supabase
-   - **Generate report + submit for review** — HTML + Supabase push
+   - **Upload to QA portal** — HTML report + findings uploaded to portal
 
    **Do NOT skip this prompt. Do NOT auto-generate reports.**
 
