@@ -269,6 +269,7 @@ def push_to_rlhf(data: dict, html_path: str = None, xlsx_path: str = None):
                         "criterion_id": cr.get("criterion_id"),
                         "category": "crc" if item.get("id", "").startswith("crc") else "design_standard",
                         "remediation_requested": False,
+                        "affected_pages": cr.get("affected_pages", []),
                     })
             else:
                 # Fallback: push standard-level finding (legacy)
@@ -542,8 +543,12 @@ def _severity_color(severity: str) -> str:
         return '#b5540a'
     elif s in ('not met', 'fail', 'critical'):
         return '#c62828'
-    elif s in ('not auditable',):
+    elif s in ('not auditable', 'not_applicable', 'n/a'):
         return '#6a7883'
+    elif s == 'needs_review':
+        return '#7b5ea7'
+    elif s == 'manual_entry':
+        return '#0066a6'
     return '#6a7883'
 
 
@@ -555,8 +560,12 @@ def _severity_bg(severity: str) -> str:
         return '#fef3e5'
     elif s in ('not met', 'fail', 'critical'):
         return '#fde8e8'
-    elif s in ('not auditable',):
+    elif s in ('not auditable', 'not_applicable', 'n/a'):
         return '#eef0f2'
+    elif s == 'needs_review':
+        return '#f0ebf8'
+    elif s == 'manual_entry':
+        return '#e5f0f8'
     return '#f5f5f5'
 
 
@@ -568,9 +577,23 @@ def _severity_icon(severity: str) -> str:
         return '⚠'
     elif s in ('not met', 'fail', 'critical'):
         return '✗'
-    elif s in ('not auditable',):
+    elif s in ('not auditable', 'not_applicable', 'n/a'):
         return '○'
+    elif s == 'needs_review':
+        return '?'
+    elif s == 'manual_entry':
+        return '✎'
     return '–'
+
+
+def _severity_display_label(severity: str) -> str:
+    """Human-friendly label for new granular statuses."""
+    _labels = {
+        "not_applicable": "Not Applicable",
+        "needs_review": "Needs Review",
+        "manual_entry": "Manual Entry",
+    }
+    return _labels.get(severity.lower(), severity)
 
 
 def _render_criteria_results(criteria_results: list) -> str:
@@ -593,13 +616,34 @@ def _render_criteria_results(criteria_results: list) -> str:
             tier_badge = '<span style="background:#f3ebe7;color:#AF674B;font-size:10px;padding:1px 4px;border-radius:3px;margin-left:4px">C</span>'
         graph_tag = ' 📊' if cr.get('graph_verified') else ''
         type_label = {'deterministic': '⚙ Auto', 'ai': '🤖 AI', 'hybrid': '⚙+🤖'}.get(ct, ct)
+        # Build affected pages sub-content
+        ap = cr.get('affected_pages', [])
+        ap_html = ''
+        if ap:
+            visible = ap[:3]
+            hidden = ap[3:]
+            links = []
+            for p in visible:
+                links.append(f'<a href="{_escape(p["url"])}" target="_blank" rel="noopener" style="color:#0081b3;text-decoration:none">{_escape(p["title"])}</a>'
+                             f' <span style="color:#888">— {_escape(p["issue_summary"])}</span>')
+            ap_lines = "<br>".join(links)
+            if hidden:
+                hidden_links = "<br>".join(
+                    f'<a href="{_escape(p["url"])}" target="_blank" rel="noopener" style="color:#0081b3;text-decoration:none">{_escape(p["title"])}</a>'
+                    f' <span style="color:#888">— {_escape(p["issue_summary"])}</span>'
+                    for p in hidden
+                )
+                ap_lines += (f'<details style="display:inline"><summary style="cursor:pointer;color:#0081b3;font-size:11px;display:inline">'
+                             f'+{len(hidden)} more</summary><div style="margin-top:4px">{hidden_links}</div></details>')
+            ap_html = f'<div style="margin-top:4px;padding-left:4px;border-left:2px solid #e0e0e0;font-size:11px">{ap_lines}</div>'
+
         rows.append(
             f'<tr style="font-size:12px">'
             f'<td style="padding:4px 8px;color:#888;white-space:nowrap">{cid}{tier_badge}</td>'
             f'<td style="padding:4px 8px"><span style="color:{_severity_color(status)};font-weight:600">'
-            f'{_severity_icon(status)} {_escape(status)}</span></td>'
+            f'{_severity_icon(status)} {_escape(_severity_display_label(status))}</span></td>'
             f'<td style="padding:4px 8px;color:#888">{type_label}{graph_tag}</td>'
-            f'<td style="padding:4px 8px">{evidence[:150]}{"..." if len(evidence) > 150 else ""}</td>'
+            f'<td style="padding:4px 8px">{evidence[:150]}{"..." if len(evidence) > 150 else ""}{ap_html}</td>'
             f'</tr>'
         )
     has_issues = any(cr.get('status') in ('Not Met', 'Partially Met', 'not_met', 'not met', 'No') for cr in criteria_results)
@@ -1235,7 +1279,7 @@ def generate_report(data: dict) -> str:
           <div class="finding-header">
             <div class="finding-id-status">
               <span class="finding-id">{_escape(item.get("id", ""))}</span>
-              <span class="finding-badge" style="background:{_severity_bg(status)};color:{_severity_color(status)}">{_severity_icon(status)} {_escape(status)}</span>
+              <span class="finding-badge" style="background:{_severity_bg(status)};color:{_severity_color(status)}">{_severity_icon(status)} {_escape(_severity_display_label(status))}</span>
               {conf_html}{tier_html}{cat_badge_html}{graph_badge}{coverage_html}
             </div>
             <div class="finding-name">{_escape(item.get("name", ""))}</div>
@@ -1259,7 +1303,7 @@ def generate_report(data: dict) -> str:
         tier_bg = '#e0f4fa' if qa_tier == 'id_assistant' else '#f3ebe7'
         qa_items_html.append(f'''
         <tr>
-          <td><span class="finding-badge" style="background:{_severity_bg(status)};color:{_severity_color(status)}">{_severity_icon(status)} {_escape(status)}</span></td>
+          <td><span class="finding-badge" style="background:{_severity_bg(status)};color:{_severity_color(status)}">{_severity_icon(status)} {_escape(_severity_display_label(status))}</span></td>
           <td><strong>{_escape(item.get("id", ""))}</strong></td>
           <td>{_escape(item.get("name", ""))}</td>
           <td><span style="background:{tier_bg};color:{tier_color};font-size:11px;padding:2px 6px;border-radius:4px">{tier_label}</span></td>

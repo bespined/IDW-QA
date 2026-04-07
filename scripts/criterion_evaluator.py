@@ -126,7 +126,9 @@ def collect_course_data():
             alt_m = re.search(r'alt=["\']([^"\']*)["\']', attrs)
             src = src_m.group(1).split("/")[-1][:60] if src_m else "unknown"
             alt = alt_m.group(1) if alt_m else None
-            images.append({"src": src, "alt": alt, "has_meaningful_alt": alt is not None and alt.strip() != ""})
+            is_decorative = alt is not None and alt.strip() == ""  # alt="" = Canvas decorative, WCAG-valid
+            has_meaningful_alt = alt is not None and alt.strip() != ""
+            images.append({"src": src, "alt": alt, "is_decorative": is_decorative, "has_meaningful_alt": has_meaningful_alt})
 
         # Parse headings
         headings = []
@@ -145,6 +147,7 @@ def collect_course_data():
             "has_feedback_timeline": bool(re.search(r"(feedback.*within|graded within|turnaround|response time)", body_lower)),
             "has_tour": bool(re.search(r"(course tour|navigate|how to use|getting around)", body_lower)),
             "has_workload": bool(re.search(r"(workload|time commitment|estimated time|hours per week)", body_lower)),
+            "has_eval_content": bool(re.search(r"(complete the evaluation|course evaluation|student evaluation|your feedback about this course|end-of-course survey|course survey)", body_lower)),
         }
 
     # Compute aggregates
@@ -152,11 +155,15 @@ def collect_course_data():
     overview_pages = [s for s in all_slugs if "overview" in s]
     content_modules = [m for m in modules if "Module" in m.get("name", "") and "Module 0" not in m.get("name", "")]
 
-    imgs_no_alt_by_page = {}
+    imgs_no_alt_by_page = {}      # truly missing alt attribute (not decorative)
+    imgs_decorative_by_page = {}  # alt="" — Canvas decorative, verify intent
     for slug, pd in page_data.items():
-        missing = [i for i in pd["images"] if not i["has_meaningful_alt"]]
+        missing = [i for i in pd["images"] if i["alt"] is None]
         if missing:
-            imgs_no_alt_by_page[slug] = [f'{i["src"]} (alt={repr(i["alt"])})' for i in missing]
+            imgs_no_alt_by_page[slug] = [f'{i["src"]} (alt missing)' for i in missing]
+        decorative = [i for i in pd["images"] if i["is_decorative"]]
+        if decorative:
+            imgs_decorative_by_page[slug] = [i["src"] for i in decorative]
 
     heading_issues = []
     for slug, pd in page_data.items():
@@ -188,6 +195,8 @@ def collect_course_data():
         "imgs_total": sum(len(pd["images"]) for pd in page_data.values()),
         "imgs_no_alt_total": sum(len(imgs) for imgs in imgs_no_alt_by_page.values()),
         "imgs_no_alt_by_page": imgs_no_alt_by_page,
+        "imgs_decorative_total": sum(len(imgs) for imgs in imgs_decorative_by_page.values()),
+        "imgs_decorative_by_page": imgs_decorative_by_page,
         "heading_issues": heading_issues,
         "assignments_with_rubric": [a["name"] for a in assignments if a.get("rubric_settings") or a.get("rubric")],
         "assignments_no_rubric": [a["name"] for a in assignments if not (a.get("rubric_settings") or a.get("rubric")) and a.get("grading_type") != "not_graded"],
@@ -199,7 +208,12 @@ def collect_course_data():
         "feedback_timeline_pages": [s for s, pd in page_data.items() if pd["has_feedback_timeline"]],
         "has_tour": any(pd["has_tour"] for pd in page_data.values()),
         "tour_pages": [s for s, pd in page_data.items() if pd["has_tour"]],
-        "has_eval_reminder": any("evaluation" in pd["title"].lower() or "course eval" in pd["title"].lower() for pd in page_data.values()),
+        "has_eval_reminder": any(
+            any(kw in pd["title"].lower() for kw in ["evaluation", "course eval", "end-of-course", "course survey", "course feedback"])
+            or any(kw in pd.get("slug", "") for kw in ["evaluation", "course-eval", "course-survey", "course-feedback"])
+            or pd.get("has_eval_content", False)
+            for pd in page_data.values()
+        ),
         "pages_with_objectives": [s for s, pd in page_data.items() if pd["has_objectives"]],
     }
 
@@ -212,6 +226,68 @@ def _pages_list(slugs, limit=5):
     shown = slugs[:limit]
     extra = f" (+{len(slugs)-limit} more)" if len(slugs) > limit else ""
     return ", ".join(shown) + extra
+
+
+def _build_affected_pages(cid_str, status, cd):
+    """Build structured affected_pages for criteria with page-level findings."""
+    link = cd["link"]
+    pages = []
+
+    # Alt text missing (truly missing alt attribute)
+    if cid_str in ("B-22.1", "B-22.2", "B-22.3") and cd["imgs_no_alt_by_page"]:
+        for slug, imgs in sorted(cd["imgs_no_alt_by_page"].items(), key=lambda x: -len(x[1]))[:10]:
+            title = cd["pages"].get(slug, {}).get("title", slug) if isinstance(cd["pages"], dict) else slug
+            pages.append({
+                "slug": slug, "title": title,
+                "url": f"{link}/pages/{slug}",
+                "issue_summary": f"{len(imgs)} image(s) missing alt text",
+                "issue_count": len(imgs),
+            })
+
+    # Decorative images — verify intent
+    if cid_str == "B-22.4" and cd["imgs_decorative_by_page"]:
+        for slug, imgs in sorted(cd["imgs_decorative_by_page"].items(), key=lambda x: -len(x[1]))[:10]:
+            title = cd["pages"].get(slug, {}).get("title", slug) if isinstance(cd["pages"], dict) else slug
+            pages.append({
+                "slug": slug, "title": title,
+                "url": f"{link}/pages/{slug}",
+                "issue_summary": f"{len(imgs)} image(s) marked decorative — verify intent",
+                "issue_count": len(imgs),
+            })
+
+    # Heading hierarchy issues
+    if cid_str in ("B-22.1", "B-22.2") and cd["heading_issues"]:
+        for hi in cd["heading_issues"][:5]:
+            slug = hi.split(":")[0].strip()
+            pages.append({
+                "slug": slug, "title": slug,
+                "url": f"{link}/pages/{slug}",
+                "issue_summary": f"Heading skip: {hi}",
+                "issue_count": 1,
+            })
+
+    # Overview pages — for objectives/time estimates checks
+    if cid_str in ("B-02.1", "B-06.2") and status != "Met":
+        for slug in cd["overview_pages"][:10]:
+            title = cd["pages"].get(slug, {}).get("title", slug) if isinstance(cd["pages"], dict) else slug
+            pages.append({
+                "slug": slug, "title": title,
+                "url": f"{link}/pages/{slug}",
+                "issue_summary": "Check module overview for objectives/time estimates",
+                "issue_count": 0,
+            })
+
+    # Rubrics missing — list assignments without rubrics
+    if cid_str == "B-09.2" and cd["assignments_no_rubric"]:
+        for name in cd["assignments_no_rubric"][:10]:
+            pages.append({
+                "slug": "", "title": name,
+                "url": f"{link}/assignments",
+                "issue_summary": "No rubric attached",
+                "issue_count": 1,
+            })
+
+    return pages
 
 
 def evaluate_b_criterion(cid_str, text, cd):
@@ -269,7 +345,7 @@ def evaluate_b_criterion(cid_str, text, cd):
         if "template personalization" in t or "customization" in t:
             return ("Met", "Template customized")
         if "source course" in t:
-            return ("N/A", "Not determinable via API")
+            return ("needs_review", "Not determinable via API")
         if "course template" in t:
             return ("Met", "ASU template used")
         if "textbook" in t and "information" in t:
@@ -301,7 +377,72 @@ def evaluate_b_criterion(cid_str, text, cd):
             return ("Met", "Announcements in nav") if "Announcements" in cd["tabs"] else ("Not Met", "Not in nav")
         if "home" in t and ("page" in t or "navigation" in t):
             return ("Met", "Home configured") if "Home" in cd["tabs"] else ("Not Met", "Missing")
-        return ("Met", "Layout element present")
+        # Syllabus-scoped duplicates of B-01 checks (B-04 asks about syllabus specifically)
+        if ("course outcomes" in t or "course goals" in t or "course objectives" in t) and "syllabus" in t:
+            return ("Met", f'Course objectives in syllabus ({cd["syllabus_len"]} chars)') if cd["has_syllabus"] else ("Not Met", "Syllabus missing or empty")
+        if ("learning outcomes" in t or "learning objectives" in t) and "syllabus" in t:
+            return ("Met", f'Learning objectives in syllabus ({cd["syllabus_len"]} chars)') if cd["has_syllabus"] else ("Not Met", "Syllabus missing or empty")
+        if "template" in t and ("applied" in t or "canvas template" in t or "asu online" in t):
+            # Check for ASU template indicators: welcome module + overview pages + standard nav tabs
+            has_welcome = cd["has_getting_started"]
+            has_overviews = len(cd["overview_pages"]) > 0
+            has_standard_tabs = "Syllabus" in cd["tabs"] and "Modules" in cd["tabs"]
+            if has_welcome and has_overviews and has_standard_tabs:
+                return ("Met", f'Template indicators: welcome module, {len(cd["overview_pages"])} overviews, standard nav tabs')
+            return ("needs_review", "Template application could not be fully confirmed — verify visually")
+        # Syllabus content checks — search syllabus body for required elements
+        syl = cd["syllabus"].lower()
+        if "contact information" in t or "office hour" in t:
+            found = any(kw in syl for kw in ["office hour", "contact", "email", "phone", "virtual office"])
+            return ("Met", "Contact/office info in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "communicate" in t and "instructor" in t:
+            found = any(kw in syl for kw in ["email", "inbox", "message", "office hour", "slack", "discussion"])
+            return ("Met", "Communication methods in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "technology requirement" in t:
+            found = any(kw in syl for kw in ["technology", "browser", "computer", "internet", "software", "hardware"])
+            return ("Met", "Technology requirements in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "course access" in t:
+            found = any(kw in syl for kw in ["access statement", "accessibility", "accommodat", "disability"])
+            return ("Met", "Access statement in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "submitting" in t and ("coursework" in t or "assignment" in t):
+            found = any(kw in syl for kw in ["submit", "upload", "turn in", "submission"])
+            return ("Met", "Submission instructions in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "late work" in t or "missed work" in t:
+            found = any(kw in syl for kw in ["late work", "late submission", "late policy", "missed", "penalty"])
+            return ("Met", "Late/missed work policy in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "grade breakdown" in t or "grade distribution" in t:
+            found = any(kw in syl for kw in ["grade breakdown", "grade distribution", "grading", "percentage", "weight"])
+            return ("Met", "Grade breakdown in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "disclaimer" in t:
+            found = any(kw in syl for kw in ["disclaimer", "subject to change", "reserved the right", "syllabus is subject"])
+            return ("Met", "Disclaimer in syllabus") if found else ("Not Met", "Not found in syllabus")
+        if "general studies gold" in t:
+            found = "general studies" in syl or "gold" in syl
+            return ("Met", "General Studies statement in syllabus") if found else ("not_applicable", "Not a General Studies course or not found")
+        if "links & tools" in t or "links and tools" in t:
+            found = any("link" in m.get("name", "").lower() and "tool" in m.get("name", "").lower() for m in cd["modules"])
+            return ("Met", "Links & Tools module found") if found else ("Not Met", "No Links & Tools module")
+        if "community forum" in t or "general course question" in t:
+            return ("Met", f'{len(cd["discussions"])} discussion(s)') if cd["discussions"] else ("Not Met", "No community forum")
+        if "course schedule" in t or "important dates" in t:
+            found = any(kw in s for s in cd["pages"] for kw in ["schedule", "important-dates", "course-calendar"])
+            return ("Met", "Schedule page found") if found else ("Not Met", "No schedule page found")
+        if "banner" in t:
+            # Check if any page in the welcome module contains an ASU banner image
+            welcome_pages = [s for s in cd["pages"] if any(kw in s for kw in ["welcome", "start-here", "getting-started"])]
+            has_banner = any(cd["pages"].get(s, {}).get("images") for s in welcome_pages)
+            return ("Met", "Banner detected in welcome pages") if has_banner else ("needs_review", "No banner image detected in welcome pages — verify visually")
+        if "course image" in t:
+            img_url = cd["course"].get("image_download_url")
+            return ("Met", "Course image set") if img_url else ("Not Met", "No course image configured in Canvas settings")
+        if "consistent naming" in t or "naming convention" in t:
+            return ("needs_review", "Naming consistency requires visual review")
+        if "similar experience" in t:
+            return ("needs_review", "Assessment consistency requires review")
+        if "complete" in t and "missing weeks" in t:
+            return ("Met", f'{len(cd["content_modules"])} modules with content')
+        # Catch-all: flag for review instead of silently passing
+        return ("needs_review", f"B-04 criterion not matched by specific check — needs verification")
 
     # ── Standard 06 ──
     if cid_str.startswith("B-06."):
@@ -319,8 +460,19 @@ def evaluate_b_criterion(cid_str, text, cd):
     # ── Standard 07 ──
     if cid_str.startswith("B-07."):
         if "exist" in t:
-            guide_pages = [s for s in cd["pages"] if "instructor" in s and "guide" in s]
-            return ("Met", f'Instructor guide: {_pages_list(guide_pages)}') if guide_pages else ("Not Met", f'Not found in {num_pages} pages')
+            _guide_kw = ["instructor guide", "facilitation guide", "facilitation checklist",
+                         "faculty guide", "teaching guide", "instructor resources", "facilitation"]
+            # Check module names (the guide is often a whole module, not just a page)
+            guide_modules = [m["name"] for m in cd["modules"]
+                             if any(kw in m.get("name", "").lower() for kw in _guide_kw)]
+            # Check page slugs with expanded keywords
+            guide_pages = [s for s in cd["pages"]
+                           if any(kw.replace(" ", "-") in s or kw.replace(" ", "") in s for kw in _guide_kw)]
+            if guide_modules:
+                return ("Met", f'Instructor/facilitation guide module: {", ".join(guide_modules[:3])}')
+            if guide_pages:
+                return ("Met", f'Instructor guide: {_pages_list(guide_pages)}')
+            return ("Not Met", f'No instructor guide or facilitation guide found in {len(cd["modules"])} modules or {num_pages} pages')
 
     # ── Standard 08 ──
     if cid_str.startswith("B-08."):
@@ -353,14 +505,24 @@ def evaluate_b_criterion(cid_str, text, cd):
             g = cd["agroups"]
             return ("Met", f'{len(g)} groups') if len(g) > 1 else ("Not Met", "Not configured")
         if "proctoring" in t:
-            return ("N/A", "No proctoring detected")
+            return ("not_applicable", "No proctoring detected")
 
     # ── Standard 10 ──
     if cid_str.startswith("B-10."):
         if "two different" in t or "2+" in t.replace(" ", ""):
             return ("Met", f'{len(cd["quizzes"])} quizzes, {len(cd["assignments"])} assignments, {len(cd["discussions"])} discussions')
         if "ungraded" in t or "practice" in t:
-            return ("Met", "Practice activities available")
+            practice_assignments = [a for a in cd["assignments"] if (a.get("points_possible") or 0) == 0 or a.get("grading_type") == "not_graded"]
+            practice_quizzes = [q for q in cd["quizzes"] if q.get("quiz_type") == "practice_quiz" or q.get("quiz_type") == "survey"]
+            total_practice = len(practice_assignments) + len(practice_quizzes)
+            if total_practice > 0:
+                parts = []
+                if practice_assignments:
+                    parts.append(f'{len(practice_assignments)} ungraded assignment(s)')
+                if practice_quizzes:
+                    parts.append(f'{len(practice_quizzes)} practice quiz(zes)')
+                return ("Met", f'{total_practice} practice activities: {", ".join(parts)}')
+            return ("Not Met", f'No ungraded or practice assessments found in {len(cd["assignments"])} assignments and {len(cd["quizzes"])} quizzes')
 
     # ── Standard 13 ──
     if cid_str.startswith("B-13."):
@@ -404,7 +566,7 @@ def evaluate_b_criterion(cid_str, text, cd):
         if "10 minutes" in t or "length" in t:
             return ("Met", "Videos segmented")
         if "slide" in t or "downloadable" in t:
-            return ("N/A", "No separate slide decks")
+            return ("not_applicable", "No separate slide decks")
 
     # ── Standard 20 ──
     if cid_str.startswith("B-20."):
@@ -412,7 +574,7 @@ def evaluate_b_criterion(cid_str, text, cd):
             support = [t_tab for t_tab in cd["tabs"] if any(k in t_tab.lower() for k in ["tutor", "support", "accessibility"])]
             return ("Met", f'Support: {", ".join(support)}') if support else ("Partially Met", "No dedicated support tabs")
         if "proctoring" in t:
-            return ("N/A", "No proctoring")
+            return ("not_applicable", "No proctoring")
 
     # ── Standard 22 ──
     if cid_str.startswith("B-22."):
@@ -427,31 +589,35 @@ def evaluate_b_criterion(cid_str, text, cd):
             return ("Partially Met", "Document accessibility needs manual POUR review")
         if "alt text" in t or ("alternative" in t and "image" in t):
             if cd["imgs_no_alt_total"] == 0:
-                return ("Met", f'All {cd["imgs_total"]} images have alt text')
+                decorative_note = f' ({cd["imgs_decorative_total"]} marked decorative)' if cd["imgs_decorative_total"] else ''
+                return ("Met", f'All {cd["imgs_total"]} images have alt text or are marked decorative{decorative_note}')
             by_page = cd["imgs_no_alt_by_page"]
             top = sorted(by_page.items(), key=lambda x: len(x[1]), reverse=True)[:8]
             detail = ". ".join(f'{pg}: {len(imgs)} img(s)' for pg, imgs in top)
             return ("Not Met", f'{cd["imgs_no_alt_total"]}/{cd["imgs_total"]} missing alt across {len(by_page)} pages. {detail}')
         if "decorative" in t:
-            return ("Partially Met", f'{cd["imgs_no_alt_total"]} images have empty/missing alt — verify decorative vs needing descriptions')
+            d_total = cd["imgs_decorative_total"]
+            if d_total == 0:
+                return ("Met", "No images marked decorative — all have descriptive alt text")
+            return ("Partially Met", f'{d_total} images marked decorative (alt="") across {len(cd["imgs_decorative_by_page"])} pages — verify each is intentionally decorative')
         if "hyperlink" in t or ("descriptive" in t and "link" in t):
             return ("Met", "Links use descriptive text")
         if "audio description" in t:
-            return ("N/A", "No critical visual-only video detected")
+            return ("not_applicable", "No critical visual-only video detected")
         if "caption" in t:
             return ("Partially Met", "Caption accuracy not verified")
         if "transcript" in t:
             return ("Partially Met", "Transcript availability not verified")
         if "ally" in t:
-            return ("N/A", "Requires Ally dashboard — enter manually")
+            return ("manual_entry", "Requires Ally dashboard — enter manually")
         if "scout" in t:
-            return ("N/A", "SCOUT score no longer used — skip")
+            return ("not_applicable", "SCOUT score no longer used — skip")
         if "readability" in t:
-            return ("N/A", "Requires readability analysis — enter manually")
+            return ("manual_entry", "Requires readability analysis — enter manually")
 
     # ── Standard 24 ──
     if cid_str.startswith("B-24."):
-        return ("N/A", "Manual review required — verify if mobile/offline access statements exist. Collecting ID feedback during pilot to define criteria.")
+        return ("needs_review", "Manual review required — verify if mobile/offline access statements exist. Collecting ID feedback during pilot to define criteria.")
 
     # ── Standard 25 ──
     if cid_str.startswith("B-25."):
@@ -460,10 +626,10 @@ def evaluate_b_criterion(cid_str, text, cd):
 
     # ── CRC ──
     if cid_str.startswith("B-CRC."):
-        return ("N/A", "CRC criterion — evaluate separately")
+        return ("needs_review", "CRC criterion — evaluate separately")
 
     # Fallback for unmatched B-criteria
-    return ("N/A", "Criterion not matched by deterministic evaluator — needs AI review")
+    return ("needs_review", "Criterion not matched by deterministic evaluator — needs AI review")
 
 
 def evaluate_all(cd, filter_standard=None):
@@ -505,10 +671,40 @@ def evaluate_all(cd, filter_standard=None):
                 "B-04.14", "B-06.2", "B-09.1", "B-09.6", "B-13.10", "B-13.14", "B-22.5",
             }
 
+            # Hybrid Quick Check targets: B-criteria where AI should re-verify
+            # the deterministic result using page content. Excludes manual_entry
+            # criteria (B-22.9, B-22.11) which require external tools, not AI.
+            #
+            # ALWAYS_VERIFY: deterministic engine fundamentally can't check these
+            # (e.g. content quality, moderation policy) — always flag for AI.
+            ALWAYS_VERIFY = {
+                "B-13.1", "B-13.2", "B-13.3",   # citations, video, links — can't verify without browsing
+                "B-13.10", "B-13.11",            # typos, grammar — need language model
+                "B-13.13", "B-13.14",            # formatting, text density — need visual judgment
+                "B-17.1", "B-17.2",              # moderation policy, response time — static result today
+                "B-22.5",                        # descriptive link text — needs semantic check
+                "B-24.1",                        # mobile/offline access — needs content scan
+            }
+            # VERIFY_WHEN_WEAK: flag only when deterministic result is Not Met,
+            # Partially Met, or needs_review — skip when clearly Met with evidence.
+            VERIFY_WHEN_WEAK = {
+                "B-04.23", "B-04.24",           # welcome communication, course tour
+                "B-06.1", "B-06.2",             # workload details, time commitments
+                "B-09.1",                        # assessment instructions
+            }
+
             if cid_str.startswith("B-"):
                 # B-criteria are deterministic: evaluated via HTML parsing + API data
                 status, evidence = evaluate_b_criterion(cid_str, crit_text, cd)
                 confidence = "low" if cid_str in LOW_CONFIDENCE else "high"
+                affected_pages = _build_affected_pages(cid_str, status, cd)
+                # Flag for AI verification — targeted by result strength
+                weak_result = status in ("Not Met", "Partially Met", "needs_review")
+                needs_ai_verify = (
+                    cid_str in ALWAYS_VERIFY
+                    or (cid_str in VERIFY_WHEN_WEAK and weak_result)
+                    or (cid_str.startswith("B-04.") and "not matched by specific check" in evidence)
+                )
                 results.append({
                     "criterion_id": cid_str,
                     "criterion_text": crit_text,
@@ -520,6 +716,8 @@ def evaluate_all(cd, filter_standard=None):
                     "reviewer_tier": reviewer_tier,
                     "confidence": confidence,
                     "needs_ai_review": False,
+                    "needs_ai_verification": needs_ai_verify,
+                    "affected_pages": affected_pages,
                 })
             else:
                 # C-criteria require subjective judgment (e.g. alignment quality,
@@ -550,7 +748,8 @@ def summarize(results):
     for sid, criteria in sorted(by_std.items()):
         b_results = [c for c in criteria if not c["needs_ai_review"]]
         c_results = [c for c in criteria if c["needs_ai_review"]]
-        b_statuses = [c["status"] for c in b_results if c["status"] != "N/A"]
+        _na_statuses = ("N/A", "not_applicable", "needs_review", "manual_entry")
+        b_statuses = [c["status"] for c in b_results if c["status"] not in _na_statuses]
         b_met = sum(1 for s in b_statuses if s == "Met")
         b_total = len(b_statuses)
 
@@ -638,7 +837,9 @@ def build_full_audit_json(cd, results, mode="full_audit"):
 
         # Build criteria_results array
         criteria_results = []
+        all_affected = []
         for cr in criteria:
+            ap = cr.get("affected_pages", [])
             criteria_results.append({
                 "criterion_id": cr["criterion_id"],
                 "criterion_text": cr["criterion_text"],
@@ -646,10 +847,14 @@ def build_full_audit_json(cd, results, mode="full_audit"):
                 "evidence": cr["evidence"],
                 "check_type": cr["check_type"],
                 "reviewer_tier": cr["reviewer_tier"],
+                "affected_pages": ap,
+                "needs_ai_verification": cr.get("needs_ai_verification", False),
             })
+            all_affected.extend(ap)
 
         # Derive standard-level status
-        statuses = [cr["status"] for cr in criteria if cr["status"] not in ("N/A", "needs_ai_review")]
+        _skip = ("N/A", "not_applicable", "needs_review", "manual_entry", "needs_ai_review")
+        statuses = [cr["status"] for cr in criteria if cr["status"] not in _skip]
         met = sum(1 for s in statuses if s == "Met")
         total = len(statuses)
 
@@ -697,7 +902,7 @@ def build_full_audit_json(cd, results, mode="full_audit"):
             "confidence": "High" if total > 3 else "Medium",
             "coverage": f"{met}/{total} criteria",
             "reviewer_tier": "id_assistant" if has_b and not is_a11y else "id",
-            "canvas_link": f"{link}/modules",
+            "canvas_link": all_affected[0]["url"] if all_affected else f"{link}/modules",
             "essential": meta.get("essential", False),
             "criteria_results": criteria_results,
         })
@@ -710,7 +915,7 @@ def build_full_audit_json(cd, results, mode="full_audit"):
         {"id": "Q04", "name": "Overviews", "status": "Pass", "detail": f'{len(cd["overview_pages"])} pages', "reviewer_tier": "id_assistant"},
         {"id": "Q05", "name": "Quizzes", "status": "Pass" if cd["quizzes"] else "Warn", "detail": f'{len(cd["quizzes"])} configured', "reviewer_tier": "id_assistant"},
         {"id": "Q06", "name": "Headings", "status": "Warn" if cd["heading_issues"] else "Pass", "detail": f'{len(cd["heading_issues"])} issue(s): {", ".join(cd["heading_issues"][:2])}' if cd["heading_issues"] else "Clean", "reviewer_tier": "id_assistant"},
-        {"id": "Q07", "name": "Alt text", "status": "Fail" if cd["imgs_no_alt_total"] > 0 else "Pass", "detail": f'{cd["imgs_no_alt_total"]}/{cd["imgs_total"]} missing across {len(cd["imgs_no_alt_by_page"])} pages' if cd["imgs_no_alt_total"] > 0 else "All present", "reviewer_tier": "id_assistant"},
+        {"id": "Q07", "name": "Alt text", "status": "Fail" if cd["imgs_no_alt_total"] > 0 else ("Warn" if cd["imgs_decorative_total"] > 0 else "Pass"), "detail": f'{cd["imgs_no_alt_total"]}/{cd["imgs_total"]} truly missing across {len(cd["imgs_no_alt_by_page"])} pages' if cd["imgs_no_alt_total"] > 0 else (f'All present ({cd["imgs_decorative_total"]} marked decorative — verify intent)' if cd["imgs_decorative_total"] > 0 else "All present"), "reviewer_tier": "id_assistant"},
         {"id": "Q08", "name": "Rubrics", "status": "Pass" if cd["assignments_with_rubric"] else "Fail", "detail": f'{len(cd["assignments_with_rubric"])}/{len(cd["assignments"])} have rubrics', "reviewer_tier": "id_assistant"},
         {"id": "Q09", "name": "Navigation", "status": "Pass", "detail": f'{", ".join(cd["tabs"][:5])}', "reviewer_tier": "id_assistant"},
         {"id": "Q10", "name": "Assignment groups", "status": "Pass" if len(cd["agroups"]) > 1 else "Warn", "detail": f'{len(cd["agroups"])} groups', "reviewer_tier": "id_assistant"},
@@ -727,9 +932,19 @@ def build_full_audit_json(cd, results, mode="full_audit"):
         a11y_items.append({
             "severity": "Critical",
             "page": f'{len(cd["imgs_no_alt_by_page"])} pages',
-            "issue": f'{cd["imgs_no_alt_total"]} images missing alt text',
+            "issue": f'{cd["imgs_no_alt_total"]} images missing alt text (no alt attribute)',
             "element": f'Top: {", ".join(p[0] for p in top_pages)}',
-            "fix": "Add descriptive alt text",
+            "fix": "Add descriptive alt text or mark as decorative in Canvas",
+            "canvas_link": f"{link}/pages",
+        })
+    if cd["imgs_decorative_total"] > 0:
+        top_dec = sorted(cd["imgs_decorative_by_page"].items(), key=lambda x: len(x[1]), reverse=True)[:5]
+        a11y_items.append({
+            "severity": "Warning",
+            "page": f'{len(cd["imgs_decorative_by_page"])} pages',
+            "issue": f'{cd["imgs_decorative_total"]} images marked decorative (alt="") — verify each is intentionally decorative',
+            "element": f'Top: {", ".join(p[0] for p in top_dec)}',
+            "fix": "Confirm images are decorative; add alt text to any that convey meaning",
             "canvas_link": f"{link}/pages",
         })
     for hi in cd["heading_issues"][:3]:
@@ -742,7 +957,8 @@ def build_full_audit_json(cd, results, mode="full_audit"):
             "fix": "Fix heading level",
             "canvas_link": f"{link}/pages/{page_slug}",
         })
-    a11y_critical = len(a11y_items)
+    a11y_critical = sum(1 for a in a11y_items if a["severity"] == "Critical")
+    a11y_warning = sum(1 for a in a11y_items if a["severity"] == "Warning")
 
     # Build readiness
     readiness_cats = [
@@ -778,18 +994,19 @@ def build_full_audit_json(cd, results, mode="full_audit"):
     # ── Compute split scores ──
     # Three independent scores map to the report's score boxes.
     # Readiness = Col B pass rate -- the "can this course launch?" metric
-    b_results_all = [r for r in results if r["criterion_id"].startswith("B-") and r["status"] != "N/A"]
+    _na_all = ("N/A", "not_applicable", "needs_review", "manual_entry")
+    b_results_all = [r for r in results if r["criterion_id"].startswith("B-") and r["status"] not in _na_all]
     b_met_all = sum(1 for r in b_results_all if r["status"] == "Met")
     readiness_score = round(b_met_all / len(b_results_all) * 100) if b_results_all else 0
 
     # Design = Col C pass rate -- the "is the pedagogy sound?" metric
     # None when C-criteria haven't been evaluated yet (Quick Check mode)
-    c_results_all = [r for r in results if r["criterion_id"].startswith("C-") and r["status"] not in ("N/A", "needs_ai_review")]
+    c_results_all = [r for r in results if r["criterion_id"].startswith("C-") and r["status"] not in (*_na_all, "needs_ai_review")]
     c_met_all = sum(1 for r in c_results_all if r["status"] == "Met")
     design_score = round(c_met_all / len(c_results_all) * 100) if c_results_all else None  # None = not evaluated
 
     # A11y = Standards 22-23 only -- carved out because ASU mandates WCAG AA separately
-    a11y_results = [r for r in results if r["standard_id"] in ("22", "23") and r["criterion_id"].startswith("B-") and r["status"] != "N/A"]
+    a11y_results = [r for r in results if r["standard_id"] in ("22", "23") and r["criterion_id"].startswith("B-") and r["status"] not in _na_all]
     a11y_met = sum(1 for r in a11y_results if r["status"] == "Met")
     a11y_score = round(a11y_met / len(a11y_results) * 100) if a11y_results else 0
 
@@ -839,7 +1056,7 @@ def build_full_audit_json(cd, results, mode="full_audit"):
             "accessibility": {
                 "title": "WCAG 2.1 AA Accessibility",
                 "subtitle": "Accessibility checks",
-                "summary": {"Critical": a11y_critical, "Warning": 0, "Info": 0},
+                "summary": {"Critical": a11y_critical, "Warning": a11y_warning, "Info": 0},
                 "items": a11y_items,
             },
             "readiness": {

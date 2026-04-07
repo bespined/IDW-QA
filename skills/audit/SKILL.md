@@ -102,7 +102,26 @@ Every finding MUST be tagged with `reviewer_tier` from `standards.yaml`:
 
 Runs **Pass 1 (deterministic) + light AI verification**. Two steps:
 1. All deterministic checks run via `criterion_evaluator.py --quick-check` (supersedes legacy `deterministic_checks.py`)
-2. One AI verification call: Claude receives a summary of all deterministic results + raw content from flagged pages (syllabus body, module overviews, CLO text). The AI checks for obvious false positives and false negatives — pages that exist but are empty, CLOs that technically use measurable verbs but are meaningless, template placeholders that weren't caught by regex. The AI does NOT evaluate instructional quality — that's what Deep Audit does.
+2. One AI verification call: Claude receives a summary of all deterministic results + raw content from flagged pages (syllabus body, module overviews, CLO text). The AI performs two types of checks:
+
+   **General false-positive/negative detection:**
+   - Pages that exist but are empty or contain only template boilerplate
+   - CLOs that technically use measurable verbs but are meaningless or placeholder text
+   - Template placeholders that weren't caught by regex
+   - **Instructor guide / facilitation guide detection**: If B-07.1 shows "Not Met," check the full module list for unpublished/hidden modules that serve as an instructor guide regardless of naming. Look for modules containing pages about office hours setup, Zoom configuration, grading/facilitation checklists, or preparation tasks. Common names include "ASU Online Facilitation Guide," "Faculty Guide," or "Instructor Resources" — but the content pattern matters more than the name. One module with instructor-facing content is sufficient. If found, override B-07.1 to "Met" with evidence citing the module name.
+
+   **Targeted hybrid verification (criteria with `needs_ai_verification: true`):**
+   The evaluator flags specific B-criteria where the deterministic result may be unreliable. For each flagged criterion, re-evaluate using page content and override the deterministic result when you find clear evidence:
+
+   - **B-04.23/24** (welcome communication, course tour): Read the welcome/getting-started module pages. Look for any video or text that introduces the instructor or orients students to the course. Override to Met if found, citing the specific page.
+   - **B-06.1/06.2** (workload details, time commitments): Read the syllabus and module overview pages. Look for concrete workload language, time estimates, weekly pacing, or expected hours. Override only when specific workload/time language exists.
+   - **B-09.1** (assessment instructions): Spot-check assignment, quiz, and discussion descriptions. Look for clear completion expectations, required components, submission expectations, or grading cues. Override only when directions are clearly substantive.
+   - **B-17.1** (moderation policy): Read the community forum / discussion instructions / syllabus. Look for any language about discussion expectations, moderation, netiquette. Override to Met if found, citing the specific text.
+   - **B-17.2** (response time): Read the syllabus + discussion instructions + getting-started pages. Look for any response time commitment (e.g., "within 24-48 hours"). Override to Met if found, citing the specific text.
+   - **B-13.1/2/3/10/11/13/14 and B-22.5** (content quality spot-check): Spot-check 3-5 content pages from different modules. Flag obvious issues only — clearly missing citations, broken embeds, vague "click here" links, obvious typos, extremely dense text, visibly inconsistent formatting. Do NOT attempt comprehensive link checking or full typo/grammar scanning. Override to Partially Met or Not Met only when clear evidence exists.
+   - **B-24.1** (mobile/offline access): Read the syllabus, getting-started content, and support/help pages. Look for explicit statements about what works on mobile versus what requires laptop/desktop access. Keep as Needs Review if no explicit statement exists.
+
+   The AI does NOT evaluate instructional quality or design depth — that's what Deep Audit does. Hybrid verification is limited to verifying factual presence/absence of content the deterministic engine couldn't reliably detect.
 
 All findings tagged `reviewer_tier: "id_assistant"` (Col B). These are validated by ID Assistants in the Vercel review app after submission.
 
