@@ -47,8 +47,8 @@ POLL_INTERVAL = 5       # seconds between polls
 DEFAULT_TIMEOUT = 60    # seconds total
 MAX_POLLS = 12          # max poll attempts
 
-# Issue reasons that are definite failures
-FAIL_REASONS = {"course_mismatch", "unpublished_item", "missing"}
+# Issue reasons that are definite failures (Canvas uses these exact strings)
+FAIL_REASONS = {"course_mismatch", "unpublished_item", "missing_item", "deleted"}
 
 # URL prefixes that are known Canvas validator false positives
 IGNORE_PREFIXES = ("tel:", "mailto:")
@@ -62,7 +62,11 @@ REVIEW_DOMAINS = ("doi.org",)
 # ============================================================
 
 def _categorize_issue(issue):
-    """Categorize a single link validator issue.
+    """Categorize a single flattened link validator issue.
+
+    Each issue has been flattened by _extract_issues and contains:
+      - url, reason, image: from the invalid_links entry
+      - source_name, source_type, content_url: from the parent page/resource
 
     Returns a dict with:
         category: "broken_link" | "broken_image" | "review" | "ignored"
@@ -72,14 +76,14 @@ def _categorize_issue(issue):
         image: whether this is an image issue
         source_url: the Canvas page/content URL where the issue was found
         source_name: the name of the source content
-        source_type: the type of source (e.g., "WikiPage", "Assignment")
+        source_type: the type of source (e.g., "wiki_page", "assignment")
     """
     url = issue.get("url", "")
     reason = issue.get("reason", "unknown")
     is_image = issue.get("image", False)
     source_url = issue.get("content_url", "")
-    source_name = issue.get("name", "")
-    source_type = issue.get("content_type", "")
+    source_name = issue.get("source_name", "") or issue.get("name", "")
+    source_type = issue.get("source_type", "") or issue.get("type", "")
 
     base = {
         "url": url,
@@ -239,13 +243,28 @@ def build_affected_pages(categorized_issues, course_link, pages_dict=None):
                 if isinstance(page_info, dict):
                     title = page_info.get("title", title)
 
-            # Build page URL based on source type
-            if "WikiPage" in group.get("source_type", ""):
+            # Build page URL from content_url or fall back to pages/{slug}
+            raw_content_url = ""
+            for iss in issue_list:
+                if iss.get("source_url"):
+                    raw_content_url = iss["source_url"]
+                    break
+            if raw_content_url:
+                # Canvas content_url is relative (e.g., /courses/123/pages/slug/edit)
+                # Strip /edit suffix and make absolute
+                clean_url = raw_content_url.rstrip("/")
+                if clean_url.endswith("/edit"):
+                    clean_url = clean_url[:-5]
+                if clean_url.startswith("/"):
+                    # Extract domain from course_link
+                    domain_part = "/".join(course_link.split("/")[:3])
+                    page_url = f"{domain_part}{clean_url}"
+                else:
+                    page_url = clean_url
+            elif "wiki_page" in group.get("source_type", "") or "page" in group.get("source_type", ""):
                 page_url = f"{course_link}/pages/{slug}"
             else:
-                page_url = group.get("source_url", f"{course_link}/pages/{slug}")
-                if not page_url:
-                    page_url = f"{course_link}/pages/{slug}"
+                page_url = f"{course_link}/pages/{slug}"
 
             pages.append({
                 "slug": slug,
@@ -263,20 +282,27 @@ def build_affected_pages(categorized_issues, course_link, pages_dict=None):
 def _extract_slug(content_url):
     """Extract a page slug from a Canvas content URL.
 
-    Examples:
-        https://canvas.asu.edu/courses/12345/pages/module-1-overview → module-1-overview
-        https://canvas.asu.edu/courses/12345/assignments/67890 → assignment-67890
+    Canvas content_url formats (from link validator):
+        /courses/123/pages/module-1-overview/edit → module-1-overview
+        /courses/123/assignments/67890 → assignments-67890
+        /courses/123/quizzes/111 → quizzes-111
+        https://canvas.asu.edu/courses/12345/pages/slug → slug
         "" → unknown
     """
     if not content_url:
         return "unknown"
 
+    # Strip trailing /edit (Canvas content_urls often end with /edit)
+    clean = content_url.rstrip("/")
+    if clean.endswith("/edit"):
+        clean = clean[:-5]
+
     # Try to extract /pages/{slug}
-    if "/pages/" in content_url:
-        return content_url.split("/pages/")[-1].split("?")[0].split("#")[0]
+    if "/pages/" in clean:
+        return clean.split("/pages/")[-1].split("?")[0].split("#")[0]
 
     # For other content types, use the type + ID
-    parts = content_url.rstrip("/").split("/")
+    parts = clean.rstrip("/").split("/")
     if len(parts) >= 2:
         return f"{parts[-2]}-{parts[-1]}"
 
@@ -383,24 +409,63 @@ def run_validation(course_id, config=None, timeout=DEFAULT_TIMEOUT):
 
 
 def _extract_issues(data):
-    """Extract issues list from Canvas link validation response.
+    """Extract and flatten issues from Canvas link validation response.
 
-    Canvas nests issues under various keys depending on the version.
+    Canvas returns a nested structure where each issue is a *page/resource*
+    containing an `invalid_links` array:
+
+        {
+          "issues": [
+            {
+              "name": "Page Title",
+              "type": "wiki_page",
+              "content_url": "/courses/123/pages/slug/edit",
+              "invalid_links": [
+                {"url": "https://broken.com", "reason": "unreachable"},
+                {"url": "/courses/456/files/789", "reason": "course_mismatch", "image": true}
+              ]
+            }
+          ]
+        }
+
+    We flatten this into a list of individual link issues, each carrying
+    the parent page's name, type, and content_url.
     """
-    # Try common paths
+    # The response may be wrapped in a progress object
+    issues_list = None
     if "issues" in data:
-        return data["issues"]
-    if "results" in data:
+        issues_list = data["issues"]
+    elif "results" in data:
         results = data["results"]
         if isinstance(results, dict) and "issues" in results:
-            return results["issues"]
-        if isinstance(results, list):
-            return results
-    if "links" in data:
-        links = data["links"]
-        # Filter to only invalid links
-        return [l for l in links if l.get("validity") != "valid"]
-    return []
+            issues_list = results["issues"]
+
+    if not issues_list:
+        return []
+
+    # Flatten: each page-level issue contains invalid_links
+    flat = []
+    for page_issue in issues_list:
+        source_name = page_issue.get("name", "")
+        source_type = page_issue.get("type", "")
+        content_url = page_issue.get("content_url", "")
+
+        invalid_links = page_issue.get("invalid_links", [])
+        if not invalid_links:
+            # Old format: the issue itself might be a flat link
+            if "url" in page_issue or "reason" in page_issue:
+                flat.append(page_issue)
+            continue
+
+        for link in invalid_links:
+            flat.append({
+                **link,
+                "source_name": source_name,
+                "source_type": source_type,
+                "content_url": content_url,
+            })
+
+    return flat
 
 
 # ============================================================
