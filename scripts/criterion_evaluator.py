@@ -141,8 +141,9 @@ def collect_course_data():
             alt_m = re.search(r'alt=["\']([^"\']*)["\']', attrs)
             src = src_m.group(1).split("/")[-1][:60] if src_m else "unknown"
             alt = alt_m.group(1) if alt_m else None
-            is_decorative = alt is not None and alt.strip() == ""  # alt="" = Canvas decorative, WCAG-valid
-            has_meaningful_alt = alt is not None and alt.strip() != ""
+            # Decorative markers: alt="" (WCAG), alt=" " (Canvas editor), alt="None" (legacy template artifact)
+            is_decorative = alt is not None and (alt.strip() == "" or alt.strip().lower() == "none")
+            has_meaningful_alt = alt is not None and not is_decorative
             images.append({"src": src, "alt": alt, "is_decorative": is_decorative, "has_meaningful_alt": has_meaningful_alt})
 
         # Parse headings

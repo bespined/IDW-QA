@@ -349,7 +349,10 @@ def check_page(html: str, context: dict = None) -> list:
     for idx, img in enumerate(ip.images):
         if img.get("role") == "presentation":
             continue  # Decorative, skip
-        if img.get("alt") is None:
+        alt_val = img.get("alt")
+        # Decorative markers: alt="" (WCAG), alt=" " (Canvas editor), alt="None" (legacy template artifact)
+        is_decorative = alt_val is not None and (alt_val.strip() == "" or alt_val.strip().lower() == "none")
+        if alt_val is None:
             src_short = img.get("src", "?")[:40]
             issues.append(Issue(
                 "22.2", "error",
@@ -358,8 +361,8 @@ def check_page(html: str, context: dict = None) -> list:
                 False,  # Never auto-generate alt text
                 "Add descriptive alt text, or alt=\"\" if decorative."
             ))
-        elif img.get("alt") == "":
-            # Empty alt = decorative. Fine, but flag if it looks like a content image
+        elif is_decorative:
+            # Decorative image. Fine, but flag if it looks like a content image
             src = img.get("src", "").lower()
             if not any(kw in src for kw in ["icon", "spacer", "bullet", "divider",
                                              "decoration", "background"]):

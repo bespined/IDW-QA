@@ -637,11 +637,15 @@ def _check_alt_text(graph, course_data):
         except (ValueError, AssertionError):
             continue
         for img in parser.images:
-            # Skip decorative images (role="presentation" or alt="")
+            # Skip decorative images: role="presentation", alt="" (WCAG), alt=" " (Canvas), alt="None" (template)
             if img.get("role") == "presentation":
                 continue
+            alt_val = img.get("alt")
+            is_decorative = alt_val is not None and (alt_val.strip() == "" or alt_val.strip().lower() == "none")
+            if is_decorative:
+                continue
             total_images += 1
-            if img.get("alt") is None:  # alt="" is acceptable for decorative
+            if alt_val is None:  # truly missing alt attribute
                 missing_alt.append(f"\"{p.get('title', '?')}\": {img.get('src', '?')[:40]}")
     return total_images, missing_alt
 
