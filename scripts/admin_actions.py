@@ -201,8 +201,7 @@ def change_role(tester_id, new_role, dry_run=False):
         return {"ok": False, "error": "Supabase not configured"}
 
     # Get current role
-    from role_gate import _supabase_get
-    testers = _supabase_get(url, key, "testers", {"id": f"eq.{tester_id}", "select": "id,name,role"})
+    testers = supabase_client.get("testers", params={"id": f"eq.{tester_id}", "select": "id,name,role"})
     if not testers:
         return {"ok": False, "error": f"Tester {tester_id} not found"}
 
@@ -241,21 +240,17 @@ def list_testers():
         return {"ok": False, "error": "Supabase not configured"}
 
     _verify_admin()
-    from role_gate import _supabase_get
-    testers = _supabase_get(url, key, "testers", {"order": "role.asc,name.asc"})
+    testers = supabase_client.get("testers", params={"order": "role.asc,name.asc"})
     return {"ok": True, "testers": testers or []}
 
 
 def list_unassigned_sessions():
     """List sessions that need an ID Assistant assigned."""
-    from role_gate import _supabase_get
-
     _verify_admin()
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured"}
 
-    sessions = _supabase_get(url, key, "audit_sessions", {
+    sessions = supabase_client.get("audit_sessions", params={
         "assigned_to": "is.null",
         "status": "in.(in_progress,pending_qa_review)",
         "order": "run_date.desc",
@@ -267,7 +262,6 @@ def list_unassigned_sessions():
 def assign_session(session_id, tester_id, dry_run=False):
     """Assign an ID Assistant to a review session."""
     import requests
-    from role_gate import _supabase_get
 
     caller_id = _verify_admin()
     url, key = _get_supabase_config()
@@ -275,7 +269,7 @@ def assign_session(session_id, tester_id, dry_run=False):
         return {"ok": False, "error": "Supabase not configured"}
 
     # Verify session exists
-    sessions = _supabase_get(url, key, "audit_sessions", {
+    sessions = supabase_client.get("audit_sessions", params={
         "id": f"eq.{session_id}", "select": "id,course_name,status,assigned_to",
     })
     if not sessions:
@@ -284,7 +278,7 @@ def assign_session(session_id, tester_id, dry_run=False):
 
     # Verify target is an active id_assistant
     if tester_id:
-        testers = _supabase_get(url, key, "testers", {
+        testers = supabase_client.get("testers", params={
             "id": f"eq.{tester_id}", "select": "id,name,role,is_active",
         })
         if not testers:

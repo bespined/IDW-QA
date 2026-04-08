@@ -29,50 +29,20 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
-try:
-    from dotenv import load_dotenv
-    load_dotenv(PLUGIN_ROOT / ".env")
-    load_dotenv(PLUGIN_ROOT / ".env.local")
-except ImportError:
-    pass
+sys.path.insert(0, os.path.dirname(__file__))
+import supabase_client
 
 
 # ── Config ──
 
 def _get_config():
+    # Airtable config still loaded from env (supabase_client handles Supabase config)
+    supabase_client._ensure_env()
     return {
-        "supabase_url": os.getenv("SUPABASE_URL", ""),
-        "supabase_key": os.getenv("SUPABASE_SERVICE_KEY", ""),
         "airtable_token": os.getenv("AIRTABLE_TOKEN", ""),
         "airtable_base_id": os.getenv("AIRTABLE_BASE_ID", ""),
         "airtable_table": "Course Audits",
     }
-
-
-# ── Supabase helpers ──
-
-def _sb_get(url, key, table, params=None):
-    import requests
-    resp = requests.get(
-        f"{url}/rest/v1/{table}",
-        headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        params=params or {},
-        timeout=30,
-    )
-    if resp.status_code == 200:
-        return resp.json()
-    _log.error("Supabase GET %s: %s %s", table, resp.status_code, resp.text[:200])
-    return None
-
-
-def _sb_patch(url, key, table, row_id, updates):
-    import requests
-    requests.patch(
-        f"{url}/rest/v1/{table}?id=eq.{row_id}",
-        headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json"},
-        json=updates,
-        timeout=15,
-    )
 
 
 # ── Airtable helpers ──
@@ -333,7 +303,7 @@ def build_airtable_row(session, findings, crit_map, rating_fields, notes_fields,
 def sync_session(session_id, dry_run=False):
     """Sync a single audit session to Airtable."""
     cfg = _get_config()
-    if not cfg["supabase_url"] or not cfg["supabase_key"]:
+    if not supabase_client.is_configured():
         return {"error": "Supabase credentials not configured"}
     if not cfg["airtable_token"] or not cfg["airtable_base_id"]:
         return {"error": "Airtable credentials not configured"}
@@ -344,15 +314,14 @@ def sync_session(session_id, dry_run=False):
         _log.warning("No criterion mapping found — syncing standard-level only")
 
     # Fetch session
-    sessions = _sb_get(cfg["supabase_url"], cfg["supabase_key"], "audit_sessions",
-                       {"id": f"eq.{session_id}"})
+    sessions = supabase_client.get("audit_sessions", params={"id": f"eq.{session_id}"})
     if not sessions:
         return {"error": f"Session {session_id} not found"}
     session = sessions[0]
 
     # Fetch findings
-    findings = _sb_get(cfg["supabase_url"], cfg["supabase_key"], "audit_findings",
-                       {"session_id": f"eq.{session_id}", "order": "standard_id.asc"})
+    findings = supabase_client.get("audit_findings", params={
+        "session_id": f"eq.{session_id}", "order": "standard_id.asc"})
     if findings is None:
         return {"error": "Failed to fetch findings"}
 
@@ -360,8 +329,8 @@ def sync_session(session_id, dry_run=False):
     feedback_map = {}
     if findings:
         finding_ids = [f["id"] for f in findings]
-        all_fb = _sb_get(cfg["supabase_url"], cfg["supabase_key"], "finding_feedback",
-                         {"finding_id": f"in.({','.join(finding_ids)})", "order": "reviewed_at.desc"})
+        all_fb = supabase_client.get("finding_feedback", params={
+            "finding_id": f"in.({','.join(finding_ids)})", "order": "reviewed_at.desc"})
         if all_fb:
             for fb in all_fb:
                 fid = fb["finding_id"]
@@ -387,8 +356,9 @@ def sync_session(session_id, dry_run=False):
                         cfg["airtable_table"], record_id, fields)
 
     if result:
-        _sb_patch(cfg["supabase_url"], cfg["supabase_key"], "audit_sessions", session_id,
-                  {"airtable_synced_at": datetime.now(timezone.utc).isoformat()})
+        if not supabase_client.patch("audit_sessions", session_id,
+                                    {"airtable_synced_at": datetime.now(timezone.utc).isoformat()}):
+            _log.warning("Failed to stamp airtable_synced_at on session %s", session_id)
         action = "updated" if record_id else "created"
         bc_filled = sum(1 for k in fields if k.startswith(("B-", "C-")))
         return {"ok": True, "action": action, "record_id": result.get("id"), "course": course_name,
@@ -399,10 +369,9 @@ def sync_session(session_id, dry_run=False):
 
 def sync_pending():
     """Sync all sessions that are qa_approved but not yet synced."""
-    cfg = _get_config()
-    sessions = _sb_get(cfg["supabase_url"], cfg["supabase_key"], "audit_sessions",
-                       {"status": "eq.qa_approved", "airtable_synced_at": "is.null",
-                        "order": "run_date.desc"})
+    sessions = supabase_client.get("audit_sessions", params={
+        "status": "eq.qa_approved", "airtable_synced_at": "is.null",
+        "order": "run_date.desc"})
     if not sessions:
         return {"synced": 0, "message": "No pending sessions to sync"}
 
@@ -424,9 +393,8 @@ def main():
     if args.session_id:
         result = sync_session(args.session_id, dry_run=args.dry_run)
     elif args.course_id:
-        cfg = _get_config()
-        sessions = _sb_get(cfg["supabase_url"], cfg["supabase_key"], "audit_sessions",
-                           {"course_id": f"eq.{args.course_id}", "order": "run_date.desc", "limit": "1"})
+        sessions = supabase_client.get("audit_sessions", params={
+            "course_id": f"eq.{args.course_id}", "order": "run_date.desc", "limit": "1"})
         if sessions:
             result = sync_session(sessions[0]["id"], dry_run=args.dry_run)
         else:

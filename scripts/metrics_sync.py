@@ -46,34 +46,29 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
+sys.path.insert(0, os.path.dirname(__file__))
 
-def _load_env():
-    """Load env vars from .env AND .env.local using python-dotenv (consistent with all other scripts).
-
-    Falls back to manual parsing if python-dotenv is not installed.
-    Supabase credentials live in .env.local, not .env — loading only .env misses them.
-    """
+# Delegate env loading to the centralized module (handles .env + .env.local)
+try:
+    from supabase_client import _ensure_env
+    _ensure_env()
+except ImportError:
+    # Fallback: manual parse if supabase_client is not importable
     try:
         from dotenv import load_dotenv
         load_dotenv(PLUGIN_ROOT / ".env")
-        load_dotenv(PLUGIN_ROOT / ".env.local")  # Supabase keys are here
+        load_dotenv(PLUGIN_ROOT / ".env.local")
     except ImportError:
-        # Fallback: manual parse of both files
-        for env_file in [PLUGIN_ROOT / ".env", PLUGIN_ROOT / ".env.local"]:
-            if env_file.exists():
-                for line in env_file.read_text(encoding="utf-8").splitlines():
-                    line = line.strip()
-                    if line and not line.startswith("#") and "=" in line:
-                        key, _, value = line.partition("=")
-                        os.environ.setdefault(key.strip(), value.strip())
-
-
-# Load env vars at module init (same pattern as canvas_api.py, role_gate.py, etc.)
-_load_env()
+        pass
 
 
 def _get_supabase_config():
-    """Get Supabase URL and keys. Returns None if not configured."""
+    """Get Supabase URL and keys. Returns None if not configured.
+
+    Note: metrics_sync uses urllib (not requests) and needs both anon_key
+    and service_key, so it keeps its own config dict rather than using
+    supabase_client.get_config() which only returns the service key.
+    """
     url = os.getenv("SUPABASE_URL", "")
     anon_key = os.getenv("SUPABASE_ANON_KEY", "")
     service_key = os.getenv("SUPABASE_SERVICE_KEY", "")

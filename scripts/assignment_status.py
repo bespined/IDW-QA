@@ -24,6 +24,8 @@ except ImportError:
 
 PLUGIN_ROOT = Path(__file__).resolve().parents[1]
 
+import supabase_client
+
 # Valid state transitions
 VALID_TRANSITIONS = {
     "assigned": ["in_progress"],
@@ -32,25 +34,11 @@ VALID_TRANSITIONS = {
 }
 
 
-def _get_supabase_config():
-    try:
-        from dotenv import load_dotenv
-        load_dotenv(PLUGIN_ROOT / ".env")
-        load_dotenv(PLUGIN_ROOT / ".env.local", override=True)
-    except ImportError:
-        pass
-    url = os.getenv("SUPABASE_URL", "")
-    key = os.getenv("SUPABASE_SERVICE_KEY", "")
-    return (url, key) if url and key else (None, None)
-
-
 def update_status(assignment_id, new_status, dry_run=False):
     """Update assignment status with ownership check and valid transition enforcement."""
     import requests
-    from role_gate import _supabase_get
 
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured"}
 
     tester_id = os.getenv("IDW_TESTER_ID", "")
@@ -58,7 +46,7 @@ def update_status(assignment_id, new_status, dry_run=False):
         return {"ok": False, "error": "IDW_TESTER_ID not set"}
 
     # Fetch assignment
-    assignments = _supabase_get(url, key, "tester_course_assignments", {
+    assignments = supabase_client.get("tester_course_assignments", params={
         "id": f"eq.{assignment_id}",
         "select": "id,tester_id,status,course_id",
     })
@@ -72,7 +60,7 @@ def update_status(assignment_id, new_status, dry_run=False):
     # Check ownership (tester owns it, or caller is admin)
     if owner_id != tester_id:
         # Check if caller is admin
-        testers = _supabase_get(url, key, "testers", {
+        testers = supabase_client.get("testers", params={
             "id": f"eq.{tester_id}", "select": "role",
         })
         caller_role = testers[0].get("role") if testers else None
@@ -87,18 +75,8 @@ def update_status(assignment_id, new_status, dry_run=False):
     if dry_run:
         return {"ok": True, "dry_run": True, "old_status": current_status, "new_status": new_status}
 
-    resp = requests.patch(
-        f"{url}/rest/v1/tester_course_assignments?id=eq.{assignment_id}",
-        headers={
-            "apikey": key, "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json", "Prefer": "return=representation",
-        },
-        json={"status": new_status},
-        timeout=15,
-    )
-
-    if resp.status_code not in (200, 204):
-        return {"ok": False, "error": f"HTTP {resp.status_code}: {resp.text[:200]}"}
+    if not supabase_client.patch("tester_course_assignments", assignment_id, {"status": new_status}):
+        return {"ok": False, "error": "Failed to update assignment status"}
 
     _log.info("Assignment %s: %s → %s (by %s)", assignment_id, current_status, new_status, tester_id)
     return {
@@ -112,17 +90,14 @@ def update_status(assignment_id, new_status, dry_run=False):
 
 def list_assignments():
     """List assignments for the current tester."""
-    from role_gate import _supabase_get
-
-    url, key = _get_supabase_config()
-    if not url:
+    if not supabase_client.is_configured():
         return {"ok": False, "error": "Supabase not configured"}
 
     tester_id = os.getenv("IDW_TESTER_ID", "")
     if not tester_id:
         return {"ok": False, "error": "IDW_TESTER_ID not set"}
 
-    assignments = _supabase_get(url, key, "tester_course_assignments", {
+    assignments = supabase_client.get("tester_course_assignments", params={
         "tester_id": f"eq.{tester_id}",
         "order": "assigned_at.desc",
     })
